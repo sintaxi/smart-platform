@@ -5,21 +5,19 @@ use warnings;
 
 use File::Spec;
 
-my $self = undef;
-
 sub start {
   my $class = shift;
   my $cx    = shift or die "no context provided";
   my $req   = shift or die "no request provided";
   my $turi = URI->new('http://' . lc($req->header('Host')) . '/');
-  $self = { host => $turi->host, request => $req, context => $cx };
+  my $self = { host => $turi->host, request => $req, context => $cx };
   bless $self => $class;
-  $class->import_extensions();
+  $self->import_extensions();
   return $self;
 }
 
 sub run {
-  my $class = shift;
+  my $self = shift;
   my $bs = File::Spec->catfile(
     RSP->config->{server}->{Root},
     RSP->config->{hosts}->{Root},
@@ -32,15 +30,20 @@ sub run {
     $self->log("bootstrapping $bs failed: $@");
     die $@;
   }
-  return $self->{context}->call('main');
+  my $result = $self->{context}->call('main');
+  if ($@) {
+    die $@;
+  }
+  return $result;
 }
 
 sub end {
+  my $self = shift;
   $self = undef;
 }
 
 sub log {
-  my $class = shift;
+  my $self = shift;
   my $mesg  = shift;
   my $fmsg  = sprintf("[%s (%s)] %s\n", $self->{host}, $$, $mesg);
   if (!RSP->config->{_}->{LogFile}) {
@@ -49,27 +52,74 @@ sub log {
 }
 
 sub import_extensions {
-  my $class  = shift;
+  my $self  = shift;
   my @exts   = map {
     $_ =~ s/\s//g;
     'RSP::Extension::' . $_;
-  } split(',', RSP->config->{_}->{extensions});
+  } split(',', join(",",
+     RSP->config->{_}->{extensions},
+     ( RSP->config->{ $self->{host} } ) ? RSP->config->{ $self->{host} }->{extensions} : () 
+  ));
   foreach my $ext ( @exts ) {
     $self->import_extension( $ext );
   }
 }
 
 sub import_extension {
-  my $class  = shift;
+  my $self  = shift;
   my $ext    = shift; ## Extension class name
   eval {
     Module::Load::load( $ext );
   };
-  if ($@) {
+  if ($@) {    
     $self->log("attempt to load extension $ext failed: $@");
   } else {
     $self->{context}->bind_value( $ext->provide( $self ) );
   }
+}
+
+sub hostroot {
+  my $self = shift;
+  return File::Spec->catfile(
+    RSP->config->{server}->{Root},
+    RSP->config->{hosts}->{Root},
+    $self->{host},
+  ); 
+}
+
+sub jsroot {
+  my $self = shift;
+  return File::Spec->catfile(
+    $self->hostroot,
+    RSP->config->{hosts}->{JSRoot},
+  );
+}
+
+sub webroot {
+  my $self = shift;
+  return File::Spec->catfile(
+    $self->hostroot,
+    RSP->config->{hosts}->{WebRoot},
+  );
+}
+
+sub dbroot {
+  my $self = shift;
+  return File::Spec->catfile(
+    RSP->config->{db}->{Root},
+    $self->{host}
+  );
+}
+
+sub gitroot {
+  my $self = shift;
+  return File::Spec->catfile(
+    RSP->config->{server}->{Root},
+    RSP->config->{git}->{Root},
+    ( RSP->config->{ $self->{host} }->{git} ) ? 
+      RSP->config->{ $self->{host} }->{git} :
+      'core'
+  );
 }
 
 1;

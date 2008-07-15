@@ -14,15 +14,13 @@ sub provide {
       $lib =~ s!\.!/!g;
       $lib .= '.js';
       my $f = File::Spec->catfile(
-        RSP->config->{server}->{Root},
-        RSP->config->{hosts}->{Root},
-        $tx->{host},
-        RSP->config->{hosts}->{JSRoot},
+        $tx->jsroot,
         $lib
       );
       $tx->{context}->eval_file( $f );
       if ($@) {
         die $@;
+      } else {
       }
     }
   );

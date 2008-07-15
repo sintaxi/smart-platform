@@ -10,6 +10,8 @@ use IO::File;
 use HTTP::Status;
 use HTTP::Daemon;
 
+our $VERSION = '3.00';
+
 {
   no warnings 'redefine';
   sub HTTP::Daemon::product_tokens {
@@ -29,10 +31,9 @@ sub stop {
   my $pid = $fh->getline;
   $fh->close;
   if ( kill 15, $pid ) {
-    print "killed $pid\n";
     unlink $PIDFILE;
   } else {
-    print "Couldn't kill proces $pid\n";
+    warn "Couldn't kill proces $pid\n";
   }
 }
 
@@ -84,7 +85,6 @@ sub run {
   
   my $master = HTTP::Daemon->new( %{ $CONFIG->{daemon} } )
     or die "Cannot create master: $!";
-  print $master->url . "\n";
 
   my $fh = IO::File->new($PIDFILE, ">");
   if (!$fh) {
