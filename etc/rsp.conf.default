@@ -1,4 +1,4 @@
-extensions=Console,Use
+extensions=Console,Use,FileSystem,Request,Digest,Datastore,Template,OpenId,UUID,JSON
 
 [hosts]
 Root=hosts
@@ -7,6 +7,7 @@ JSBootstrap=bootstrap.js
 
 [db]
 Root=db
+File=data.db
 
 [server]
 Root=/Users/jduncan/Devel/rsp
