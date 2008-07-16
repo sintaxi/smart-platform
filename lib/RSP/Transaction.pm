@@ -85,11 +85,19 @@ sub import_extension {
 
 sub hostroot {
   my $self = shift;
-  return File::Spec->catfile(
-    RSP->config->{server}->{Root},
-    RSP->config->{hosts}->{Root},
-    $self->{host},
-  ); 
+  my $hostroot = RSP->config->{hosts}->{Root};
+  if ( $hostroot =~ m!^/! ) {
+    return File::Spec->catfile(
+      $hostroot,
+      $self->{host},
+    );
+  } else {
+    return File::Spec->catfile(
+      RSP->config->{server}->{Root},
+      RSP->config->{hosts}->{Root},
+      $self->{host},
+    ); 
+  }
 }
 
 sub jsroot {
@@ -108,12 +116,22 @@ sub webroot {
   );
 }
 
+
 sub dbroot {
   my $self = shift;
-  return File::Spec->catfile(
-    RSP->config->{db}->{Root},
-    $self->{host}
-  );
+  my $dbroot = RSP->config->{db}->{Root};
+  if ( $dbroot =~ m!^/! ) {
+    return File::Spec->catfile(
+      $dbroot,
+      $self->{host},
+    );
+  } else {
+    return File::Spec->catfile(
+      RSP->config->{server}->{Root},
+      RSP->config->{db}->{Root},
+      $self->{host},
+    ); 
+  }
 }
 
 sub gitroot {
