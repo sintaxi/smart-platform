@@ -26,7 +26,7 @@ sub provide {
           ua    => LWPx::ParanoidAgent->new,
           args  => $tx->{request}->uri->query_form_hash,
           consumer_secret => $sec,
-          required_root => 'http://'.$tx->{host}.':8181/signin',
+          required_root => 'http://'.$tx->{host} . ((RSP->config->{daemon}->{LocalPort} != 80) ? ':' . RSP->config->{daemon}->{LocalPort} : '') . $tx->{request}->{uri},
         );        
         
         my $cid = $csr->claimed_identity( $claimed );
@@ -36,7 +36,7 @@ sub provide {
         }
         my $check_url = $cid->check_url(
           return_to  => $return,
-          trust_root => 'http://'.$tx->{host}.':8181/signin'
+          trust_root => 'http://'.$tx->{host} . ((RSP->config->{daemon}->{LocalPort} != 80) ? ':' . RSP->config->{daemon}->{LocalPort} : '') . $tx->{request}->{uri},
         );
         return {
           check  => $check_url,
@@ -49,7 +49,7 @@ sub provide {
           ua    => LWPx::ParanoidAgent->new,
           args  => $tx->{request}->uri->query_form_hash,
           consumer_secret => $sec,
-          required_root => 'http://'.$tx->{host}.':8181/signin',
+          required_root => 'http://'.$tx->{host} . ((RSP->config->{daemon}->{LocalPort} != 80) ? ':' . RSP->config->{daemon}->{LocalPort} : '') . $tx->{request}->{uri},,
         );        
         if (my $setup_url = $csr->user_setup_url) {
           return { setup => $setup_url }
