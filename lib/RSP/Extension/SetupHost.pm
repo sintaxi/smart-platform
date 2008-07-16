@@ -24,10 +24,11 @@ sub provide {
         );
         eval {
           my $git = Git::Wrapper->new( $hostsroot );
+          $ntx->log("git root is " . $ntx->gitroot);
           $git->clone( $ntx->gitroot, $ntx->{host} );
         };
         if ($@) {
-          $ntx->log($@);
+          $ntx->log("setup phase one: clone failed: " . $@);
           return undef;
         } else {
           eval {

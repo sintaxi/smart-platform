@@ -15,14 +15,12 @@ sub provide {
   my $qp  = $req->uri->query_form_hash;
   my %headers = %{ $req->{_headers} };
   return (
-    'system' => {
-      'request' => {
-        'method' => $req->method,
-        'uri'    => uri_unescape( $uri ),
-        'query'  => $qp,
-        'headers'=> \%headers,
-        'content' => $req->decoded_content
-      }
+    'request' => {
+      'method' => $req->method,
+      'uri'    => uri_unescape( $uri ),
+      'query'  => $qp,
+      'headers'=> \%headers,
+      'content' => $req->decoded_content
     }
   );
 }

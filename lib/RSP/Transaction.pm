@@ -60,9 +60,14 @@ sub import_extensions {
      RSP->config->{_}->{extensions},
      ( RSP->config->{ $self->{host} } ) ? RSP->config->{ $self->{host} }->{extensions} : () 
   ));
+  my $system = {};
   foreach my $ext ( @exts ) {
-    $self->import_extension( $ext );
+    my %hash = $self->import_extension( $ext );
+    foreach my $key ( keys %hash ) {
+      $system->{ $key } = $hash{$key};
+    }
   }
+  $self->{context}->bind_value( 'system' => $system );
 }
 
 sub import_extension {
@@ -74,7 +79,7 @@ sub import_extension {
   if ($@) {    
     $self->log("attempt to load extension $ext failed: $@");
   } else {
-    $self->{context}->bind_value( $ext->provide( $self ) );
+    return $ext->provide( $self );
   }
 }
 
@@ -114,11 +119,18 @@ sub dbroot {
 sub gitroot {
   my $self = shift;
   return File::Spec->catfile(
-    RSP->config->{server}->{Root},
     RSP->config->{git}->{Root},
     ( RSP->config->{ $self->{host} }->{git} ) ? 
       RSP->config->{ $self->{host} }->{git} :
       'core'
+  );
+}
+
+sub dbfile {
+  my $self = shift;
+  return File::Spec->catfile(
+    $self->dbroot,
+    RSP->config->{db}->{File}
   );
 }
 

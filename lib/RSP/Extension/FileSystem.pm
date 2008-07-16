@@ -10,7 +10,7 @@ sub provide {
   my $tx = shift;
 
   $tx->{context}->bind_class(
-    name => 'File',
+    name => 'RealFile',
     constructor => sub {
       return undef;
     },
@@ -27,6 +27,9 @@ sub provide {
       },
       'mtime' =>{
         'getter' => 'MyRSP::FileObject::mtime',
+      },
+      'exists' => {
+        'getter' => 'MyRSP::FileObject::exists',
       }
     },
     methods => {
@@ -62,10 +65,10 @@ my $mimetypes = MIME::Types->new;
 sub new {
   my $class = shift;
   my $fn    = shift;
-  if (!-e $fn) {
-    die "$!";
-  }
   my $jsface = shift; ## javascript facing name
+  if (!-e $fn) {
+    die "$!: $jsface";
+  }
   my $self  = { file => $fn, original => $jsface };
   bless $self, $class;
 }
@@ -94,9 +97,19 @@ sub filename {
   return $self->{original}
 }
 
+sub fullpath {
+  my $self = shift;
+  return $self->{file};
+}
+
 sub size {
   my $self = shift;
   return -s $self->{file};
+}
+
+sub exists {
+  my $self = shift;
+  return -e $self->{file};
 }
 
 sub mtime {

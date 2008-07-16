@@ -19,6 +19,7 @@ sub provide {
       );
       $tx->{context}->eval_file( $f );
       if ($@) {
+        $tx->log("failed to load $f: " . $@);
         die $@;
       } else {
       }
