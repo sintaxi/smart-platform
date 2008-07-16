@@ -34,8 +34,8 @@ sub provide {
     },
     methods => {
       'toString' => sub {
-        use Data::Dumper; print Dumper( [@_] );
-        return "hello";
+        my $self = shift;
+        return $self->filename;
       }
     },
     flags   => JS_CLASS_NO_INSTANCE
