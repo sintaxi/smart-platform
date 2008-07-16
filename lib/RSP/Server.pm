@@ -20,6 +20,7 @@ our $VERSION = '3.00';
 }
 
 sub start {
+  $0 = HTTP::Daemon->product_tokens();
   setup_signals();
   run();
 }
