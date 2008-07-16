@@ -52,7 +52,9 @@ sub provide {
         
         my $set;
         foreach my $key (keys %$query) {
-          my $nset = $class->getrd( $tx )->query( $key, '=', $query->{$key} );
+          my $val = $query->{$key};
+          my $encval = $encoder->encode( $val );
+          my $nset = $class->getrd( $tx )->query( $key, '=', $encval );
           if ( $set ) {
             $set = $set->intersection( $nset );
           } else {
@@ -60,30 +62,38 @@ sub provide {
           }
         }
         return [ ] if !$set; ## empty array
+               
         
         my @objects;
         foreach my $member ( $set->members ) {
-          push @objects, $class->getrd( $tx )->get( $member );
+          my $parts = $class->getrd( $tx )->get( $member );
+          push @objects, $class->parts2object( $member, $parts );
         }
-        
+       
         return \@objects;
       },
       'get'    => sub {
         my $type = shift;
         my $id   = shift;
         my $parts = $class->getrd( $tx )->get( $id );        
-        my $object = {};
-        foreach my $part ( @$parts ) {
-          my $key = $part->[0];
-          my $val = $part->[1];
-          $object->{ $key } = $encoder->decode( $part->[1] );
-        }
-        $object->{id} = $id;
-        return $object;
+        return $class->parts2object( $id, $parts );
       }
     }
   );
 }
 
+sub parts2object {
+  my $class = shift;
+  my $id    = shift;
+  my $parts = shift;
+  my $object = {};
+  foreach my $part ( @$parts ) {
+    my $key = $part->[0];
+    my $val = $part->[1];
+    $object->{ $key } = $encoder->decode( $part->[1] );
+  }  
+  $object->{id} = $id;
+  return $object;
+}
 
 1;
