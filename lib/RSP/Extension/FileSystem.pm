@@ -46,12 +46,10 @@ sub provide {
       'get' => sub {
         my $fn = shift;
         my $fullpath = File::Spec->catfile( $tx->webroot, $fn );
-        $tx->log("file is $fn, full path is $fullpath");
         my $file = eval {
           MyRSP::FileObject->new( $fullpath, $fn );
         };
         if ($@) {
-          $tx->log("couldn't get file: $@");
           return undef;
         }
         return $file;
