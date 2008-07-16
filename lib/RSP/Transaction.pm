@@ -107,10 +107,12 @@ sub jsroot {
 
 sub webroot {
   my $self = shift;
-  return File::Spec->catfile(
+  my $file = File::Spec->catfile(
     $self->hostroot,
     RSP->config->{hosts}->{WebRoot},
   );
+  $self->log("file is $file");
+  return $file;
 }
 
 
