@@ -19,10 +19,7 @@ sub start {
 sub run {
   my $self = shift;
   my $bs = File::Spec->catfile(
-    RSP->config->{server}->{Root},
-    RSP->config->{hosts}->{Root},
-    $self->{host},
-    RSP->config->{hosts}->{JSRoot},
+    $self->jsroot,
     RSP->config->{hosts}->{JSBootstrap}    
   );
   $self->{context}->eval_file( $bs );
