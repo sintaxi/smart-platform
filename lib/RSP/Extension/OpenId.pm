@@ -18,6 +18,8 @@ sub provide {
         my $claimed = shift;
         my $return  = shift;
 
+        $return = 'http://'.$tx->{host} . ((RSP->config->{daemon}->{LocalPort} != 80) ? ':' . RSP->config->{daemon}->{LocalPort} : '') . $return,
+
         $tx->log("checking $claimed for valid identity...");
 
         my $sec = $ug->create_b64_urlsafe;
