@@ -49,7 +49,7 @@ sub provide {
         my $sec = shift;
         my $csr = Net::OpenID::Consumer->new(
           ua    => LWPx::ParanoidAgent->new,
-          args  => $tx->{request}->uri->query_form_hash,
+          args  => $tx->{request}->uri->query_form_hash || {},
           consumer_secret => $sec,
           required_root => 'http://'.$tx->{host} . ((RSP->config->{daemon}->{LocalPort} != 80) ? ':' . RSP->config->{daemon}->{LocalPort} : '') . $tx->{request}->{uri},,
         );        
