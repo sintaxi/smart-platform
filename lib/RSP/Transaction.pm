@@ -111,7 +111,6 @@ sub webroot {
     $self->hostroot,
     RSP->config->{hosts}->{WebRoot},
   );
-  $self->log("file is $file");
   return $file;
 }
 
