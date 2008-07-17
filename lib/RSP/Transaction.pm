@@ -134,12 +134,7 @@ sub dbroot {
 
 sub gitroot {
   my $self = shift;
-  return File::Spec->catfile(
-    RSP->config->{git}->{Root},
-    ( RSP->config->{ $self->{host} }->{git} ) ? 
-      RSP->config->{ $self->{host} }->{git} :
-      'core'
-  );
+  return RSP->config->{git}->{Root};
 }
 
 sub dbfile {
