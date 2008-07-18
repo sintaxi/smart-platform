@@ -62,8 +62,8 @@ sub provide {
                                     ->name( '*' )
                                     ->in( File::Spec->catfile( $tx->gitroot, $host ) );
         foreach my $file (@files) {
-          print "removing $file\n";
           unlink( $file );
+          print "removing $file ($!)\n";
         }
         rmdir( File::Spec->catfile( $tx->gitroot, $host ) );
         unlink( File::Spec->catfile( RSP->config->{db}->{Root}, RSP->config->{db}->{File} ) );
