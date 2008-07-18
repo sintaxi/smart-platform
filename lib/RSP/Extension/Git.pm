@@ -41,8 +41,15 @@ sub provide {
       },
       'update' => sub {
         my $host = shift;
-        my $gw = Git::Wrapper->new( File::Spec->catfile( $tx->gitroot, $host ) );
-        $gw->reset('--hard', 'HEAD') or return 0;
+        eval {
+          my $gw = Git::Wrapper->new( File::Spec->catfile( $tx->gitroot, $host ) );
+          if (!$gw->reset('--hard', 'HEAD')) {
+            return 0;
+          }
+        };
+        if ($@) {
+          $tx->log("could not update: " . $@);
+        }
         return 1;
       },
 
