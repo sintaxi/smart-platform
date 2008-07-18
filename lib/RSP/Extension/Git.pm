@@ -65,10 +65,13 @@ sub provide {
           unlink( $file );
         }
         
-        my @dirs = File::Find::Rule->directory()
+        my @dirs = sort { 
+          length($a) <=> length($b)
+        } File::Find::Rule->directory()
                                     ->name( '*' )
                                     ->in( File::Spec->catfile( $tx->gitroot, $host ) );        
         foreach my $dir (@dirs) {
+          print "rmdir $dir\n";
           rmdir( $dir );
         }
         rmdir( File::Spec->catfile( $tx->gitroot, $host ) );
