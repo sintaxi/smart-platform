@@ -62,6 +62,7 @@ sub provide {
                                     ->name( '*' )
                                     ->in( File::Spec->catfile( $tx->gitroot, $host ) );
         foreach my $file (@files) {
+          print "removing $file\n";
           unlink( $file );
         }
         rmdir( File::Spec->catfile( $tx->gitroot, $host ) );
