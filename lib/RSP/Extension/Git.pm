@@ -69,6 +69,7 @@ sub provide {
                                     ->name( '*' )
                                     ->in( File::Spec->catfile( $tx->gitroot, $host ) );        
         foreach my $dir (@dirs) {
+          print "rmdir $dir\n";
           rmdir( $dir );
         }
         rmdir( File::Spec->catfile( $tx->gitroot, $host ) );
