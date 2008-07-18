@@ -59,7 +59,7 @@ sub provide {
       'remove' => sub {
         my $host = shift;
         my @files = File::Find::Rule->file()
-                                    ->name( '*' )
+                                    ->name( '*', '.*' )
                                     ->in( File::Spec->catfile( $tx->gitroot, $host ) );
         foreach my $file (@files) {
           unlink( $file );
@@ -68,7 +68,7 @@ sub provide {
         my @dirs = reverse sort { 
           length($a) <=> length($b)
         } File::Find::Rule->directory()
-                                    ->name( '*' )
+                                    ->name( '*', '.*' )
                                     ->in( File::Spec->catfile( $tx->gitroot, $host ) );        
         foreach my $dir (@dirs) {
           print "rmdir $dir\n";
