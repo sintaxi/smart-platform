@@ -3,6 +3,7 @@ package RSP::Transaction;
 use strict;
 use warnings;
 
+use Time::HiRes qw( gettimeofday tv_interval );
 use File::Spec;
 
 sub start {
@@ -13,6 +14,7 @@ sub start {
   my $turi = URI->new('http://' . lc($req->header('Host')) . '/');
   my $self = { ops => 0, host => $turi->host, request => $req, context => $cx };
   bless $self => $class;
+  $self->profile('transaction');
   $rt->set_interrupt_handler( sub {
     $self->{ops}++;
     return 1;
@@ -36,13 +38,35 @@ sub run {
   if ($@) {
     die $@;
   }
+  $self->logp( $self->profile('transaction'), "%s on " . $self->{request}->uri . " took %s");
   return $result;
 }
 
 sub end {
   my $self = shift;
-  $self->log("call to $self->{request} executed $self->{ops} ops");
+  $self->logp($self->{ops}, "opcount", "%s was %s");
   $self = undef;
+}
+
+sub profile {
+  my $self = shift;
+  my $type = shift;
+  if (!$self->{profile}->{$type}) {
+    $self->{profile}->{$type}->{start} = [gettimeofday];
+  } else {
+    return (tv_interval( delete $self->{profile}->{$type}->{start} ), $type);
+  }
+}
+
+sub logp {
+  my $self = shift;
+  my $num  = shift;
+  my $type = shift;
+  my $mesg = shift;
+  if ( !$mesg ) {
+    $mesg = "stat of type %s was %s";
+  }
+  $self->log( sprintf($mesg, $type, $num) );
 }
 
 sub log {
