@@ -96,12 +96,23 @@ sub run {
   }
 
   if ( $CONFIG->{server}->{User} ) {
-    my ($name,$passwd,$uid,$gid, $quota,$comment,$gcos,$dir,$shell,$expire) = getpwnam( $CONFIG->{server}->{User} );
-    if ($uid) {
-      POSIX::setuid( $uid );
-    } else {
-      die "unknown user $CONFIG->{server}->{User}";
-    }
+    {
+      my ($name,$passwd,$uid,$gid, $quota,$comment,$gcos,$dir,$shell,$expire) = getpwnam( $CONFIG->{server}->{User} );
+      if ($uid) {
+        POSIX::setuid( $uid );
+      } else {
+        die "unknown user $CONFIG->{server}->{User}";
+      }
+   }
+   {
+      my ($name,$passwd,$gid,$members) = getgrnam( $CONFIG->{server}->{Group} );
+      if ($gid) {
+        POSIX::setgid( $uid );
+      } else {
+        die "unknown user $CONFIG->{server}->{User}";
+      }
+   }
+
   }
 
 
