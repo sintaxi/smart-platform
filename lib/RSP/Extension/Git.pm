@@ -5,6 +5,7 @@ use warnings;
 
 use Git;
 use JavaScript;
+use File::Find::Rule;
 use Git::Wrapper;
 
 sub provide {
@@ -48,10 +49,25 @@ sub provide {
         $gw->reset('--hard', 'HEAD') or return 0;
         return 1;
       },
+
       'current_branch' => sub {
         my $host = shift;
         my $gw   = Git::Wrapper->new( File::Spec->catfile( $tx->gitroot, $host ) );
         return [ $gw->branch ];
+      },
+
+      'remove' => sub {
+        my $host = shift;
+        my @files = File::Find::Rule->file()
+                                    ->name( '*' )
+                                    ->in( File::Spec->catfile( $tx->gitroot, $host ) );
+        foreach my $file (@files) {
+          unlink( $file );
+        }
+        rmdir( File::Spec->catfile( $tx->gitroot, $host ) );
+        unlink( File::Spec->catfile( RSP->config->{db}->{Root}, RSP->config->{db}->{File} ) );
+        rmdir( RSP->config->{db}->{Root} );
+        return 1;
       }
     }
   

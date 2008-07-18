@@ -40,7 +40,7 @@ sub provide {
         return $rd->save( @parts );        
       },
       
-      'delete' => sub {
+      'remove' => sub {
         my $type = shift;
         my $id   = shift;
         $class->getrd( $tx )->delete( $id );
