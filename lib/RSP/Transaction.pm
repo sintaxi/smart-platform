@@ -7,11 +7,16 @@ use File::Spec;
 
 sub start {
   my $class = shift;
-  my $cx    = shift or die "no context provided";
+  my $rt    = JavaScript::Runtime->new;
+  my $cx    = $rt->create_context;
   my $req   = shift or die "no request provided";
   my $turi = URI->new('http://' . lc($req->header('Host')) . '/');
-  my $self = { host => $turi->host, request => $req, context => $cx };
+  my $self = { ops => 0, host => $turi->host, request => $req, context => $cx };
   bless $self => $class;
+  $rt->set_interrupt_handler( sub {
+    $self->{ops}++;
+    return 1;
+  } );
   $self->import_extensions();
   return $self;
 }
@@ -36,6 +41,7 @@ sub run {
 
 sub end {
   my $self = shift;
+  $self->log("call to $self->{request} executed $self->{ops} ops");
   $self = undef;
 }
 

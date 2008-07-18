@@ -16,9 +16,7 @@ sub handle {
   my $class = shift;
   my $req   = shift;
 
-  my $rt = JavaScript::Runtime->new;
-  my $cx = $rt->create_context;
-  my $tx = RSP::Transaction->start( $cx, $req ); 
+  my $tx = RSP::Transaction->start( $req ); 
   my $op = $tx->run;
  
   ## handle blessed objects, like filesystem objects...

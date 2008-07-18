@@ -24,14 +24,10 @@ sub provide {
         }
         my $gw = Git::Wrapper->new( File::Spec->catfile( $tx->gitroot, $host ) );
         $gw->update_server_info();
-
-        my $rt   = JavaScript::Runtime->new;
-        my $cx   = $rt->create_context;     
         
         eval {
           ## this is stuff to make the database...
           my $ntx  = RSP::Transaction->start(
-            $cx,
             HTTP::Request->new('GET','/', ['Host', $host])
           );
           mkdir( $ntx->dbroot );        
