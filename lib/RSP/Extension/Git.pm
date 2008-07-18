@@ -75,8 +75,8 @@ sub provide {
           rmdir( $dir );
         }
         rmdir( File::Spec->catfile( $tx->gitroot, $host ) );
-        unlink( File::Spec->catfile( RSP->config->{db}->{Root}, RSP->config->{db}->{File} ) );
-        rmdir( RSP->config->{db}->{Root} );
+        unlink( File::Spec->catfile( $tx->dbroot, RSP->config->{db}->{File} ) );
+        rmdir( $tx->dbroot );
         return 1;
       }
     }
