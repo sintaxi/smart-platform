@@ -65,7 +65,7 @@ sub provide {
           unlink( $file );
         }
         
-        my @dirs = sort { 
+        my @dirs = reverse sort { 
           length($a) <=> length($b)
         } File::Find::Rule->directory()
                                     ->name( '*' )
