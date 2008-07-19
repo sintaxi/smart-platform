@@ -18,7 +18,7 @@ sub provide {
         if (!$kfh) { $tx->log("could not read keyfile: $!"); return 0; }
         my @keys;
         while(my $tkey = <$kfh>) {
-          if ( $tkey ne $key ) {
+          if ( $tkey =~ $key ) {
             push @keys, $tkey;
           }
         }
