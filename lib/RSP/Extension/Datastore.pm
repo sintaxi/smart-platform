@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use JSON::XS;
+use Cache::Memcached;
 use RSP::ObjectStore;
 use Scalar::Util qw( reftype );
 
@@ -19,6 +20,7 @@ sub getrd {
 sub provide {
   my $class = shift;
   my $tx    = shift;
+  my $md = Cache::Memcached->new( servers => [ '127.0.0.1:11211' ] );
   return (
     'datastore' => {
     
@@ -37,12 +39,17 @@ sub provide {
           push @parts, [ $id, $key, $encoder->encode( $obj->{$key} ) ];
         }
         my $rd = $class->getrd( $tx );
-        return $rd->save( @parts );        
+        if ( $rd->save( @parts ) ) {
+          $md->set( $obj->{id}, $obj );
+          return 1;        
+        }
+        return 0;
       },
       
       'remove' => sub {
         my $type = shift;
         my $id   = shift;
+        $md->delete( $id );
         $class->getrd( $tx )->delete( $id );
       },
 
@@ -72,9 +79,12 @@ sub provide {
        
         return \@objects;
       },
+      
       'get'    => sub {
         my $type = shift;
         my $id   = shift;
+        my $cached = $md->get( $id );
+        if ($cached) { return $cached; }
         my $parts = $class->getrd( $tx )->get( $id );        
         return $class->parts2object( $id, $parts );
       }
