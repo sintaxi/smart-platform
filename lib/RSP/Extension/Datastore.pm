@@ -27,12 +27,18 @@ sub provide {
       'write' => sub {
         my $type = shift;
         my $obj = shift;
-
+        my $trans = shift;
+                
         if (!$obj) { die "no object" }
         if (reftype($obj) ne 'HASH') { die "not an Object" }
   
         my $id    = delete $obj->{id};
         if (!$id) { die "object has no id" }
+
+        ## if the object is transient, don't even bother going 
+        ## to the database with, just put it in memcache and be done.
+        ## primarily used for sessions.
+        if ( $trans ) { $md->set( $obj->{id}, $obj ); return 1; }
 
         my @parts = ( [ $id, 'type', $encoder->encode( $type ) ] );
         foreach my $key (keys %$obj) {
