@@ -40,18 +40,17 @@ sub handler {
       foreach my $part (@$parts) {
         my $name  = $part->[0];
         my $value = $part->[1];
-        warn("name is $name");
 	if ( $name eq 'committers' ) {
-	  warn("decoding $value...");
           my $auth = $coder->decode( $value );
-          return Apache2::Const::OK if ( $password eq $auth->{$r->user}->{password});
+	  if ( $password eq $auth->{$r->user}->{password} ) {  
+            return Apache2::Const::OK;
+          }
 	}
       }
     }
 
     $tx->end;   
 
-    #return Apache2::Const::OK if ( $password eq $auth->{$r->user}->{password});
     
     $r->note_basic_auth_failure;
     return Apache2::Const::HTTP_UNAUTHORIZED;
