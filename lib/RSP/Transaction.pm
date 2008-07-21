@@ -2,7 +2,9 @@ package RSP::Transaction;
 
 use strict;
 use warnings;
+use JavaScript;
 
+use Module::Load;
 use Time::HiRes qw( gettimeofday tv_interval );
 use File::Spec;
 

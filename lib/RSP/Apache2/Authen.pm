@@ -8,11 +8,14 @@ use Apache2::RequestUtil ();
 
 use JSON::XS;
 use HTTP::Request;
+use RSP::Config;
 use RSP::Transaction;
 use RSP::ObjectStore;
 use Apache2::Const -compile => qw(OK DECLINED HTTP_UNAUTHORIZED);
 
 use constant SECRET_LENGTH => 14;
+
+my $coder = JSON::XS->new->allow_nonref->utf8;
 
 sub handler {
     my $r = shift;
@@ -23,23 +26,27 @@ sub handler {
     my $host = $r->headers_in->{Host};    
     my $mgmt = RSP->config->{_}->{ManagementHost}; 
 
-    my $tx   = RSP::Transaction->new( HTTP::Request->new( 'GET', '/', [ 'Host' => $host ] ) );
+    my $tx   = RSP::Transaction->start( HTTP::Request->new( 'GET', '/', [ 'Host' => $host ] ) );
     my $os   = RSP::ObjectStore->new( $tx->dbfile );
     
-    my $set  = $os->query("hostname" => "=" => JSON::XS::encode_json( $host ));
+    my $set  = $os->query("hostname" => "=" => $coder->encode( $host ));
     my $hid  = ($set->members)[0];
-    
-    my $auth  = {};
-    my $parts = $os->get($hid);
-    foreach my $part (@$parts) {
-      my $name  = $part->[0];
-      my $value = $part->[1];
-      if ( $name eq 'committers' ) {
-        $auth = JSON::XS::decode_json( $value );
-        last;
+    my $auth = {};
+    if ($hid) {
+      my $auth  = {};
+      my $parts = $os->get($hid);
+      foreach my $part (@$parts) {
+        my $name  = $part->[0];
+        my $value = $part->[1];
+        if ( $name eq 'committers' ) {
+          $auth = JSON::XS::decode_json( $value );
+          last;
+        }
       }
     }
-    
+
+    $tx->end;   
+ 
     return Apache2::Const::OK if ( $password eq $auth->{$r->user}->{password});
     
     $r->note_basic_auth_failure;
