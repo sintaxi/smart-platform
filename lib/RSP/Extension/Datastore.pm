@@ -4,11 +4,12 @@ use strict;
 use warnings;
 
 use JSON::XS;
-use Cache::Memcached;
+use Cache::Memcached::Fast;
 use RSP::ObjectStore;
 use Scalar::Util qw( reftype );
 
 my $encoder = JSON::XS->new->utf8->allow_nonref;
+my $mdservers = [ {address => '127.0.0.1:11211'} ];
 
 sub getrd {
   my $class = shift;
@@ -20,7 +21,6 @@ sub getrd {
 sub provide {
   my $class = shift;
   my $tx    = shift;
-  my $md = Cache::Memcached->new( servers => [ '127.0.0.1:11211' ] );
   return (
     'datastore' => {
     
@@ -28,6 +28,7 @@ sub provide {
         my $type = shift;
         my $obj = shift;
         my $trans = shift;
+	my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
                 
         if (!$obj) { die "no object" }
         if (reftype($obj) ne 'HASH') { die "not an Object" }
@@ -38,7 +39,11 @@ sub provide {
         ## if the object is transient, don't even bother going 
         ## to the database with, just put it in memcache and be done.
         ## primarily used for sessions.
-        if ( $trans ) { $md->set( $obj->{id}, $obj ); return 1; }
+        if ( $trans ) {
+	  if ($md->set( $id, $encoder->encode( $obj ) )) {
+	    return 1;
+	  } else { $tx->log("can't find memcache, falling back to db on transient store"); }
+	}
 
         my @parts = ( [ $id, 'type', $encoder->encode( $type ) ] );
         foreach my $key (keys %$obj) {
@@ -46,7 +51,7 @@ sub provide {
         }
         my $rd = $class->getrd( $tx );
         if ( $rd->save( @parts ) ) {
-          $md->set( $obj->{id}, $obj );
+          $md->set( $id, $encoder->encode( $obj ) );
           return 1;        
         }
         return 0;
@@ -55,6 +60,7 @@ sub provide {
       'remove' => sub {
         my $type = shift;
         my $id   = shift;
+	my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
         $md->delete( $id );
         $class->getrd( $tx )->delete( $id );
       },
@@ -62,6 +68,7 @@ sub provide {
       'search' => sub {
         my $type  = shift;
         my $query = shift;
+	my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
         
         my $set;
         foreach my $key (keys %$query) {
@@ -89,8 +96,9 @@ sub provide {
       'get'    => sub {
         my $type = shift;
         my $id   = shift;
+	my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
         my $cached = $md->get( $id );
-        if ($cached) { return $cached; }
+        if ($cached) { return $encoder->decode( $cached ); }
         my $parts = $class->getrd( $tx )->get( $id );        
         return $class->parts2object( $id, $parts );
       }
