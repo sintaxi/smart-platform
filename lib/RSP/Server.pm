@@ -48,7 +48,7 @@ sub handle_one_connection {
       if ($notimeout) { die "alarm"; }
     };
     $notimeout = 1;
-    alarm(60);
+    alarm(RSP->config->{server}->{ConnectionTimeout} || 60);
     while( my $r = $c->get_request ) {    
       alarm(60);
       $notimeout = 0;
@@ -62,6 +62,9 @@ sub handle_one_connection {
         if ($response->header('Connection') && $response->header('Connection') =~ /close/i) {
           last;
         }
+      }
+      if ( $this_conn == ( RSP->config->{server}->{MaxRequetsPerClient} || 5 )) {
+        last;
       }
     }  
   };
@@ -148,6 +151,7 @@ sub fork_a_slave {              # return int (pid)
 
   my $pid;
   defined ($pid = fork) or die "Cannot fork: $!";
+  print "forked a child\n";
   &child_does($master) unless $pid;
   $pid;
 }

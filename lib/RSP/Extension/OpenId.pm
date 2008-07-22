@@ -52,7 +52,10 @@ sub provide {
           args  => $tx->{request}->uri->query_form_hash || {},
           consumer_secret => $sec,
           required_root => 'http://'.$tx->{host} . ((RSP->config->{daemon}->{LocalPort} != 80) ? ':' . RSP->config->{daemon}->{LocalPort} : '') . $tx->{request}->{uri},,
-        );        
+        );
+
+        use Data::Dumper; warn Dumper( $tx->{request}->uri->query_form_hash );
+        
         if (my $setup_url = $csr->user_setup_url) {
           return { setup => $setup_url }
         } elsif ($csr->user_cancel) {
