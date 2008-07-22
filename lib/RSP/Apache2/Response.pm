@@ -14,18 +14,21 @@ use Apache2::RequestRec;
 
 sub handler {
   my $r = shift;
+
   my $ap = Apache2::Request->new( $r );
   my $req = HTTP::Request->parse( $r->as_string );
 
   ## is there not a better way to get the unparsed body? surely...
   my $postparams = [];
   foreach my $param ( $ap->param ) {
-    push @$postparams, $param, $ap->param($param);
+    my $value = $ap->param($param);
+#    warn("$param value is $value");
+    push @$postparams, $param, $value;
   }
+#  use Data::Dumper; warn Dumper( $postparams );
   my $rp = POST('/',$postparams);  
+#  if ( $rp->content ) { warn("post params are " . $rp->content) }
   $req->content( $rp->content );
-
-  warn("request is " . $req->as_string);
 
   my $res = RSP->handle( $req );
 
@@ -34,9 +37,7 @@ sub handler {
   my $ho  = $r->err_headers_out;
   foreach my $header ( $res->headers->header_field_names() ) {
     next if ( $header eq 'Content-Type' );
-    warn("setting header $header");
     my $val = $res->header( $header );
-    warn("setting $header to $val");
     eval {
       $ho->set( $header, $res->header( $header ) );
     };
