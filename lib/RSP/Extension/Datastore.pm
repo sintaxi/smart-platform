@@ -75,15 +75,14 @@ sub provide {
           my $val = $query->{$key};
           my $encval = $encoder->encode( $val );
           my $nset = $class->getrd( $tx )->query( $key, '=', $encval );
-          if ( $set ) {
+          if ( ref($set) ) {
             $set = $set->intersection( $nset );
           } else {
             $set = $nset;
           }
         }
         return [ ] if !$set; ## empty array
-               
-        
+
         my @objects;
         foreach my $member ( $set->members ) {
           my $parts = $class->getrd( $tx )->get( $member );
