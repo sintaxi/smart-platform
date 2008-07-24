@@ -7,6 +7,10 @@ use Git;
 use JavaScript;
 use File::Find::Rule;
 use Git::Wrapper;
+use Cache::Memcached::Fast;
+
+my $coder = JSON::XS->new->ascii->allow_nonref;
+my $mdservers = [ {address => '127.0.0.1:11211'} ];
 
 sub provide {
   my $class = shift;
@@ -42,11 +46,15 @@ sub provide {
       'update' => sub {
         my $host = shift;
         eval {
+	  my $mcdkey = "$tx->{host}:$host:branches";
+          my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+          $md->delete( $mcdkey );
           my $gw = Git::Wrapper->new( File::Spec->catfile( $tx->gitroot, $host ) );
           if (!$gw->reset('--hard', 'HEAD')) {
             $tx->log("couldn't update");
             return 0;
           }
+          $gw->update_server_info();
         };
         if ($@) {
           $tx->log("could not update: " . $@);
@@ -56,8 +64,14 @@ sub provide {
 
       'current_branch' => sub {
         my $host = shift;
+        my $mcdkey = "$tx->{host}:$host:branches";
+        my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+        my $branches = $md->get($mcdkey);
+        if ( $branches ) { warn("got branches from cache with key $mcdkey"); return $coder->decode( $branches ); }
         my $gw   = Git::Wrapper->new( File::Spec->catfile( $tx->gitroot, $host ) );
-        return [ $gw->branch ];
+        my $branch = [ $gw->branch ];
+        $md->set( $mcdkey, $coder->encode( $branch ) );
+        return $branch;
       },
 
       'remove' => sub {
