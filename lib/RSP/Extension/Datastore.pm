@@ -25,11 +25,12 @@ sub provide {
     'datastore' => {
     
       'write' => sub {        
+        my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+
         my $partsForOne = sub {
           my $type = shift;
           my $obj = shift;
           my $trans = shift;
-          my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
                   
           if (!$obj) { die "no object" }
           if (reftype($obj) ne 'HASH') { die "not an Object" }
@@ -68,7 +69,9 @@ sub provide {
         my $rd = $class->getrd( $tx );
         if ( $rd->save( @parts ) ) {
           foreach my $cache_sub ( @cache ) {
-            $cache_sub->();
+            if ( ref( $cache_sub ) && ref($cache_sub) eq 'CODE') {
+              $cache_sub->();
+            }
           }
           return 1;        
         }
