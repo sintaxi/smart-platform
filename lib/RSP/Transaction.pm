@@ -12,6 +12,7 @@ sub start {
   my $class = shift;
   my $rt    = JavaScript::Runtime->new;
   my $cx    = $rt->create_context;
+  $cx->set_version("1.7") if $cx->can("set_version");
   my $req   = shift or die "no request provided";
   my $turi = URI->new('http://' . lc($req->header('Host')) . '/');
   my $self = { ops => 0, host => $turi->host, request => $req, context => $cx };
