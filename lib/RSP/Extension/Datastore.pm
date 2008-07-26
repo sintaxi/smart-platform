@@ -4,8 +4,8 @@ use strict;
 use warnings;
 
 use JSON::XS;
-use Cache::Memcached::Fast;
 use RSP::ObjectStore;
+use Cache::Memcached::Fast;
 use Scalar::Util qw( reftype );
 
 my $encoder = JSON::XS->new->utf8->allow_nonref;
@@ -24,34 +24,52 @@ sub provide {
   return (
     'datastore' => {
     
-      'write' => sub {
-        my $type = shift;
-        my $obj = shift;
-        my $trans = shift;
-	my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
-                
-        if (!$obj) { die "no object" }
-        if (reftype($obj) ne 'HASH') { die "not an Object" }
+      'write' => sub {        
+        my $partsForOne = sub {
+          my $type = shift;
+          my $obj = shift;
+          my $trans = shift;
+          my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+                  
+          if (!$obj) { die "no object" }
+          if (reftype($obj) ne 'HASH') { die "not an Object" }
+    
+          my $id    = delete $obj->{id};
+          if (!$id) { die "object has no id" }
   
-        my $id    = delete $obj->{id};
-        if (!$id) { die "object has no id" }
+          ## if the object is transient, don't even bother going 
+          ## to the database with, just put it in memcache and be done.
+          ## primarily used for sessions.
+          if ( $trans ) {
+            if ($md->set( $id, $encoder->encode( $obj ) )) {
+              return ();
+            } else { $tx->log("can't find memcache, falling back to db on transient store"); }
+          }
+  
+          return (sub {
+            $md->set( $id, $encoder->encode( $obj ) );
+          }, $class->object2parts( $type, $id, $obj ));
+        };
 
-        ## if the object is transient, don't even bother going 
-        ## to the database with, just put it in memcache and be done.
-        ## primarily used for sessions.
-        if ( $trans ) {
-	  if ($md->set( $id, $encoder->encode( $obj ) )) {
-	    return 1;
-	  } else { $tx->log("can't find memcache, falling back to db on transient store"); }
-	}
-
-        my @parts = ( [ $id, 'type', $encoder->encode( $type ) ] );
-        foreach my $key (keys %$obj) {
-          push @parts, [ $id, $key, $encoder->encode( $obj->{$key} ) ];
+        my @cache = ();
+        my @parts = ();
+        if (ref($_[0]) && ref($_[0]) eq 'ARRAY') {
+          foreach my $elem ( $_[0] ) {
+            my @pfo = $partsForOne->( @$elem );
+            push @cache, shift @pfo;
+            push @parts, @pfo;
+          }
+        } else {
+          my @pfo = $partsForOne->( @_ );
+          push @cache, shift @pfo;
+          push @parts, @pfo;
         }
+        
         my $rd = $class->getrd( $tx );
         if ( $rd->save( @parts ) ) {
-          $md->set( $id, $encoder->encode( $obj ) );
+          foreach my $cache_sub ( @cache ) {
+            $cache_sub->();
+          }
           return 1;        
         }
         return 0;
@@ -60,7 +78,7 @@ sub provide {
       'remove' => sub {
         my $type = shift;
         my $id   = shift;
-	my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+        my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
         $md->delete( $id );
         $class->getrd( $tx )->delete( $id );
       },
@@ -68,7 +86,7 @@ sub provide {
       'search' => sub {
         my $type  = shift;
         my $query = shift;
-	my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+        my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
         
         my $set;
         foreach my $key (keys %$query) {
@@ -95,7 +113,7 @@ sub provide {
       'get'    => sub {
         my $type = shift;
         my $id   = shift;
-	my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+        my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
         my $cached = $md->get( $id );
         if ($cached) { return $encoder->decode( $cached ); }
         my $parts = $class->getrd( $tx )->get( $id );        
@@ -103,6 +121,18 @@ sub provide {
       }
     }
   );
+}
+
+sub object2parts {
+  my $class  = shift;
+  my $type   = shift;
+  my $id     = shift;
+  my $object = shift;
+  my @parts = ( [ $id, 'type', $encoder->encode( $type ) ] );
+  foreach my $key (keys %$object) {
+    push @parts, [ $id, $key, $encoder->encode( $object->{$key} ) ];
+  }
+  return @parts;
 }
 
 sub parts2object {
