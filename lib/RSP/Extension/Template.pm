@@ -6,6 +6,11 @@ use warnings;
 use Template;
 use Scalar::Util qw( blessed );
 
+use Template::Plugins;
+
+$Template::Plugins::STD_PLUGINS = {};
+$Template::Plugins::PLUGIN_BASE = '';
+
 sub provide {
   my $class = shift;
   my $tx    = shift;
@@ -21,6 +26,7 @@ sub provide {
         $procstring = \$template;
       }
       my $tt = Template->new( 
+        PLUGINS => {},
         INCLUDE_PATH => [ $tx->webroot ],
         ABSOLUTE     => 1,
         RECURSION => 1
