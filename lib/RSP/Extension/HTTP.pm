@@ -19,7 +19,12 @@ sub provide {
       'request' => sub {
         my $response = eval {
           my $req = shift;
-          my $r = HTTP::Request->new( @$req );
+          my $r;
+          if ( ref( $req ) ) {
+            $r = HTTP::Request->new( @$req );
+          } else {
+            $r = HTTP::Request->new( $req, @_ );
+          }
           $ua->request( $r );
         };
         if ($@) {
