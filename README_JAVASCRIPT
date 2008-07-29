@@ -1,4 +1,4 @@
-I'm currently building JavaScript.pm from Claes' trunk: svn://svn.versed.se/public/JavaScript/trunk
+I'm currently building JavaScript.pm from Claes' trunk: svn://svn.versed.se/public/Perl/modules/JavaScript/trunk
 I'm also building it against the mozilla SpiderMonkey trunk.
 
 It should work against other versions but some JavaScript features won't be enabled (such as 'let')
