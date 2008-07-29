@@ -16,6 +16,7 @@ sub provide {
   my $tx    = shift;
   return (
     'template' => sub {
+      $tx->profile('template');
       my $template = shift;
       my $templateData = shift;
       
@@ -34,6 +35,7 @@ sub provide {
       my $buf;
       
       $tt->process($procstring, $templateData, \$buf) or warn $tt->error;
+      $tx->profile('template');
       return $buf;    
     }
   );
