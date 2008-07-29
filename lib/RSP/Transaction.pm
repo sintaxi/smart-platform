@@ -8,20 +8,27 @@ use Module::Load;
 use Time::HiRes qw( gettimeofday tv_interval );
 use File::Spec;
 
+use RSP::Queue::Client;
+
 sub start {
   my $class = shift;
+  my $req   = shift or die "no request provided";
+
   my $rt    = JavaScript::Runtime->new;
   my $cx    = $rt->create_context;
   $cx->set_version("1.7") if $cx->can("set_version");
-  my $req   = shift or die "no request provided";
   my $turi = URI->new('http://' . lc($req->header('Host')) . '/');
+
   my $self = { ops => 0, host => $turi->host, request => $req, context => $cx };
   bless $self => $class;
+
   $self->profile('transaction');
+
   $rt->set_interrupt_handler( sub {
     $self->{ops}++;
     return 1;
   } );
+
   $self->import_extensions();
   return $self;
 }
@@ -41,14 +48,27 @@ sub run {
   if ($@) {
     die $@;
   }
-  $self->logp( $self->profile('transaction'), "%s on " . $self->{request}->uri . " took %s");
+  
+  $self->profile('transaction');
   return $result;
 }
 
 sub end {
   my $self = shift;
-  $self->logp($self->{ops}, "opcount", "%s was %s");
+  $self->log_billing($self->{ops}, "opcount", "%s was %s");
   $self = undef;
+}
+
+sub logger {
+  my $self = shift;
+  if (!$self->{logpackage}) {
+    $self->{logpackage} = RSP->config->{server}->{LogPackage} || 'RSP::Queue::Fake';
+    eval {
+      Module::Load::load( $self->{logpackage} );    
+    };
+    if ($@) { warn("could not load module $self->{logpackage}: $@") }
+  }
+  return $self->{logpackage};
 }
 
 sub profile {
@@ -57,28 +77,30 @@ sub profile {
   if (!$self->{profile}->{$type}) {
     $self->{profile}->{$type}->{start} = [gettimeofday];
   } else {
-    return (tv_interval( delete $self->{profile}->{$type}->{start} ), $type);
+    my $intv = tv_interval( delete $self->{profile}->{$type}->{start} );
+    $self->logger->send({ host => $self->{host}, request => $self->{request}->uri->as_string, elapsed => $intv, type => $type }, 'profiling');
   }
 }
 
-sub logp {
+### log profiling information (for example, op counts and 
+sub log_billing {
   my $self = shift;
   my $num  = shift;
   my $type = shift;
   my $mesg = shift;
-  if ( !$mesg ) {
-    $mesg = "stat of type %s was %s";
-  }
-  $self->log( sprintf($mesg, $type, $num) );
+  
+  if (RSP->config->{$self->{host}}->{NoBilling}) { return; }
+  
+  $self->logger->send(
+    { count => $num, type => $type, host => $self->{host}, request => $self->{request}->uri->as_string }, "billing"
+  );
 }
 
 sub log {
   my $self = shift;
   my $mesg  = shift;
   my $fmsg  = sprintf("[%s (%s)] %s\n", $self->{host}, $$, $mesg);
-  if (!RSP->config->{_}->{LogFile}) {
-    print STDERR $fmsg;
-  }
+  $self->logger->send($fmsg, 'log');
 }
 
 sub import_extensions {
