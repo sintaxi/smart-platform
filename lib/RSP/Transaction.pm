@@ -8,8 +8,6 @@ use Module::Load;
 use Time::HiRes qw( gettimeofday tv_interval );
 use File::Spec;
 
-use RSP::Queue::Client;
-
 sub start {
   my $class = shift;
   my $req   = shift or die "no request provided";
