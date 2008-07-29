@@ -13,13 +13,18 @@ our $CONFIG;
 our $CONFIG_FILENAME;
 
 sub RSP::config {
-  my $class = shift;  
+  my $class = shift;
+
+  ## get the config file once, then we're done...
   $CONFIG_FILENAME ||= $class->find_config_file;
+
+  ## get the mtime, if it's greater than what we
+  ## have we need to re-read the config file, otherwise
+  ## simply return what we have cached.
   my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
     $atime,$mtime,$ctime,$blksize,$blocks)
         = stat($CONFIG_FILENAME);
   if ( $mtime > $MTIME ) {
-    print STDERR "reading config file\n";
     $CONFIG = Config::Tiny->read( $CONFIG_FILENAME );
     $MTIME  = $mtime;
     return $CONFIG;
