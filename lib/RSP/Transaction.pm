@@ -76,7 +76,7 @@ sub profile {
     $self->{profile}->{$type}->{start} = [gettimeofday];
   } else {
     my $intv = tv_interval( delete $self->{profile}->{$type}->{start} );
-    $self->logger->send({ host => $self->{host}, request => $self->{request}->uri->as_string, elapsed => $intv, type => $type }, 'profiling');
+    $self->logger->send({ host => $self->{host}, request => $self->{request}->uri->path, elapsed => $intv, type => $type }, 'profiling');
   }
 }
 
@@ -88,9 +88,9 @@ sub log_billing {
   my $mesg = shift;
   
   if (RSP->config->{$self->{host}}->{NoBilling}) { return; }
-  
+
   $self->logger->send(
-    { count => $num, type => $type, host => $self->{host}, request => $self->{request}->uri->as_string }, "billing"
+    { count => $num, type => $type, host => $self->{host}, request => $self->{request}->uri->path }, "billing"
   );
 }
 
