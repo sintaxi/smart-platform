@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use RSP;
+use POSIX;
 use Spread;
 use JSON::XS;
 use RSP::ObjectStore;
@@ -13,6 +14,28 @@ my $FLUSH_AT = 10;
 
 my $coder = JSON::XS->new->allow_nonref;
 $0 = "RSP Billing Collation";
+
+if ( RSP->config->{server}->{User} ) {
+   {
+      my ($name,$passwd,$gid,$members) = getgrnam( RSP->config->{server}->{Group} );
+      if ($gid) {
+        POSIX::setgid( $gid );
+        if ($!) { warn "setgid: $!" }
+      } else {
+        die "unknown group RSP->config->{server}->{User}";
+      }
+   }
+    {
+      my ($name,$passwd,$uid,$gid, $quota,$comment,$gcos,$dir,$shell,$expire) = getpwnam( RSP->config->{server}->{User} );
+      if ($uid) {
+        POSIX::setuid( $uid );
+        if ($!) { warn "setuid: $!" }
+      } else {
+        die "unknown user RSP->config->{server}->{User}";
+      }
+   }
+}
+
 
 my $hosts = {};
 
