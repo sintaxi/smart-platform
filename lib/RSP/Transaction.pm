@@ -103,13 +103,15 @@ sub log {
 
 sub import_extensions {
   my $self  = shift;
+  my $extension_list = RSP->config->{_}->{extensions};
+  if (exists(RSP->config->{ $self->{host} }) && exists(RSP->config->{ $self->{host} }->{extensions})) {
+    $extension_list = join( ",", $extension_list, RSP->config->{$self->{host}}->{extensions});  
+  }
+  my @extensions_to_load = split(',', $extension_list);
   my @exts   = map {
-    $_ =~ s/\s//g;
-    'RSP::Extension::' . $_;
-  } split(',', join(",",
-     RSP->config->{_}->{extensions},
-     ( RSP->config->{ $self->{host} } ) ? RSP->config->{ $self->{host} }->{extensions} : () 
-  ));
+      $_ =~ s/\s//g;
+      'RSP::Extension::' . $_;
+  } @extensions_to_load;
   my $system = {};
   foreach my $ext ( @exts ) {
     my %hash = $self->import_extension( $ext );
