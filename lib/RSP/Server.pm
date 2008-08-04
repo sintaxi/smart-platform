@@ -151,7 +151,6 @@ sub fork_a_slave {              # return int (pid)
 
   my $pid;
   defined ($pid = fork) or die "Cannot fork: $!";
-  print "forked a child\n";
   &child_does($master) unless $pid;
   $pid;
 }
