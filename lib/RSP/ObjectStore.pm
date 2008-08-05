@@ -16,14 +16,29 @@ sub new {
   my $class = shift;
   my $tx    = shift;
   if (!$tx) { die "no transaction" }
+
   my $self  = {};
-  $self->{transaction} = $tx;
+  if ( !ref( $tx ) ) {
+    $self->{dbfile} = $tx;
+  } else {
+    $self->{transaction} = $tx;  
+  }
+
   bless $self, $class;
+}
+
+sub log {
+  my $self = shift;
+  if ( $self->{transaction} ) {
+    $self->{transaction}->log(@_)
+  } else {
+    print STDERR @_, "\n";
+  }
 }
 
 sub storage {
   my $self = shift;
-  $self->{storage} ||= RSP::ObjectStore::Storage->new( $self->{transaction}->dbfile );
+  $self->{storage} ||= RSP::ObjectStore::Storage->new( $self->{dbfile} || $self->{transaction}->dbfile );
 }
 
 sub write {
@@ -48,7 +63,7 @@ sub write {
       if ($md->set( $id, $encoder->encode( $obj ) )) {
         return ();
       } else {
-        $self->{transaction}->log("can't find memcache, falling back to db on transient store");
+        $self->log("can't find memcache, falling back to db on transient store");
       }
     }
 
@@ -60,7 +75,7 @@ sub write {
   my @cache = ();
   my @parts = ();
   if (ref($_[0]) && ref($_[0]) eq 'ARRAY') {
-    foreach my $elem ( $_[0] ) {
+    foreach my $elem ( @_ ) {
       my @pfo = $partsForOne->( @$elem );
       push @cache, shift @pfo;
       push @parts, @pfo;
@@ -76,9 +91,9 @@ sub write {
       if ( ref( $cache_sub ) && ref($cache_sub) eq 'CODE') {
         $cache_sub->();
       }
-    }
-    return 1;        
-  } else { $self->{transaction}->log("couldn't save, don't know why yet...") }
+    }    
+    return 1;
+  } else { $self->log("couldn't save, don't know why yet...") }
 
   return 0;
 }
