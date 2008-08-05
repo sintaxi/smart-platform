@@ -7,6 +7,7 @@ use RSP;
 use POSIX;
 use Spread;
 use JSON::XS;
+use DateTime;
 use RSP::ObjectStore;
 use RSP::Queue::Client;
 
@@ -45,63 +46,54 @@ RSP::Queue::Client->listen( "billing", sub {
     my $members = scalar(@$groups);
     print "There are now $members member(s) of the $sender group\n";
   } else {
-    my $data = $coder->decode( $message );
-    my $hosth = $hosts->{$data->{host}} ||= { id => $data->{host} };
-    $hosth->{ logged_entries }+=1;
-    $hosth->{ $data->{type} }->{ total } += $data->{count};
-    $hosth->{ $data->{type} }->{ $data->{request} } += $data->{count};
-
-    if ($hosth->{logged_entries} == $FLUSH_AT) {
-      delete $hosth->{logged_entries};
-      eval {
-        flush_data_to_db( $hosth );
-        delete $hosts->{$data->{host}};
-      };
-      if ($@) { warn("could not flush: $@"); }
-    }
-
+    my $os = RSP::ObjectStore->new( RSP->config->{server}->{BillingDB} );  
+    my $mesg = $coder->decode( $message );
+    $os->write( prepare_hourly( $os, $mesg ), prepare_daily( $os, $mesg ), prepare_monthly( $os, $mesg ) );
   }
 });
 
-sub flush_data_to_db {
-  my $host = shift;
-  my $id   = $host->{id};
-  my $os = RSP::ObjectStore->new( RSP->config->{server}->{BillingDB} );
-  
-  ## first of all, get the old object out...
-  my $oldparts = $os->get($id);
-  my $oldobj   = {};
-
-  foreach my $piece (@$oldparts) {
-    my ($key, $val) = @$piece;
-    $oldobj->{$key} = $coder->decode( $val );
+sub prepare_cycle {
+  my $os   = shift;
+  my $cycle_name = shift;
+  my $cycle_val  = shift;
+  my $mesg = shift;
+  my $objects = $os->search( $cycle_name, { host => $mesg->{host}, cycle => $cycle_val });
+  my $object;
+  if (!@$objects) {
+    $object = { type => $cycle_name, cycle => $cycle_val, host => $mesg->{host}, id => $mesg->{host} . $cycle_val };
+  } else {
+    $object = $objects->[0];
   }
-
-  update_stats_from( $host, $oldobj );
-  
-  ## now write the new one...
-  my @parts = ();
-  foreach my $key (keys %$oldobj) {
-    push @parts, [ $id, $key, $coder->encode( $oldobj->{$key} ) ];
+  $object->{ $mesg->{type} } += $mesg->{count};
+  $object->{uris}->{ $mesg->{request} }->{ $mesg->{type} } += $mesg->{count};
+  if ( $mesg->{type} eq 'bandwidth' ) {
+    $object->{uris}->{ $mesg->{request} }->{hitcount} += 1;
   }
-  push @parts, [ $id, "type", $coder->encode( "host billing" ) ];
-  $os->save( @parts );
+  return [$cycle_name, $object, 0];
 }
 
-sub update_stats_from {
-  my $from = shift;
-  my $to   = shift;
-  
-  foreach my $tl (keys %$from) {
-    ## these are the count types, opcount, storage, etc...
-    my $counter = $from->{$tl};
-    if ( ref( $counter ) ) {
-      foreach my $logged ( keys %$counter ) {
-        ## this is the data we need to collate
-        $to->{$tl}->{$logged} += $counter->{$logged};
-      }
-    }
-  }  
+sub prepare_monthly {
+  my $os = shift;
+  my $mesg = shift;
+  my $time = DateTime->now;
+  my $cycle = sprintf("%s%02d", $time->year, $time->month);
+  return prepare_cycle( $os, "billing_monthly", $cycle, $mesg );
+}
+
+sub prepare_daily {
+  my $os = shift;
+  my $mesg = shift;
+  my $time = DateTime->now;
+  my $cycle = sprintf("%s%02d%02d", $time->year, $time->month, $time->day);
+  return prepare_cycle( $os, "billing_daily", $cycle, $mesg );
+}
+
+sub prepare_hourly {
+  my $os = shift;
+  my $mesg = shift;
+  my $time = DateTime->now;
+  my $cycle = sprintf("%s%02d%02d%02d", $time->year, $time->month, $time->day, $time->hour);
+  return prepare_cycle( $os, "billing_hourly", $cycle, $mesg );
 }
 
 1;
