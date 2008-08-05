@@ -3,177 +3,159 @@ package RSP::ObjectStore;
 use strict;
 use warnings;
 
-use DBI;
-use File::Spec;
-use Set::Scalar;
-use MIME::Base64;
-use SQL::Abstract;
-use Data::UUID::Base64URLSafe;
+use JSON::XS;
+use Cache::Memcached::Fast;
+use RSP::ObjectStore::Storage;
+use Scalar::Util qw( reftype );
 
-my $ug = Data::UUID::Base64URLSafe->new;
-my $sa = SQL::Abstract->new;
+
+my $encoder = JSON::XS->new->utf8->allow_nonref;
+my $mdservers = [ {address => '127.0.0.1:11211'} ];
 
 sub new {
-  my $class   = shift;
-  my $db      = shift;
-  if (!$db) { die "no database specified" }
-  
-  my $self    = {};
+  my $class = shift;
+  my $tx    = shift;
+  if (!$tx) { die "no transaction" }
+  my $self  = {};
+  $self->{transaction} = $tx;
   bless $self, $class;
-
-  my $dbh;
-  if (-e $db) {
-    ## we open the file, and run
-    $dbh = DBI->connect_cached( "dbi:SQLite:dbname=$db" );
-  } else {
-    $dbh = DBI->connect_cached( "dbi:SQLite:dbname=$db" );
-    ## we need to open the file and create the database
-    $self->create_store( $dbh );
-  }
-  $self->{dbh}          = $dbh;
-  
-  return $self;
 }
 
-sub create_store {
+sub storage {
   my $self = shift;
-  my $dbh  = shift;
-  local $/ = ";";
-  while(my $q = <DATA>) {
-    if ( $q ) {
-      $q =~ s/^\s+//g;
-      my $sth = $dbh->prepare( $q );
-      $sth->execute();
+  $self->{storage} ||= RSP::ObjectStore::Storage->new( $self->{transaction}->dbfile );
+}
+
+sub write {
+  my $self = shift;
+  my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+
+  my $partsForOne = sub {
+    my $type = shift;
+    my $obj = shift;
+    my $trans = shift;
+            
+    if (!$obj) { die "no object" }
+    if (reftype($obj) ne 'HASH') { die "not an Object" }
+
+    my $id    = delete $obj->{id};
+    if (!$id) { die "object has no id" }
+
+    ## if the object is transient, don't even bother going 
+    ## to the database with, just put it in memcache and be done.
+    ## primarily used for sessions.
+    if ( $trans ) {
+      if ($md->set( $id, $encoder->encode( $obj ) )) {
+        return ();
+      } else {
+        $self->{transaction}->log("can't find memcache, falling back to db on transient store");
+      }
     }
-  }
-}
 
-sub dbh {
-  my $self = shift;
-  return $self->{dbh};
-}
+    return (sub {
+      $md->set( $id, $encoder->encode( $obj ) );
+    }, $self->object2parts( $type, $id, $obj ));
+  };
 
-sub save {
-  my $self  = shift;
-  my @parts = @_;   
-  my $sql  = "INSERT OR REPLACE INTO candomble_atom VALUES( ?, ?, ? )";
-  $self->dbh->begin_work;
-  my $sth = $self->dbh->prepare_cached( $sql );
-  eval {
-    my $p = 0;
-    foreach my $part (@parts) {
-      $p++;
-      my ($id, $key, $val) = @$part;
-      if (!$id) { die "no id on part $p" }
-      $sth->execute( $id, $key, $val );
+  my @cache = ();
+  my @parts = ();
+  if (ref($_[0]) && ref($_[0]) eq 'ARRAY') {
+    foreach my $elem ( $_[0] ) {
+      my @pfo = $partsForOne->( @$elem );
+      push @cache, shift @pfo;
+      push @parts, @pfo;
     }
-  };
-  if ($@) {
-    $sth->finish;
-    $self->dbh->rollback;
-    die $@;
-  }
-  $sth->finish;
-  $self->dbh->commit;
-  return 1;
-}
-
-sub query {
-  my $self = shift;
-  my $key  = shift;
-  my $op   = shift;
-  my $val  = shift;
-  
-  if (! ( $key && $op && $val ) ) {
-    die "need key, test, and value to query";
-  }
-  my ($stmt, @bind) = $sa->select(
-    'candomble_atom',
-    'atom_id',
-    { atom_name => $key, atom_value => { $op => $val } }
-  );
-  my $sth = $self->dbh->prepare_cached( $stmt );
-  $sth->execute( @bind );
-  my $set = Set::Scalar->new;
-  while( my $row = $sth->fetchrow_arrayref() ) {
-    $set->insert( $row->[0] );
-  }
-  $sth->finish;
-
-  return $set;
-}
-
-sub delete {
-  my $self = shift;
-  my $id   = shift;
-  if (!$id) { die "no id" }
-  my ($stmt, @bind) = $sa->delete(
-    'candomble_atom',
-    { atom_id => $id }
-  );
-  $self->dbh->begin_work;
-  eval {
-    my $sth = $self->dbh->prepare_cached( $stmt );
-    $sth->execute( @bind );
-    $sth->finish;
-  };
-  if ($@) {
-    $self->dbh->rollback;
-    die $@;
   } else {
-    $self->dbh->commit;
-    return 1;
+    my @pfo = $partsForOne->( @_ );
+    push @cache, shift @pfo;
+    push @parts, @pfo;
   }
+  
+  if ( $self->storage->save( @parts ) ) {
+    foreach my $cache_sub ( @cache ) {
+      if ( ref( $cache_sub ) && ref($cache_sub) eq 'CODE') {
+        $cache_sub->();
+      }
+    }
+    return 1;        
+  } else { $self->{transaction}->log("couldn't save, don't know why yet...") }
+
+  return 0;
 }
 
 sub get {
   my $self = shift;
+  my $type = shift;
   my $id   = shift;
-  if (!$id) { die "no id" };
-  my ($stmt, @bind) = $sa->select(
-    'candomble_atom',
-    ['atom_name','atom_value'],
-    { atom_id => $id }
-  );
-  my $sth = $self->dbh->prepare_cached( $stmt );
-  $sth->execute( @bind );
-  my $parts = [];
-  while(my $row = $sth->fetchrow_arrayref) {
-    push @$parts, [ $row->[0], $row->[1] ];
+  my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+  my $cached = $md->get( $id );
+  if ($cached) { return $encoder->decode( $cached ); }
+  my $parts = $self->storage->get( $id );        
+  return $self->parts2object( $id, $parts );
+}
+
+sub search {
+  my $self = shift;
+  my $type  = shift;
+  my $query = shift;
+  my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+  
+  my $set;
+  foreach my $key (keys %$query) {
+    my $val = $query->{$key};
+    my $encval = $encoder->encode( $val );
+    my $nset = $self->storage->query( $key, '=', $encval );
+    if ( ref($set) ) {
+      $set = $set->intersection( $nset );
+    } else {
+      $set = $nset;
+    }
   }
-  return $parts;
+  return [ ] if !$set; ## empty array
+
+  my @objects;
+  foreach my $member ( $set->members ) {
+    my $parts = $self->storage->get( $member );
+    push @objects, $self->parts2object( $member, $parts );
+  }
+ 
+  return \@objects;
 }
 
-sub atom_count {
+sub remove {
   my $self = shift;
-  my ($stmt, @bind) = $sa->select('candomble_atom',['count(distinct(atom_id)) as count'], {});
-  my $sth = $self->dbh->prepare_cached( $stmt );
-  $sth->execute( @bind );
-  my $count = $sth->fetchrow_hashref->{count};
-  $sth->finish;
-  return $count;
+  my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+  my $type = shift;
+  my $id   = shift;
+  $md->delete( $id );
+  $self->storage->delete( $id );
 }
 
-sub key_count {
-  my $self = shift;
-  my ($stmt, @bind) = $sa->select('candomble_atom',['count(atom_id) as count'], {});
-  my $sth = $self->dbh->prepare_cached( $stmt );
-  $sth->execute( @bind );
-  my $count = $sth->fetchrow_hashref->{count};
-  $sth->finish;
-  return $count;
+sub object2parts {
+  my $self   = shift;
+  my $type   = shift;
+  my $id     = shift;
+  my $object = shift;
+  my @parts = ( [ $id, 'type', $encoder->encode( $type ) ] );
+  foreach my $key (keys %$object) {
+    push @parts, [ $id, $key, $encoder->encode( $object->{$key} ) ];
+  }
+  return @parts;
 }
+
+sub parts2object {
+  my $self  = shift;
+  my $id    = shift;
+  my $parts = shift;
+  my $object = {};
+  foreach my $part ( @$parts ) {
+    my $key = $part->[0];
+    my $val = $part->[1];
+    $object->{ $key } = $encoder->decode( $part->[1] );
+  }  
+  $object->{id} = $id;
+  return $object;
+}
+
 
 1;
-
-__DATA__
-CREATE TABLE candomble_atom (
-  atom_id, atom_name, atom_value
-);
-
-CREATE INDEX atom_id_idx
-       ON candomble_atom ( atom_id );
-CREATE INDEX atom_name_value_idx
-       ON candomble_atom ( atom_name, atom_value );
-CREATE UNIQUE INDEX atom_id_name_idx
-       ON candomble_atom ( atom_id, atom_name );
