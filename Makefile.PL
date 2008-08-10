@@ -29,5 +29,6 @@ WriteMakefile(
     'URI' => 0,    
     'Git::Wrapper' => 0,
     'Cache::Memcached::Fast' => 0,
+    'Hash::Merge::Simple' => 0,
   }
 );
