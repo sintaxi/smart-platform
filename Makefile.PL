@@ -27,5 +27,7 @@ WriteMakefile(
     'IO::File' => 0,
     'Module::Load' => 0,
     'URI' => 0,    
+    'Git::Wrapper' => 0,
+    'Cache::Memcached::Fast' => 0,
   }
 );
