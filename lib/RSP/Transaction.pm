@@ -7,6 +7,7 @@ use JavaScript;
 use Module::Load;
 use Time::HiRes qw( gettimeofday tv_interval );
 use File::Spec;
+use Hash::Merge::Simple;
 
 sub start {
   my $class = shift;
@@ -114,10 +115,10 @@ sub import_extensions {
   } @extensions_to_load;
   my $system = {};
   foreach my $ext ( @exts ) {
-    my %hash = $self->import_extension( $ext );
-    foreach my $key ( keys %hash ) {
-      $system->{ $key } = $hash{$key};
-    }
+    $system = Hash::Merge::Simple::merge(
+        $system,
+        { $self->import_extension( $ext ) }
+    );
   }
   $self->{context}->bind_value( 'system' => $system );
 }
