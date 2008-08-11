@@ -15,7 +15,7 @@ our $VERSION = '3.00';
 {
   no warnings 'redefine';
   sub HTTP::Daemon::product_tokens {
-    return join("/", __PACKAGE__, $VERSION);
+    return join("/", __PACKAGE__, $RSP::VERSION);
   }
 }
 

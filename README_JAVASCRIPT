@@ -1,4 +1,5 @@
 I'm currently building JavaScript.pm from Claes' trunk: svn://svn.versed.se/public/Perl/modules/JavaScript/trunk
-I'm also building it against the mozilla SpiderMonkey trunk.
 
-It should work against other versions but some JavaScript features won't be enabled (such as 'let')
+The working build is the 1.7.0 release.  FF 3 and trunk are currently breaking
+when you try to return a function from bootstrap.js in the HTTP::Response
+array

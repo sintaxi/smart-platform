@@ -17,6 +17,13 @@ sub new {
   bless $self, $class;
 }
 
+sub as_function {
+  my $self = shift;
+  return sub {
+    return $self->as_string;
+  };
+}
+
 sub as_string {
   my $self = shift;
   my $fh   = IO::File->new( $self->{ file } );
