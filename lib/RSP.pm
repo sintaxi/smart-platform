@@ -9,6 +9,8 @@ use JavaScript;
 use RSP::Config;
 use RSP::Transaction;
 
+our $VERSION = '1.00';
+
 use Devel::Peek;
 
 use Scalar::Util qw( blessed );
@@ -27,7 +29,13 @@ sub handle {
  
   ## handle blessed objects, like filesystem objects...
   if ( blessed( $op->[ 3 ] ) ) {
-    $op->[3] = $op->[3]->as_string;
+    my $fn = $op->[3]->as_function;  
+    my $result = eval {
+      my $answer = $fn->();
+      $answer;
+    };
+    if ($@) { warn "error getting content from blessed content handler: $@" }
+    $op->[3] = $result;
   }
   
   my $resp  = HTTP::Response->new( @$op );
