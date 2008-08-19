@@ -101,6 +101,8 @@ via a perl mechanism, or convert to something else.
 
 =over 4
 
+=item RSP::Transaction
+
 =item RSP::Config
 
 =item RSP::Apache2

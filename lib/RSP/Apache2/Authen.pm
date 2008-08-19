@@ -54,20 +54,68 @@ sub handler {
       foreach my $part (@$parts) {
         my $name  = $part->[0];
         my $value = $part->[1];
-	if ( $name eq 'committers' ) {
+        if ( $name eq 'committers' ) {
           my $auth = $coder->decode( $value );
-	  if ( $password eq $auth->{$r->user}->{password} ) {  
+          if ( $password eq $auth->{$r->user}->{password} ) {  
             return Apache2::Const::OK;
           }
-	}
+        }
       }
     }
 
     $tx->end;   
-
     
     $r->note_basic_auth_failure;
     return Apache2::Const::HTTP_UNAUTHORIZED;
 }
 
 1;
+
+=head1 NAME
+
+RSP::Apache2::Authen - Authentication for the Git repositories
+
+=head1 SYNOPSIS
+
+  # in Apache configuration
+  <Location />
+    DAV on
+    SetHandler  modperl
+
+    <LimitExcept GET PROPFIND OPTIONS REPORT>
+      AuthName  "Reasonably Smart Git"
+
+      PerlAuthenHandler RSP::Apache2::Authen
+
+      Require valid-user
+    </LimitExcept>  
+  </Location>
+  
+=head1 DESCRIPTION
+
+C<RSP::Apache2::Authen> provides http-basic authentication to a git repository
+through Apache2.
+
+=head1 AUTHOR
+
+James A. Duncan <james@reasonablysmart.com>
+
+=head1 LICENSE
+
+
+This file is part of the RSP.
+
+The RSP is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+The RSP is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the RSP.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut
