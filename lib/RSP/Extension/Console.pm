@@ -17,6 +17,28 @@ package RSP::Extension::Console;
 use strict;
 use warnings;
 
+=head1 Name
+
+Console - log information to the console
+
+=head1 Structure
+
+=over 4
+
+=item console
+
+=over 4
+
+=item log( aMessage )
+
+Logs aMessage to the console
+
+=back
+
+=back
+
+=cut
+
 sub provide {
   my $class = shift;
   my $tx    = shift;
