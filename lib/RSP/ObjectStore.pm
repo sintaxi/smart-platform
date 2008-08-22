@@ -104,9 +104,13 @@ sub get {
   my $id   = shift;
   my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
   my $cached = $md->get( $id );
-  if ($cached) { return $encoder->decode( $cached ); }
+  if ($cached) {
+    my $object = $encoder->decode( $cached );
+    $object->{id} = $id;
+    return $object;
+  }
   my $parts = $self->storage->get( $id );        
-  return $self->parts2object( $id, $parts );
+  my $dbobject = $self->parts2object( $id, $parts );
 }
 
 sub search {
