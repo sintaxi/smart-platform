@@ -40,8 +40,8 @@ sub create_store {
   my $dbh  = shift;
   local $/ = ";";
   while(my $q = <DATA>) {
+    $q =~ s/^\s+//g;
     if ( $q ) {
-      $q =~ s/^\s+//g;
       my $sth = $dbh->prepare( $q );
       $sth->execute();
     }
