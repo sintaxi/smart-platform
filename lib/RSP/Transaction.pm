@@ -37,8 +37,6 @@ sub start {
   my $self = { ops => 0, host => $turi->host, request => $req, context => $cx };
   bless $self => $class;
 
-  $self->profile('transaction');
-
   $rt->set_interrupt_handler( sub {
     $self->{ops}++;
     return 1;
@@ -50,6 +48,10 @@ sub start {
 
 sub run {
   my $self = shift;
+  my $func = shift || 'main';
+  
+  $self->profile('transaction');
+
   my $bs = File::Spec->catfile(
     $self->jsroot,
     RSP->config->{hosts}->{JSBootstrap}    
@@ -59,7 +61,7 @@ sub run {
     $self->log("bootstrapping $bs failed: $@");
     die $@;
   }
-  my $result = $self->{context}->call('main');
+  my $result = $self->{context}->call($func);
   if ($@) {
     die $@;
   }
@@ -254,7 +256,8 @@ any other host-specific details that may need to be provided to any extensions.
 
 When RSP::Transaction constructs the request it builds a JavaScript environment
 that is custom to the request. It returns an RSP::Transaction object that you
-can do whatever you like with.
+can do whatever you like with.  Most likely you'll want to call the C<run>
+method upon it.
 
 =back
 
@@ -262,11 +265,11 @@ can do whatever you like with.
 
 =over 4
 
-=item Thing run()
+=item Thing run([String functionName])
 
-Passes the request into the JavaScript environment, by calling the C<main()>
-function.  If the JavaScript environment returns successfully, any return
-value from it is returned as the result.  Any exceptions that are thrown
+Passes the request into the JavaScript environment, by calling functionName, if 
+specified, or C<main()>. If the JavaScript environment returns successfully, any
+return value from it is returned as the result.  Any exceptions that are thrown
 in the JavaScript environment are re-thrown in this method.  You'll need to
 catch them, and process them as you see fit.
 

@@ -57,6 +57,14 @@ the query aQuery.
 
 =back
 
+=head1 SEE ALSO
+
+=over 4
+
+=item RSP::Datastore
+
+=back
+
 =cut
 
 sub provide {

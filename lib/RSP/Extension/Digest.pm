@@ -19,11 +19,41 @@ use warnings;
 
 use Digest::MD5 qw( md5_hex md5_base64 );
 
+
+=head1 Name
+
+Digest - md5 digests for the RSP
+
+=head1 Structure
+
+=over 4
+
+=item digest
+
+=over 4
+
+=item md5
+
+=over 4
+
+=item String hex( String data )
+
+Returns the md5 hex digest calculation for data.
+
+=item String base64( String data )       
+
+Returns the base64 encoded md5 digest for data.
+
+=cut        
+
+
 sub provide {
   my $class = shift;
   my $tx    = shift;
   return (
+
     'digest' => {
+
       'md5' => {
         'hex' => sub {
           my $data = shift;
