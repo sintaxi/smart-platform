@@ -140,10 +140,12 @@ sub import_extensions {
   } @extensions_to_load;
   my $system = {};
   foreach my $ext ( @exts ) {
-    $system = Hash::Merge::Simple::merge(
-        $system,
-        { $self->import_extension( $ext ) }
-    );
+   eval { 
+     $system = Hash::Merge::Simple::merge(
+          $system,
+          { $self->import_extension( $ext ) }
+      );
+   };
   }
   $self->{context}->bind_value( 'system' => $system );
 }
