@@ -39,6 +39,30 @@ Git - bindings to the version control layer of the RSP.
 
 =over 4
 
+=item Boolean update( String hostname );
+
+Gets the latest version of the code from the git repository for hostname.
+
+=item Boolean clone( String origin, String hostname )
+
+Clone an existing git repository at origin for the host hostname.  This also
+sends in a fake request so that the database gets set up early.
+
+
+=item String current_branch( String hostname )
+
+Gets the name of the current branch of the git repository containing the code
+for hostname.
+
+=item String remove( String hostname )
+
+Removes the git repository, and all the data for a host.
+
+
+=back
+
+=back
+
 =cut
 
 sub provide {
@@ -49,12 +73,6 @@ sub provide {
   
     'git' => {
 
-=item Boolean clone( String origin, String hostname )
-
-Clone an existing git repository at origin for the host hostname.  This also
-sends in a fake request so that the database gets set up early.
-
-=cut
 
       'clone' => sub {
         my $origin = shift;
@@ -79,13 +97,6 @@ sends in a fake request so that the database gets set up early.
         
         return 1;
       },
-
-=item Boolean update( String hostname );
-
-Gets the latest version of the code from the git repository for hostname.
-
-=cut
-
       'update' => sub {
         my $host = shift;
         eval {
@@ -105,13 +116,6 @@ Gets the latest version of the code from the git repository for hostname.
         return 1;
       },
 
-=item String current_branch( String hostname )
-
-Gets the name of the current branch of the git repository containing the code
-for hostname.
-
-=cut
-
       'current_branch' => sub {
         my $host = shift;
         my $mcdkey = "$tx->{host}:$host:branches";
@@ -123,12 +127,6 @@ for hostname.
         $md->set( $mcdkey, $coder->encode( $branch ) );
         return $branch;
       },
-
-=item String remove( String hostname )
-
-Removes the git repository, and all the data for a host.
-
-=cut
 
       'remove' => sub {
         my $host = shift;
@@ -158,11 +156,5 @@ Removes the git repository, and all the data for a host.
   
   );
 }
-
-=back
-
-=back
-
-=cut
 
 1;
