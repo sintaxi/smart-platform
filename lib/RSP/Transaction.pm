@@ -1,3 +1,17 @@
+#    This file is part of the RSP.
+#
+#    The RSP is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    The RSP is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with the RSP.  If not, see <http://www.gnu.org/licenses/>.
 package RSP::Transaction;
 
 use strict;
@@ -15,18 +29,16 @@ sub start {
 
   my $rt    = JavaScript::Runtime->new;
   my $cx    = $rt->create_context;
+
   $cx->set_version("1.7") if $cx->can("set_version");
-  
   if ( $cx->can("toggle_options") ) {
     $cx->toggle_options( "jit" );
   }
-  
+
   my $turi = URI->new('http://' . lc($req->header('Host')) . '/');
 
   my $self = { ops => 0, host => $turi->host, request => $req, context => $cx };
   bless $self => $class;
-
-  $self->profile('transaction');
 
   $rt->set_interrupt_handler( sub {
     $self->{ops}++;
@@ -39,6 +51,10 @@ sub start {
 
 sub run {
   my $self = shift;
+  my $func = shift || 'main';
+  
+  $self->profile('transaction');
+
   my $bs = File::Spec->catfile(
     $self->jsroot,
     RSP->config->{hosts}->{JSBootstrap}    
@@ -48,7 +64,7 @@ sub run {
     $self->log("bootstrapping $bs failed: $@");
     die $@;
   }
-  my $result = $self->{context}->call('main');
+  my $result = $self->{context}->call($func);
   if ($@) {
     die $@;
   }
@@ -107,6 +123,10 @@ sub log {
   $self->logger->send($fmsg, 'log');
 }
 
+##
+## private, not in public docs.  This loads the extensions for a particular
+## host into the JavaScript environment.
+##
 sub import_extensions {
   my $self  = shift;
   my $extension_list = RSP->config->{_}->{extensions};
@@ -128,6 +148,10 @@ sub import_extensions {
   $self->{context}->bind_value( 'system' => $system );
 }
 
+##
+## This is not documented in the public documentation.
+## It imports a single extension into the JavaScript environment.
+##
 sub import_extension {
   my $self  = shift;
   my $ext    = shift; ## Extension class name
@@ -207,3 +231,133 @@ sub dbfile {
 }
 
 1;
+
+=head1 NAME
+
+RSP::Transaction - processing of a single request in the RSP
+
+=head1 SYNOPSIS
+
+  use RSP::Transaction
+
+  my $rspt = RSP::Transaction->start( $http_request );
+  my $result = $rspt->run;
+  $rspt->end;
+  
+=head1 DESCRIPTION
+
+The C<RSP::Transaction> class is where most of the action happens when
+a request to the RSP arrives.  It is responsible for routing the request,
+composing the JavaScript environment, logging the billing information, and
+any other host-specific details that may need to be provided to any extensions.
+
+=head1 CONSTRUCTOR
+
+=over 4
+
+=item RSP::Transaction start( HTTP::Request aRequest )
+
+When RSP::Transaction constructs the request it builds a JavaScript environment
+that is custom to the request. It returns an RSP::Transaction object that you
+can do whatever you like with.  Most likely you'll want to call the C<run>
+method upon it.
+
+=back
+
+=head1 METHODS
+
+=over 4
+
+=item Thing run([String functionName])
+
+Passes the request into the JavaScript environment, by calling functionName, if 
+specified, or C<main()>. If the JavaScript environment returns successfully, any
+return value from it is returned as the result.  Any exceptions that are thrown
+in the JavaScript environment are re-thrown in this method.  You'll need to
+catch them, and process them as you see fit.
+
+=item profile( String aThing )
+
+The C<profile> method provides profiling for particular element of a request
+named in aThing. The first time the method is called with a particular string
+a timer starts, the second time the timer is stopped, and the details logged.
+
+=item log_billing( Integer aCount, String aType[, String mesg ])
+
+The C<log_billing> method provides information to the billing engine.  For example
+if you wanted to log op count information, you'd do something like:
+
+  $tx->log_billing( $number_of_ops, "opcount" );
+
+The mechanism that is used to process the data is unimportant to this method.
+
+=item String hostroot()
+
+Uses the configuration setting Root in the hosts group of the config file, as
+well as the original request to provide a path to root of a host.
+
+=item String jsroot()
+
+Uses the configuration setting JSRoot in the hosts group of the config file to
+provide a path to the root of the javascript for a particular host.
+
+=item String webroot()
+
+Uses the configuration setting WebRoot in the hosts group of the config file to
+provide a path to the root of the web-related files for a particular host.
+
+=item String dbroot()
+
+Uses the configuration setting Root in the db group of the config file to provide
+a path to the directory where the hosts databse is stored.
+
+This will be deprecated in future releases.
+
+=item String gitroot()
+
+Uses the configuration setting Root in the git group of the config file to provide
+a path to the git repository for a given host.
+
+=item String dbfile()
+
+Uses the configuration setting File in the db group of the config file to provide
+a filename for the hosts datastore.
+
+This will be deprecated in future releases.
+
+=back
+
+=head1 SEE ALSO
+
+=over 4
+
+=item RSP::Extension
+
+=item RSP::Config
+
+=back
+
+=head1 AUTHOR
+
+James A. Duncan <james@reasonablysmart.com>
+
+=head1 LICENSE
+
+
+This file is part of the RSP.
+
+The RSP is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+The RSP is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the RSP.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut
+  

@@ -1,3 +1,17 @@
+#    This file is part of the RSP.
+#
+#    The RSP is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    The RSP is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with the RSP.  If not, see <http://www.gnu.org/licenses/>.
 package RSP::Extension::Git;
 
 use strict;
@@ -12,14 +26,36 @@ use Cache::Memcached::Fast;
 my $coder = JSON::XS->new->ascii->allow_nonref;
 my $mdservers = [ {address => '127.0.0.1:11211'} ];
 
+
+=head1 Name
+
+Git - bindings to the version control layer of the RSP.
+
+=head1 Structure
+
+=over 4
+
+=item git
+
+=over 4
+
+=cut
+
 sub provide {
   my $class = shift;
   my $tx    = shift;
   
-
   return (
   
     'git' => {
+
+=item Boolean clone( String origin, String hostname )
+
+Clone an existing git repository at origin for the host hostname.  This also
+sends in a fake request so that the database gets set up early.
+
+=cut
+
       'clone' => sub {
         my $origin = shift;
         my $host   = shift;
@@ -43,10 +79,17 @@ sub provide {
         
         return 1;
       },
+
+=item Boolean update( String hostname );
+
+Gets the latest version of the code from the git repository for hostname.
+
+=cut
+
       'update' => sub {
         my $host = shift;
         eval {
-	  my $mcdkey = "$tx->{host}:$host:branches";
+          my $mcdkey = "$tx->{host}:$host:branches";
           my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
           $md->delete( $mcdkey );
           my $gw = Git::Wrapper->new( File::Spec->catfile( $tx->gitroot, $host ) );
@@ -62,6 +105,13 @@ sub provide {
         return 1;
       },
 
+=item String current_branch( String hostname )
+
+Gets the name of the current branch of the git repository containing the code
+for hostname.
+
+=cut
+
       'current_branch' => sub {
         my $host = shift;
         my $mcdkey = "$tx->{host}:$host:branches";
@@ -73,6 +123,12 @@ sub provide {
         $md->set( $mcdkey, $coder->encode( $branch ) );
         return $branch;
       },
+
+=item String remove( String hostname )
+
+Removes the git repository, and all the data for a host.
+
+=cut
 
       'remove' => sub {
         my $host = shift;
@@ -102,5 +158,11 @@ sub provide {
   
   );
 }
+
+=back
+
+=back
+
+=cut
 
 1;
