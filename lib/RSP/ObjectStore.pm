@@ -103,6 +103,7 @@ sub get {
   my $type = shift;
   my $id   = shift;
   my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+  if (!$id) { die "no id" }
   my $cached = $md->get( $id );
   if ($cached) {
     my $object = $encoder->decode( $cached );
