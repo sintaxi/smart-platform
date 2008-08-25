@@ -29,7 +29,7 @@ sub handler {
     my $mgmt = RSP->config->{_}->{ManagementHost}; 
 
     my $tx   = RSP::Transaction->start( HTTP::Request->new( 'GET', '/', [ 'Host' => $mgmt ] ) );
-    my $os   = RSP::ObjectStore->new( $tx->dbfile );
+    my $os   = RSP::ObjectStore::Storage->new( $tx->dbfile );
 
     
     my $set  = $os->query("hostname" => "=" => $coder->encode( $host ));
