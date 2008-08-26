@@ -30,5 +30,6 @@ WriteMakefile(
     'Git::Wrapper' => 0,
     'Cache::Memcached::Fast' => 0,
     'Hash::Merge::Simple' => 0,
+    'HTTP::Body' => 0,
   }
 );
