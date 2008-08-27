@@ -26,6 +26,7 @@ sub send {
   }
 
   Spread::multicast( $mbox, UNRELIABLE_MESS, \@groups, 0, $coder->encode( $mesg ));
+  Spread::disconnect( $mbox );
 }
 
 sub listen {

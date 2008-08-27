@@ -27,6 +27,44 @@ my $coder = JSON::XS->new->ascii->allow_nonref;
 my $mdservers = [ {address => '127.0.0.1:11211'} ];
 
 
+=head1 Name
+
+Git - bindings to the version control layer of the RSP.
+
+=head1 Structure
+
+=over 4
+
+=item git
+
+=over 4
+
+=item Boolean update( String hostname );
+
+Gets the latest version of the code from the git repository for hostname.
+
+=item Boolean clone( String origin, String hostname )
+
+Clone an existing git repository at origin for the host hostname.  This also
+sends in a fake request so that the database gets set up early.
+
+
+=item String current_branch( String hostname )
+
+Gets the name of the current branch of the git repository containing the code
+for hostname.
+
+=item String remove( String hostname )
+
+Removes the git repository, and all the data for a host.
+
+
+=back
+
+=back
+
+=cut
+
 sub provide {
   my $class = shift;
   my $tx    = shift;
