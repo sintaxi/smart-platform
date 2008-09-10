@@ -57,10 +57,16 @@ sub provide {
       'md5' => {
         'hex' => sub {
           my $data = shift;
+          if ( ref( $data )) {
+            $data = $data->as_string;
+          }
           return md5_hex( $data );
         },
         'base64' => sub {
           my $data = shift;
+          if ( ref( $data )) {
+            $data = $data->as_string;
+          }
           return md5_base64( $data );
         }
       }
