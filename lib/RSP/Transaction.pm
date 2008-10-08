@@ -49,6 +49,11 @@ sub start {
   return $self;
 }
 
+sub host {
+  my $self = shift;
+  return $self->{host};
+}
+
 sub run {
   my $self = shift;
   my $func = shift || 'main';
@@ -62,6 +67,7 @@ sub run {
   $self->{context}->eval_file( $bs );
   if ($@) {
     $self->log("bootstrapping $bs failed: $@");
+    warn("bootstrapping $bs failed: $@");
     die $@;
   }
   my $result = $self->{context}->call($func);

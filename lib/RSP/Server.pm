@@ -99,6 +99,7 @@ sub run {
   my $PIDFILE = File::Spec->catfile( $CONFIG->{server}->{Root}, 'run', 'rsp.pid' );
 
   if ( fork() ) {
+    print "Forked daemon\n";
     exit;
   }
   

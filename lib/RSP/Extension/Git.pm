@@ -76,7 +76,7 @@ sub provide {
         my $origin = shift;
         my $host   = shift;
         {
-          Git::Wrapper->new( $tx->gitroot )->clone( $origin, $host ) or return 0;
+          Git::Wrapper->new( $tx->gitroot )->clone( $origin, $host ) or die "could not clone host";
         }
         my $gw = Git::Wrapper->new( File::Spec->catfile( $tx->gitroot, $host ) );
         $gw->update_server_info();

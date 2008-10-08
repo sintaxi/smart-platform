@@ -11,7 +11,10 @@ sub send {
   my $class  = shift;
   my $mesg   = shift;
   my @groups = @_;
-  print STDERR sprintf("[%s] %s\n", join(",", @groups), $coder->encode( $mesg ));
+#  my @realgroups = grep { $_ eq "log" } @groups;
+#  if ( @realgroups ) {
+    print STDERR sprintf("[%s] %s\n", join(",", @groups), $mesg);
+#  }
 }
 
 1;

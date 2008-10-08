@@ -126,6 +126,7 @@ sub get {
     return $object;
   }
   my $parts = $self->storage->get( $id );        
+  if (!@$parts) { return undef };
   my $dbobject = $self->parts2object( $id, $parts );
 }
 
