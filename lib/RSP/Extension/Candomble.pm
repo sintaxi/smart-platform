@@ -18,21 +18,74 @@ package RSP::Extension::Candomble;
 use strict;
 use warnings;
 
+use Cache::Memcached::Fast;
+use JSON::XS;
 use Candomble::Broker;
-use Data::Dumper;
 
 sub provide {
   my $class = shift;
   my $tx    = shift;
   return (
     'datastore' => {    
-      'write'  => sub { print Dumper(["write",$tx->host,@_]); Candomble::Broker->write($tx->host, @_)},
-      'remove' => sub { print Dumper(["delete",$tx->host,@_]); Candomble::Broker->delete($tx->host, @_ ) },
-      'search' => sub { print Dumper(["query",$tx->host,@_]); Candomble::Broker->query($tx->host, @_ ) },
-      'get'    => sub { print Dumper(["read",$tx->host,@_]); Candomble::Broker->read($tx->host, @_ ); },
-
+      'write'  => sub { 
+        my ($type, $obj, $transient) = @_;
+        if ( $transient ) {
+          $class->write_cache( $tx, $type, $obj );
+        } else { 
+          Candomble::Broker->write($tx->host, @_)
+        }
+      },
+      'remove' => sub { 
+        my ($type, $id) = @_;
+        $class->remove_cache( $tx, $type, $id );
+        Candomble::Broker->delete($tx->host, @_ ) 
+      },
+      'search' => sub { Candomble::Broker->query($tx->host, @_ ) },
+      'get'    => sub { 
+        my ( $type, $id ) = @_;
+        $class->read_cache( $tx, $type, $id ) || Candomble::Broker->read($tx->host, @_ ); 
+      },
     }
   );
+}
+
+sub write_cache {
+  my $class = shift;
+  my $tx    = shift;
+  my $type  = shift;
+  my $obj   = shift;  
+  $class->cache( $tx->host, $type )->set( $obj->{id}, $obj );
+}
+
+sub read_cache {
+  my $class = shift;
+  my $tx    = shift;
+  my $type  = shift;
+  my $id    = shift;
+  $class->cache( $tx->host, $type )->get( $id );  
+}
+
+sub remove_cache {
+  my $class = shift;
+  my $tx    = shift;
+  my $type  = shift;
+  my $id    = shift;
+  $class->cache( $tx->host, $type )->delete( $id );  
+}
+
+sub cache {
+  my $class = shift;
+  my $ns    = shift;
+  my $type  = shift;
+  my $cns   = join(':', __PACKAGE__, $ns, $type ) . ":";
+  my $servers = [ map { { address => $_ } } grep { $_ } split(/,/, Candomble->config->{cache}->{hosts})];
+  my $coder = JSON::XS->new->utf8;
+  my $cache = Cache::Memcached::Fast->new({
+    servers   => $servers,
+    namespace => $cns,
+    serialize_methods => [ sub { $coder->encode( $_[0] ) }, sub { $coder->decode( $_[0] ) } ],
+    utf8 => 1,
+  });
 }
 
 1;

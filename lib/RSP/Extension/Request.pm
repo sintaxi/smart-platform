@@ -32,8 +32,11 @@ sub provide {
 
   my $body = {};
   if ($req->method =~ /^(post|put)$/i) {
+    ## 'cause firefox is probably right, but HTTP::Body doesn't like it
+    my $type = $req->content_type;
+    $type =~ s/;.+$//;
     $body = HTTP::Body->new(
-      $req->content_type,
+      $type,
       $req->content_length,
     );
     $body->add($req->content);
