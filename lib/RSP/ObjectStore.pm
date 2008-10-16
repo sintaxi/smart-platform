@@ -130,17 +130,40 @@ sub get {
   my $dbobject = $self->parts2object( $id, $parts );
 }
 
+sub is_sql_op {
+  my $op  = shift;
+  my @ops = qw( > < >= <= = != LIKE IS );
+  foreach my $is_op (@ops) {
+    if ( $is_op eq $op ) { return 1; }
+  }
+  return 0;
+}
+
 sub search {
   my $self = shift;
   my $type  = shift;
   my $query = shift;
+
+  $query->{type} = $type;
+
   my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
   
   my $set;
   foreach my $key (keys %$query) {
     my $val = $query->{$key};
+    my $op  = '=';
+    if ( ref($val) eq 'ARRAY' && is_sql_op($val->[0])) {
+      $op = shift @$val;
+      if ( scalar(@$val) == 1) {
+        $val = $val->[0];
+      } else {
+        $val = $val;
+      }
+    }
     my $encval = $encoder->encode( $val );
-    my $nset = $self->storage->query( $key, '=', $encval );
+    my $q  = [ $key, $op, $encval ];
+    use Data::Dumper; print Dumper( $q );
+    my $nset = $self->storage->query( $key, $op, $encval );
     if ( ref($set) ) {
       $set = $set->intersection( $nset );
     } else {
