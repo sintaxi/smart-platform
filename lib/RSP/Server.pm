@@ -72,8 +72,9 @@ sub handle_one_connection {
       if ($@) {
         $c->send_error(RC_INTERNAL_SERVER_ERROR, $@);
       } else {
+        $response->header('Connection','close');
         $c->send_response( $response );      
-
+        last;
         if ($response->header('Connection') && $response->header('Connection') =~ /close/i) {
           last;
         }

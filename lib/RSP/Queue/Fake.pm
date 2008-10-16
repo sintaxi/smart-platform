@@ -12,7 +12,7 @@ sub send {
   my $mesg   = shift;
   my @groups = @_;
   if ( ref( $mesg ) ) { $mesg = $coder->encode( $mesg ) }
-  print STDERR sprintf("[%s] %s\n", join(",", @groups), $mesg);
+  print STDERR sprintf("[$$:%s] %s\n", join(",", @groups), $mesg);
 }
 
 1;

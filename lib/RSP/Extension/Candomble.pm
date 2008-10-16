@@ -29,24 +29,63 @@ sub provide {
     'datastore' => {    
       'write'  => sub { 
         my ($type, $obj, $transient) = @_;
-        if ( $transient ) {
-          $class->write_cache( $tx, $type, $obj );
-        } else { 
-          Candomble::Broker->write($tx->host, @_)
-        }
+        #$class->clear_query_cache( $tx, $type );
+        eval {
+          if ( $transient ) {
+            $class->write_cache( $tx, $type, $obj );
+          } else { 
+            Candomble::Broker->write($tx->host, @_)
+          }
+        };
+        if ($@) { print "error: $@" }
       },
       'remove' => sub { 
         my ($type, $id) = @_;
+        #$class->clear_query_cache( $tx, $type );
         $class->remove_cache( $tx, $type, $id );
         Candomble::Broker->delete($tx->host, @_ ) 
       },
-      'search' => sub { Candomble::Broker->query($tx->host, @_ ) },
+      'search' => sub { 
+        my ( $type, $query ) = @_;
+        #$class->query_cache( $tx, $type, $query ) || $class->cache_query( $tx, $type, $query, 
+        Candomble::Broker->query($tx->host, @_ ) 
+        #)
+      },
       'get'    => sub { 
         my ( $type, $id ) = @_;
-        $class->read_cache( $tx, $type, $id ) || Candomble::Broker->read($tx->host, @_ ); 
+        $class->read_cache( $tx, $type, $id ) || 
+        Candomble::Broker->read($tx->host, @_ ); 
       },
     }
   );
+}
+
+sub query_cache {
+  my $class = shift;
+  my $tx    = shift;
+  my $type  = shift;
+  my $query = shift;
+  my $coder = JSON::XS->new->utf8;
+
+  $class->cache( $tx->host, $type, "query_cache" )->get($coder->encode( $query ));
+}
+
+sub cache_query {
+  my $class = shift;
+  my $tx    = shift;
+  my $type  = shift;
+  my $query = shift;
+  my $ans   = shift;
+  my $coder = JSON::XS->new->utf8->canonical;
+  $class->cache( $tx->host, $type, "query_cache" )->set($coder->encode( $query ), $ans );
+  return $ans;
+}
+
+sub clear_query_cache {
+  my $class = shift;
+  my $tx    = shift;
+  my $type  = shift;
+  $class->cache( $tx->host, $type, "query_cache" )->flush_all;
 }
 
 sub write_cache {
@@ -77,7 +116,8 @@ sub cache {
   my $class = shift;
   my $ns    = shift;
   my $type  = shift;
-  my $cns   = join(':', __PACKAGE__, $ns, $type ) . ":";
+  my $meta  = shift || __PACKAGE__;
+  my $cns   = join(':', $meta, $ns, $type ) . ":";
   my $servers = [ map { { address => $_ } } grep { $_ } split(/,/, Candomble->config->{cache}->{hosts})];
   my $coder = JSON::XS->new->utf8;
   my $cache = Cache::Memcached::Fast->new({

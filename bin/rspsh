@@ -1,0 +1,33 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use RSP;
+use HTTP::Request;
+use Term::ReadLine;
+use RSP::Transaction;
+
+use JSON::XS;
+
+if (!$ARGV[0]) { die "no host" }
+my $coder = JSON::XS->new->allow_nonref;
+
+my $trl = Term::ReadLine->new('jssh');
+
+my $req = HTTP::Request->new('GET', '/', ['Host' => $ARGV[0]]);
+my $rsp = RSP::Transaction->start( $req );
+if (!$rsp) {
+  print "couldn't get rsp object\n";
+}
+
+$rsp->{context}->bind_function( 'bootstrap' => sub {
+  $rsp->run();
+});
+
+while( defined( my $line = $trl->readline('$ '))) {
+  chomp $line;
+  if ( $line ) {
+    print eval { $coder->encode( $rsp->{context}->eval( $line )) }, "\n";
+  }
+}
