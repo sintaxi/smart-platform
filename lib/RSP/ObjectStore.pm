@@ -161,8 +161,6 @@ sub search {
       }
     }
     my $encval = $encoder->encode( $val );
-    my $q  = [ $key, $op, $encval ];
-    use Data::Dumper; print Dumper( $q );
     my $nset = $self->storage->query( $key, $op, $encval );
     if ( ref($set) ) {
       $set = $set->intersection( $nset );
