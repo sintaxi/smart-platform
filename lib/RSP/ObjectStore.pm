@@ -56,9 +56,14 @@ sub storage {
   $self->{storage} ||= RSP::ObjectStore::Storage->new( $self->{dbfile} || $self->{transaction}->dbfile );
 }
 
+sub cache {
+  my $self = shift;
+  Cache::Memcached::Fast->new( { servers => $mdservers, namespace => $self->{transaction}->host . ':' } );
+}
+
 sub write {
   my $self = shift;
-  my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+  my $md   = $self->cache;
 
   my $partsForOne = sub {
     my $type = shift;
@@ -117,7 +122,7 @@ sub get {
   my $self = shift;
   my $type = shift;
   my $id   = shift;
-  my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+  my $md = $self->cache;
   if (!$id) { die "no id" }
   my $cached = $md->get( $id );
   if ($cached) {
@@ -128,6 +133,8 @@ sub get {
   my $parts = $self->storage->get( $id );        
   if (!@$parts) { return undef };
   my $dbobject = $self->parts2object( $id, $parts );
+  $self->cache->set( $id, $encoder->encode( $dbobject ) );
+  return $dbobject;
 }
 
 sub is_sql_op {
@@ -146,7 +153,7 @@ sub search {
 
   $query->{type} = $type;
 
-  my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+  my $md = $self->cache;
   
   my $set;
   foreach my $key (keys %$query) {
@@ -161,6 +168,7 @@ sub search {
       }
     }
     my $encval = $encoder->encode( $val );
+    print("query is $key $op $val\n");
     my $nset = $self->storage->query( $key, $op, $encval );
     if ( ref($set) ) {
       $set = $set->intersection( $nset );
@@ -181,7 +189,7 @@ sub search {
 
 sub remove {
   my $self = shift;
-  my $md = Cache::Memcached::Fast->new( { servers => $mdservers } );
+  my $md   = $self->cache;
   my $type = shift;
   my $id   = shift;
   $md->delete( $id );
