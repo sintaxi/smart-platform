@@ -10,7 +10,6 @@ sub provide {
     'sprintf' => sub {
       my $pattern = shift;
       my $result = sprintf($pattern, @_);
-      $tx->log("RESULT of sprintf(@_) is $result");
       return $result;
     }
   );
