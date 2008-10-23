@@ -47,7 +47,9 @@ sub handler {
   my $res = RSP->handle( $req );
 
   $r->status( $res->code );
-  $r->status_line( $res->message );
+  if ( $res->message ) {
+    $r->status_line( $res->message );
+  }
   my $ho  = $r->err_headers_out;
   foreach my $header ( $res->headers->header_field_names() ) {
     next if ( $header eq 'Content-Type' );
