@@ -48,7 +48,11 @@ sub provide {
       'search' => sub { 
         my ( $type, $query ) = @_;
         #$class->query_cache( $tx, $type, $query ) || $class->cache_query( $tx, $type, $query, 
-        Candomble::Broker->query($tx->host, @_ ) 
+        my $data = Candomble::Broker->query($tx->host, @_ );
+        foreach my $elem (@$data) {
+          $class->write_cache( $tx, $type, $elem );
+        }
+        return $data;
         #)
       },
       'get'    => sub { 
@@ -58,34 +62,6 @@ sub provide {
       },
     }
   );
-}
-
-sub query_cache {
-  my $class = shift;
-  my $tx    = shift;
-  my $type  = shift;
-  my $query = shift;
-  my $coder = JSON::XS->new->utf8;
-
-  $class->cache( $tx->host, $type, "query_cache" )->get($coder->encode( $query ));
-}
-
-sub cache_query {
-  my $class = shift;
-  my $tx    = shift;
-  my $type  = shift;
-  my $query = shift;
-  my $ans   = shift;
-  my $coder = JSON::XS->new->utf8->canonical;
-  $class->cache( $tx->host, $type, "query_cache" )->set($coder->encode( $query ), $ans );
-  return $ans;
-}
-
-sub clear_query_cache {
-  my $class = shift;
-  my $tx    = shift;
-  my $type  = shift;
-  $class->cache( $tx->host, $type, "query_cache" )->flush_all;
 }
 
 sub write_cache {

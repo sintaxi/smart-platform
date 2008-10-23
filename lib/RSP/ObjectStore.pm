@@ -58,17 +58,18 @@ sub storage {
 
 sub cache {
   my $self = shift;
-  Cache::Memcached::Fast->new( { servers => $mdservers, namespace => $self->{transaction}->host . ':' } );
+  my $type = shift;
+  Cache::Memcached::Fast->new( { servers => $mdservers, namespace => join(":", $self->{transaction}->host, $type) . ':' } );
 }
 
 sub write {
   my $self = shift;
-  my $md   = $self->cache;
 
   my $partsForOne = sub {
     my $type = shift;
     my $obj = shift;
     my $trans = shift;
+    my $md   = $self->cache( $type );
             
     if (!$obj) { die "no object" }
     if (reftype($obj) ne 'HASH') { die "not an Object" }
@@ -122,7 +123,7 @@ sub get {
   my $self = shift;
   my $type = shift;
   my $id   = shift;
-  my $md = $self->cache;
+  my $md = $self->cache( $type );
   if (!$id) { die "no id" }
   my $cached = $md->get( $id );
   if ($cached) {
@@ -133,7 +134,7 @@ sub get {
   my $parts = $self->storage->get( $id );        
   if (!@$parts) { return undef };
   my $dbobject = $self->parts2object( $id, $parts );
-  $self->cache->set( $id, $encoder->encode( $dbobject ) );
+  $self->cache( $type )->set( $id, $encoder->encode( $dbobject ) );
   return $dbobject;
 }
 
@@ -153,7 +154,7 @@ sub search {
 
   $query->{type} = $type;
 
-  my $md = $self->cache;
+  my $md = $self->cache( $type );
   
   my $set;
   foreach my $key (keys %$query) {
@@ -168,7 +169,6 @@ sub search {
       }
     }
     my $encval = $encoder->encode( $val );
-    print("query is $key $op $val\n");
     my $nset = $self->storage->query( $key, $op, $encval );
     if ( ref($set) ) {
       $set = $set->intersection( $nset );
@@ -181,7 +181,9 @@ sub search {
   my @objects;
   foreach my $member ( $set->members ) {
     my $parts = $self->storage->get( $member );
-    push @objects, $self->parts2object( $member, $parts );
+    my $obj   = $self->parts2object( $member, $parts );
+    $md->set( $obj->{id}, $encoder->encode( $obj ) );
+    push @objects, $obj;
   }
  
   return \@objects;
@@ -189,9 +191,9 @@ sub search {
 
 sub remove {
   my $self = shift;
-  my $md   = $self->cache;
   my $type = shift;
   my $id   = shift;
+  my $md   = $self->cache( $type );
   $md->delete( $id );
   $self->storage->delete( $id );
 }
