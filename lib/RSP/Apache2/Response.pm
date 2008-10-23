@@ -44,7 +44,7 @@ sub handler {
 #  if ( $rp->content ) { warn("post params are " . $rp->content) }
   $req->content( $rp->content );
 
-  my $res = RSP->handle( $req );
+  my $res = RSP->handle( $req, { original_request => $r } );
 
   $r->status( $res->code );
   if ( $res->message ) {

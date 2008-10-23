@@ -31,7 +31,7 @@ sub provide {
   my %headers = %{ $req->{_headers} };
 
   my $body = {};
-  if ($req->method =~ /^(post|put)$/i) {
+  if (!$tx->{hints}->{original_request} && $req->method =~ /^(post|put)$/i) {
     ## 'cause firefox is probably right, but HTTP::Body doesn't like it
     my $type = $req->content_type;
     $type =~ s/;.+$//;
@@ -41,6 +41,13 @@ sub provide {
     );
     $body->add($req->content);
     $body = $body->param;
+  } elsif ($tx->{hints}->{original_request}) {
+    my $r  = $tx->{hints}->{original_request};
+    my $ap = Apache2::Request->new( $r ); 
+    my $table = $ap->param;
+    foreach my $key (keys %{$table}) {
+     $body->{$key} = $table->{$key};
+    }
   }
 
   return (

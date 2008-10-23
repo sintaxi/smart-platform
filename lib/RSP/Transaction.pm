@@ -26,7 +26,7 @@ use Hash::Merge::Simple;
 sub start {
   my $class = shift;
   my $req   = shift or die "no request provided";
-
+  my $hints = shift || {};
   my $rt    = JavaScript::Runtime->new;
   my $cx    = $rt->create_context;
 
@@ -39,6 +39,8 @@ sub start {
 
   my $self = { ops => 0, host => $turi->host, request => $req, context => $cx };
   bless $self => $class;
+
+  $self->{hints} = $hints;
 
   $rt->set_interrupt_handler( sub {
     $self->{ops}++;

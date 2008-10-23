@@ -35,11 +35,13 @@ use HTTP::Response;
 sub handle {
   my $class = shift;
   my $req   = shift;
+  my $hints = shift;
 
   my $ib = $req->content;
   my $ib_bw = do { use bytes; length( $ib ); };
   
-  my $tx = RSP::Transaction->start( $req ); 
+  my $tx = RSP::Transaction->start( $req, $hints ); 
+
   my $op = $tx->run;
  
   ## handle blessed objects, like filesystem objects...
