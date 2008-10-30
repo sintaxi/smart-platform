@@ -32,17 +32,23 @@ sub handler {
   my $ap = Apache2::Request->new( $r );
   my $req = HTTP::Request->parse( $r->as_string );
 
-  ## is there not a better way to get the unparsed body? surely...
-  my $postparams = [];
-  foreach my $param ( $ap->param ) {
-    my $value = $ap->param($param);
-#    warn("$param value is $value");
-    push @$postparams, $param, $value;
+  if ( $r->method eq 'POST') {
+    ## is there not a better way to get the unparsed body? surely...
+    my $postparams = [];
+    foreach my $param ( $ap->param ) {
+      my $value = $ap->param($param);
+      push @$postparams, $param, $value;
+    }
+    my $rp = POST('/',$postparams);  
+    $req->content( $rp->content );
+  } else {
+    my $content;
+    my $len = $r->headers_in->{'Content-Length'};
+    if ( $len ) {
+      $r->read( $content, $len );
+      $req->content( $content );
+    }
   }
-#  use Data::Dumper; warn Dumper( $postparams );
-  my $rp = POST('/',$postparams);  
-#  if ( $rp->content ) { warn("post params are " . $rp->content) }
-  $req->content( $rp->content );
 
   my $res = RSP->handle( $req, { original_request => $r } );
 
