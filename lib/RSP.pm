@@ -55,6 +55,7 @@ sub handle {
     $op->[3] = $result;
   }
   
+  $op->[3] = encode("iso-8859-1", $op->[3]);
   my $resp  = HTTP::Response->new( @$op );
 
   my $ob = $resp->content;
