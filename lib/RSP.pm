@@ -53,9 +53,9 @@ sub handle {
     };
     if ($@) { warn "error getting content from blessed content handler: $@" }
     $op->[3] = $result;
+  } else {
+    $op->[3] = encode_utf8($op->[3]);
   }
-  
-  $op->[3] = encode("iso-8859-1", $op->[3]);
   my $resp  = HTTP::Response->new( @$op );
 
   my $ob = $resp->content;
