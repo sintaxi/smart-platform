@@ -36,8 +36,10 @@ sub handler {
     ## is there not a better way to get the unparsed body? surely...
     my $postparams = [];
     foreach my $param ( $ap->param ) {
-      my $value = $ap->param($param);
-      push @$postparams, $param, $value;
+      my @values = $ap->param($param);
+      foreach my $value (@values) {
+        push @$postparams, $param, $value;
+      }
     }
     my $rp = POST('/',$postparams);  
     $req->content( $rp->content );
