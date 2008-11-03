@@ -27,20 +27,29 @@ sub calculate_recurrence {
   my $period = $args->{period};
 
   my $recurrence;
+  my $duration_args = {};
   if ( $period =~ /Session/i ) {
     $recurrence = "weekly";
+    $duration_args = $args->{duration};
+  } elsif ( $period =~ /Week/i ) {
+    $recurrence = "weekly";
+    $duration_args = $args->{duration};    
   } elsif ( $period =~ /days/i ) {
     $recurrence = 'daily';
   } elsif ( $period =~ /month/i ) {
     $recurrence = 'monthly';
   } else {
-    die "invalid recurrence period";
+    $recurrence = $period;
   }
   
-  my $duration_args = $args->{duration};
-  
-  my $set = DateTime::Event::Recurrence->$recurrence( @$duration_args );
-  
+  my $set = eval {
+    DateTime::Event::Recurrence->$recurrence( %$duration_args );
+  };
+  if ($@) {
+    print "RECURRENCE_ERROR: $@";
+    die $@;
+  }
+ 
   my @days = map { 
     $_->epoch * 1000
   } $set->as_list( start => $start, end => $end );
