@@ -12,8 +12,8 @@ sub provide {
     
     ks => {
     
-      'recurrence' => \&calculate_recurrence
-    
+      'recurrence' => \&calculate_recurrence,
+
     }
   
   );
