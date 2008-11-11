@@ -60,6 +60,7 @@ sub handle_one_connection {
   eval {
     my $notimeout;
     local $SIG{ALRM} = sub {
+      print "timeout exceded\n";
       if ($notimeout) { die "alarm"; }
     };
     $notimeout = 1;
@@ -72,18 +73,20 @@ sub handle_one_connection {
       if ($@) {
         $c->send_error(RC_INTERNAL_SERVER_ERROR, $@);
       } else {
-        $response->header('Connection','close');
+        if ( $this_conn == ( RSP->config->{server}->{MaxRequetsPerClient} || 5 )) {
+          $response->header('Connection','close');
+        }
         $c->send_response( $response );      
-        last;
+        $notimeout = 1;
         if ($response->header('Connection') && $response->header('Connection') =~ /close/i) {
           last;
         }
       }
-      if ( $this_conn == ( RSP->config->{server}->{MaxRequetsPerClient} || 5 )) {
-        last;
-      }
-    }  
+    } 
   };
+  if ($@) {
+    print $@;
+  }
   alarm(0);
   $c->close;
 }

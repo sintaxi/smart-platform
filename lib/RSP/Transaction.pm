@@ -31,9 +31,10 @@ sub start {
   my $cx    = $rt->create_context;
 
   $cx->set_version("1.7") if $cx->can("set_version");
-  if ( $cx->can("toggle_options") ) {
+#  if ( $cx->can("toggle_options") ) {
+    print "WE ARE JITTING\n";
     $cx->toggle_options( "jit" );
-  }
+#  }
 
   my $turi = URI->new('http://' . lc($req->header('Host')) . '/');
 

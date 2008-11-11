@@ -151,41 +151,53 @@ sub search {
   my $self = shift;
   my $type  = shift;
   my $query = shift;
-
-  $query->{type} = $type;
-
   my $md = $self->cache( $type );
-  
   my $set;
-  foreach my $key (keys %$query) {
-    my $val = $query->{$key};
-    my $op  = '=';
-    if ( ref($val) eq 'ARRAY' && is_sql_op($val->[0])) {
-      $op = shift @$val;
-      if ( scalar(@$val) == 1) {
-        $val = $val->[0];
+
+  eval {
+    $query->{type} = $type;
+  
+    
+    foreach my $key (keys %$query) {
+      my $val = $query->{$key};
+      my $op  = '=';
+      if ( ref($val) eq 'ARRAY' && is_sql_op($val->[0])) {
+        $op = shift @$val;
+        if ( scalar(@$val) == 1) {
+          $val = $val->[0];
+        } else {
+          $val = $val;
+        }
+      }
+      my $encval = $encoder->encode( $val );
+      my $nset = $self->storage->query( $key, $op, $encval );
+      if ( ref($set) ) {
+        $set = $set->intersection( $nset );
       } else {
-        $val = $val;
+        $set = $nset;
       }
     }
-    my $encval = $encoder->encode( $val );
-    my $nset = $self->storage->query( $key, $op, $encval );
-    if ( ref($set) ) {
-      $set = $set->intersection( $nset );
-    } else {
-      $set = $nset;
-    }
-  }
-  return [ ] if !$set; ## empty array
+  };
 
-  my @objects;
-  foreach my $member ( $set->members ) {
-    my $parts = $self->storage->get( $member );
-    my $obj   = $self->parts2object( $member, $parts );
-    $md->set( $obj->{id}, $encoder->encode( $obj ) );
-    push @objects, $obj;
+  if ($@) {
+    warn($@);
   }
- 
+
+  return [ ] if !$set; ## empty array
+  my @objects;
+  eval {
+    foreach my $member ( $set->members ) {
+      my $parts = $self->storage->get( $member );
+      my $obj   = $self->parts2object( $member, $parts );
+      $md->set( $obj->{id}, $encoder->encode( $obj ) );
+      push @objects, $obj;
+    }
+  };
+  if ($@) {
+    warn($@);
+  }
+  
+  print "RETURNING ", scalar(@objects), " $type OBJECTS\n";
   return \@objects;
 }
 
