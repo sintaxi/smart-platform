@@ -3,13 +3,19 @@ package RSP::Transaction;
 use strict;
 use warnings;
 
-use RSP::Host;
 use JavaScript;
 use Module::Load qw();
 use Hash::Merge::Simple 'merge';
 use base 'Class::Accessor::Chained';
 
+
+our $HOST_CLASS = RSP->config->{_}->{host_class} || 'RSP::Host';
+
 __PACKAGE__->mk_accessors(qw( request response runtime context ));
+
+sub import {
+  Module::Load::load( $HOST_CLASS );
+}
 
 ##
 ## simple constructor, returns a new RSP::Transaction
@@ -29,7 +35,6 @@ sub initialize_js_environment {
   my $self = shift;
   $self->runtime( JavaScript::Runtime->new( $self->host->alloc_size ) );
   $self->context( $self->runtime->create_context );
-
   $self->context->set_version( "1.8" );
   $self->context->toggle_options(qw( xml strict jit ));
 }
@@ -87,6 +92,7 @@ sub run {
       my $value = shift @headers;
       $self->response->headers->add_line( $key, $value );
     }
+    
     ##
     ## if we have a simple body string, use that, otherwise
     ##  we need to be a bit more clever
@@ -145,7 +151,12 @@ sub import_extensions {
 ##
 sub host {
   my $self = shift;  
-  return $self->{host} ||= RSP::Host->new( $self->request->headers->host );
+  
+  if ( !$self->{host} ) {
+    $self->{host} = $HOST_CLASS->new( $self ); 
+  }
+  
+  return $self->{host};
 }
 
 
