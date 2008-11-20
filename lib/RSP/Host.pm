@@ -14,12 +14,36 @@ __PACKAGE__->mk_accessors(qw( hostname ));
 ##
 sub new {
   my $class = shift;
-  my $hostname = shift || die "no hostname";
-  if ($hostname =~ /:/) {
-    $hostname =~ s/:.+$//;
-  }
+  my $tx    = shift || die "no transaction";
+  my $self  = {};
 
-  bless { hostname => $hostname }, $class;  
+  bless $self, $class;
+  
+  $self->hostname( $self->_strip_hostname( $tx->request->headers->host ) );
+
+  return $self;
+}
+
+##
+## lots of things in RSP need a namespace for isolation,
+##   this method returns the namespace for this host
+##
+sub namespace {
+  my $self = shift;
+  if (! $self->{namespace} ) {
+    $self->{namespace} = join(".", split(/\./, $self->{namespace}));
+  }
+  return $self->{namespace};
+}
+
+##
+## strips the port number of a hostname, if there is one
+##
+sub _strip_hostname {
+  my $self = shift;
+  my $host = shift || die "no hostname";
+  $host =~ s/:.+$//;
+  return $host;
 }
 
 ##
