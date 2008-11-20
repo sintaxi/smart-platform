@@ -33,7 +33,11 @@ sub extensions {
     'RSP::Extension::HTTPRequest',
     'RSP::Extension::JSONEncoder',
     'RSP::Extension::FileSystem',
+    'RSP::Extension::OpenId',
     'RSP::Extension::UUID',
+    'RSP::Extension::Import',
+    'RSP::Extension::Console',
+    'RSP::Extension::Template',
     'RSP::Extension::MD5',
   );
 }
