@@ -19,6 +19,7 @@ use strict;
 use warnings;
 
 use JSON::XS;
+use Digest::MD5 'md5_hex';
 use Cache::Memcached::Fast;
 use RSP::ObjectStore::Storage;
 use Scalar::Util qw( reftype );
@@ -81,7 +82,7 @@ sub write {
     ## to the database with, just put it in memcache and be done.
     ## primarily used for sessions.
     if ( $trans ) {
-      if ($md->set( $id, $encoder->encode( $obj ) )) {
+      if ($md->set( md5_hex( $id ), $encoder->encode( $obj ) )) {
         return ();
       } else {
         $self->log("can't find memcache, falling back to db on transient store");
@@ -89,7 +90,7 @@ sub write {
     }
 
     return (sub {
-      $md->set( $id, $encoder->encode( $obj ) );
+      $md->set( md5_hex( $id ), $encoder->encode( $obj ) );
     }, $self->object2parts( $type, $id, $obj ));
   };
 
@@ -125,7 +126,7 @@ sub get {
   my $id   = shift;
   my $md = $self->cache( $type );
   if (!$id) { die "no id" }
-  my $cached = $md->get( $id );
+  my $cached = $md->get( md5_hex( $id ) );
   if ($cached) {
     my $object = $encoder->decode( $cached );
     $object->{id} = $id;
@@ -134,7 +135,7 @@ sub get {
   my $parts = $self->storage->get( $id );        
   if (!@$parts) { return undef };
   my $dbobject = $self->parts2object( $id, $parts );
-  $self->cache( $type )->set( $id, $encoder->encode( $dbobject ) );
+  $self->cache( $type )->set( md5_hex( $id ), $encoder->encode( $dbobject ) );
   return $dbobject;
 }
 
@@ -153,7 +154,7 @@ sub search {
   my $query = shift;
   my $md = $self->cache( $type );
   my $set;
-
+  
   eval {
     $query->{type} = $type;
   
@@ -187,9 +188,7 @@ sub search {
   my @objects;
   eval {
     foreach my $member ( $set->members ) {
-      my $parts = $self->storage->get( $member );
-      my $obj   = $self->parts2object( $member, $parts );
-      $md->set( $obj->{id}, $encoder->encode( $obj ) );
+      my $obj = $self->get( $type, $member );
       push @objects, $obj;
     }
   };
@@ -197,7 +196,6 @@ sub search {
     warn($@);
   }
   
-  print "RETURNING ", scalar(@objects), " $type OBJECTS\n";
   return \@objects;
 }
 
