@@ -20,6 +20,7 @@ use warnings;
 
 use JSON::XS;
 use Digest::MD5 'md5_hex';
+use Scalar::Util qw( looks_like_number );
 use Cache::Memcached::Fast;
 use RSP::ObjectStore::Storage;
 use Scalar::Util qw( reftype );
@@ -152,12 +153,14 @@ sub search {
   my $self = shift;
   my $type  = shift;
   my $query = shift;
+  
+  my $opts  = shift || {};
+  
   my $md = $self->cache( $type );
   my $set;
   
   eval {
-    $query->{type} = $type;
-  
+    $query->{type} = $type;  
     
     foreach my $key (keys %$query) {
       my $val = $query->{$key};
@@ -196,6 +199,27 @@ sub search {
     warn($@);
   }
   
+  if ( $opts->{'sort'} ) {
+    my $key = $opts->{'sort'};
+#    print("Sorting returned objects by $opts->{'sort'}\n");
+    @objects = sort { 
+      if ( looks_like_number( $a->{$key} ) ) {
+        return $a->{$key} <=> $b->{$key};
+      } else {
+        return $a->{$key} cmp $b->{$key};
+      }
+    } @objects;
+  }
+
+  if ( $opts->{'reverse'} ) {
+    @objects = reverse @objects;
+  }
+  
+  if ( $opts->{'limit'} ) {
+#    print("limiting returned objects to $opts->{limit}\n");
+    @objects = splice(@objects, 0, $opts->{'limit'});
+  }
+  
   return \@objects;
 }
 
@@ -215,7 +239,11 @@ sub object2parts {
   my $object = shift;
   my @parts = ( [ $id, 'type', $encoder->encode( $type ) ] );
   foreach my $key (keys %$object) {
-    push @parts, [ $id, $key, $encoder->encode( $object->{$key} ) ];
+    if (looks_like_number( $object->{$key})) {
+      push @parts, [ $id, $key, $encoder->encode( 0 + $object->{$key} ) ];
+    } else {
+      push @parts, [ $id, $key, $encoder->encode( $object->{$key} ) ];
+    }
   }
   return @parts;
 }
