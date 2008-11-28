@@ -64,9 +64,9 @@ sub handle_one_connection {
       if ($notimeout) { die "alarm"; }
     };
     $notimeout = 1;
-    alarm(RSP->config->{server}->{ConnectionTimeout} || 60);
+    alarm(RSP->config->{server}->{ConnectionTimeout} || 120);
     while( my $r = $c->get_request ) {    
-      alarm(60);
+      alarm(120);
       $notimeout = 0;
       $this_conn++;    
       my $response = eval { RSP->handle( $r ) };

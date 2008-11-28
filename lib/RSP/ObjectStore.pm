@@ -190,7 +190,11 @@ sub search {
   return [ ] if !$set; ## empty array
   my @objects;
   eval {
-    foreach my $member ( $set->members ) {
+    my @members = $set->members;
+    if ( $opts->{limit} && !$opts->{sort} ) {
+      @members = splice(@members, 0, $opts->{limit})
+    }
+    foreach my $member ( @members ) {
       my $obj = $self->get( $type, $member );
       push @objects, $obj;
     }
