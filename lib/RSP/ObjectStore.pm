@@ -19,6 +19,8 @@ use strict;
 use warnings;
 
 use JSON::XS;
+use Digest::MD5 'md5_hex';
+use Scalar::Util qw( looks_like_number );
 use Cache::Memcached::Fast;
 use RSP::ObjectStore::Storage;
 use Scalar::Util qw( reftype );
@@ -81,7 +83,7 @@ sub write {
     ## to the database with, just put it in memcache and be done.
     ## primarily used for sessions.
     if ( $trans ) {
-      if ($md->set( $id, $encoder->encode( $obj ) )) {
+      if ($md->set( md5_hex( $id ), $encoder->encode( $obj ) )) {
         return ();
       } else {
         $self->log("can't find memcache, falling back to db on transient store");
@@ -89,7 +91,7 @@ sub write {
     }
 
     return (sub {
-      $md->set( $id, $encoder->encode( $obj ) );
+      $md->set( md5_hex( $id ), $encoder->encode( $obj ) );
     }, $self->object2parts( $type, $id, $obj ));
   };
 
@@ -125,7 +127,7 @@ sub get {
   my $id   = shift;
   my $md = $self->cache( $type );
   if (!$id) { die "no id" }
-  my $cached = $md->get( $id );
+  my $cached = $md->get( md5_hex( $id ) );
   if ($cached) {
     my $object = $encoder->decode( $cached );
     $object->{id} = $id;
@@ -134,7 +136,7 @@ sub get {
   my $parts = $self->storage->get( $id );        
   if (!@$parts) { return undef };
   my $dbobject = $self->parts2object( $id, $parts );
-  $self->cache( $type )->set( $id, $encoder->encode( $dbobject ) );
+  $self->cache( $type )->set( md5_hex( $id ), $encoder->encode( $dbobject ) );
   return $dbobject;
 }
 
@@ -151,39 +153,73 @@ sub search {
   my $self = shift;
   my $type  = shift;
   my $query = shift;
-
-  $query->{type} = $type;
-
-  my $md = $self->cache( $type );
   
+  my $opts  = shift || {};
+  
+  my $md = $self->cache( $type );
   my $set;
-  foreach my $key (keys %$query) {
-    my $val = $query->{$key};
-    my $op  = '=';
-    if ( ref($val) eq 'ARRAY' && is_sql_op($val->[0])) {
-      $op = shift @$val;
-      if ( scalar(@$val) == 1) {
-        $val = $val->[0];
+  
+  eval {
+    $query->{type} = $type;  
+    
+    foreach my $key (keys %$query) {
+      my $val = $query->{$key};
+      my $op  = '=';
+      if ( ref($val) eq 'ARRAY' && is_sql_op($val->[0])) {
+        $op = shift @$val;
+        if ( scalar(@$val) == 1) {
+          $val = $val->[0];
+        } else {
+          $val = $val;
+        }
+      }
+      my $encval = $encoder->encode( $val );
+      my $nset = $self->storage->query( $key, $op, $encval );
+      if ( ref($set) ) {
+        $set = $set->intersection( $nset );
       } else {
-        $val = $val;
+        $set = $nset;
       }
     }
-    my $encval = $encoder->encode( $val );
-    my $nset = $self->storage->query( $key, $op, $encval );
-    if ( ref($set) ) {
-      $set = $set->intersection( $nset );
-    } else {
-      $set = $nset;
-    }
-  }
-  return [ ] if !$set; ## empty array
+  };
 
+  if ($@) {
+    warn($@);
+  }
+
+  return [ ] if !$set; ## empty array
   my @objects;
-  foreach my $member ( $set->members ) {
-    my $parts = $self->storage->get( $member );
-    my $obj   = $self->parts2object( $member, $parts );
-    $md->set( $obj->{id}, $encoder->encode( $obj ) );
-    push @objects, $obj;
+  eval {
+    my @members = $set->members;
+    if ( $opts->{limit} && !$opts->{sort} ) {
+      @members = splice(@members, 0, $opts->{limit})
+    }
+    foreach my $member ( @members ) {
+      my $obj = $self->get( $type, $member );
+      push @objects, $obj;
+    }
+  };
+  if ($@) {
+    warn($@);
+  }
+  
+  if ( $opts->{'sort'} ) {
+    my $key = $opts->{'sort'};
+    @objects = sort { 
+      if ( looks_like_number( $a->{$key} ) ) {
+        return $a->{$key} <=> $b->{$key};
+      } else {
+        return $a->{$key} cmp $b->{$key};
+      }
+    } @objects;
+  }
+
+  if ( $opts->{'reverse'} ) {
+    @objects = reverse @objects;
+  }
+  
+  if ( $opts->{'limit'} ) {
+    @objects = splice(@objects, 0, $opts->{'limit'});
   }
   
   return \@objects;
@@ -205,7 +241,11 @@ sub object2parts {
   my $object = shift;
   my @parts = ( [ $id, 'type', $encoder->encode( $type ) ] );
   foreach my $key (keys %$object) {
-    push @parts, [ $id, $key, $encoder->encode( $object->{$key} ) ];
+    if (looks_like_number( $object->{$key})) {
+      push @parts, [ $id, $key, $encoder->encode( 0 + $object->{$key} ) ];
+    } else {
+      push @parts, [ $id, $key, $encoder->encode( $object->{$key} ) ];
+    }
   }
   return @parts;
 }
