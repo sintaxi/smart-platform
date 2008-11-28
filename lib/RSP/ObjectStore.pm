@@ -185,7 +185,7 @@ sub search {
     $md->set( $obj->{id}, $encoder->encode( $obj ) );
     push @objects, $obj;
   }
- 
+  
   return \@objects;
 }
 

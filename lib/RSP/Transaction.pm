@@ -27,13 +27,13 @@ sub start {
   my $class = shift;
   my $req   = shift or die "no request provided";
   my $hints = shift || {};
-  my $rt    = JavaScript::Runtime->new;
+  my $rt    = JavaScript::Runtime->new( (1024 ** 2) * 2 );
   my $cx    = $rt->create_context;
 
   $cx->set_version("1.7") if $cx->can("set_version");
-  if ( $cx->can("toggle_options") ) {
-    $cx->toggle_options( "jit" );
-  }
+#  if ( $cx->can("toggle_options") ) {
+#    $cx->toggle_options( "jit" );
+#  }
 
   my $turi = URI->new('http://' . lc($req->header('Host')) . '/');
 

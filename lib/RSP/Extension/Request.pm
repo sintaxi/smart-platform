@@ -44,9 +44,13 @@ sub provide {
   } elsif ($tx->{hints}->{original_request}) {
     my $r  = $tx->{hints}->{original_request};
     my $ap = Apache2::Request->new( $r ); 
-    my $table = $ap->param;
-    foreach my $key (keys %{$table}) {
-     $body->{$key} = $table->{$key};
+    foreach my $param ( $ap->param ) {
+      my @values = $ap->param($param);
+      if ( scalar(@values) > 1 ) {
+        $body->{$param} = \@values;
+      } else {
+	$body->{$param} = $values[0];
+      }
     }
   }
 
