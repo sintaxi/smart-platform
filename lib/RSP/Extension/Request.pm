@@ -54,6 +54,7 @@ sub provide {
     'request' => {
       'method' => $req->method,
       'uri'    => uri_unescape( $uri ),
+      'queryString' => uri_unescape( $req->uri->query ),
       'query'  => $qp,
       'headers'=> \%headers,
       'content' => $req->decoded_content,
