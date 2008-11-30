@@ -205,7 +205,6 @@ sub search {
   
   if ( $opts->{'sort'} ) {
     my $key = $opts->{'sort'};
-#    print("Sorting returned objects by $opts->{'sort'}\n");
     @objects = sort { 
       if ( looks_like_number( $a->{$key} ) ) {
         return $a->{$key} <=> $b->{$key};
@@ -220,7 +219,6 @@ sub search {
   }
   
   if ( $opts->{'limit'} ) {
-#    print("limiting returned objects to $opts->{limit}\n");
     @objects = splice(@objects, 0, $opts->{'limit'});
   }
   

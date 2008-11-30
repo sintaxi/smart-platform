@@ -27,13 +27,14 @@ sub start {
   my $class = shift;
   my $req   = shift or die "no request provided";
   my $hints = shift || {};
+
   ## allocate 3 megs of RAM to this...
   my $rt    = JavaScript::Runtime->new( ( 1024 ** 2 ) * 3 );
   my $cx    = $rt->create_context;
 
   ## try setting the version to 1.8..
   eval {
-    $cx->set_version("1.8");
+    $cx->set_version("1.7");
     $cx->toggle_options( "jit" );
   };
   my $turi = URI->new('http://' . lc($req->header('Host')) . '/');
