@@ -84,8 +84,8 @@ sub query {
   my $op   = shift;
   my $val  = shift;
   
-  if (! ( $key && $op && $val ) ) {
-    die "need key, test, and value to query";
+  if (! ( defined( $key ) && defined( $op ) && defined( $val )) ) {
+    die "need key ($key), test ($op), and value ($val) to query";
   }
   my ($stmt, @bind) = $sa->select(
     'candomble_atom',
