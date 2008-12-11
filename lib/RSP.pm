@@ -11,9 +11,9 @@ sub handler {
 
   my $request = $tx->req;  
   eval {
-    my $rsptx   = RSP::Transaction->new;
-    $rsptx->request( $tx->req );
-    $rsptx->response( $tx->res );
+    my $rsptx = RSP::Transaction->new
+                                ->request( $tx->req )
+                                ->response( $tx->res );
     $rsptx->bootstrap;
     $rsptx->run;
     $rsptx->end;
