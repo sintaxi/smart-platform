@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use base 'Mojo';
+our $VERSION = '1.2';
 use Application::Config 'rsp.conf';
 
 sub handler {
