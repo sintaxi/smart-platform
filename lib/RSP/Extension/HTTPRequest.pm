@@ -15,7 +15,8 @@ sub provides {
       'body'   => $tx->request->body_params->to_hash,
       'headers'=> { map {
         ( $_ => $tx->request->headers->header($_) )
-      } $tx->request->headers->names }
+      } $tx->request->headers->names },
+      'queryString' => $tx->request->url->query->to_string,
     }  
   };
 }
