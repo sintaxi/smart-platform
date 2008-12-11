@@ -8,7 +8,6 @@ use Module::Load qw();
 use Hash::Merge::Simple 'merge';
 use base 'Class::Accessor::Chained';
 
-
 our $HOST_CLASS = RSP->config->{_}->{host_class} || 'RSP::Host';
 
 __PACKAGE__->mk_accessors(qw( request response runtime context ));
@@ -104,7 +103,7 @@ sub run {
         ## it's a javascript function, call it and use the
         ## returned data
         $self->response->body( $body->() );
-      } elsif ( ref($body) eq 'RSP::JSObject::File' ) {
+      } elsif ( ref($body) && $body->isa('RSP::JSObject') ) {
         ##
         ## it's a file object, suck the data up and use that
         ##
