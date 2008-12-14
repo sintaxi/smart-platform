@@ -6,6 +6,15 @@ use warnings;
 sub provides {
   my $class = shift;
   my $tx    = shift;
+
+  my $cookies = {};
+  if ( $tx->request->cookies ) {
+    foreach my $cookie ( @{ $tx->request->cookies } ) {
+      my $name  = $cookie->name;
+      my $value = $cookie->value->to_string;
+      $cookies->{$name} = "$value";
+    }
+  }
   
   return {
     'request' => {
@@ -17,6 +26,7 @@ sub provides {
         ( $_ => $tx->request->headers->header($_) )
       } $tx->request->headers->names },
       'queryString' => $tx->request->url->query->to_string,
+      'cookies' => $cookies
     }  
   };
 }

@@ -54,6 +54,8 @@ sub _strip_hostname {
 sub extensions {
   my $self = shift;
   return (
+    'RSP::Extension::HTTP',
+    'RSP::Extension::CouchDB',
     'RSP::Extension::HTTPRequest',
     'RSP::Extension::JSONEncoder',
     'RSP::Extension::FileSystem',

@@ -39,8 +39,8 @@ sub initialize_js_environment {
 }
 
 ##
-## removes the context and the runtime objects, so that we don't have them
-##  hanging around.
+## removes the context and the runtime objects, so that we don't have
+##   them hanging around.
 ##
 sub cleanup_js_environment {
   my $self = shift;
@@ -89,7 +89,13 @@ sub run {
     my @headers = @$headers;
     while( my $key = shift @headers ) {
       my $value = shift @headers;
-      $self->response->headers->add_line( $key, $value );
+      ## why do we need to special case this?
+      if ( $key eq 'Set-Cookie') {
+        my $cookies = Mojo::Cookie::Response->new->parse( $value );
+        $self->response->cookies( $cookies->[0] );
+      } else {
+        $self->response->headers->add_line( $key, $value );
+      }
     }
     
     ##
@@ -105,7 +111,8 @@ sub run {
         $self->response->body( $body->() );
       } elsif ( ref($body) && $body->isa('RSP::JSObject') ) {
         ##
-        ## it's a file object, suck the data up and use that
+        ## it's a blended object, most likely ( at this point ) a file.
+        ##   suck the data up and use that
         ##
         $self->response->body( $body->as_string );
       } else {
@@ -137,7 +144,13 @@ sub import_extensions {
     Module::Load::load( $ext );
     if (!$@) {
       my $provided = $ext->provides( $self );
-      $sys = merge $provided, $sys;
+      if ( !$provided ) {
+        warn "no extensions provided by $ext";
+      } elsif (!ref($provided) || ref($provided) ne 'HASH') {
+        warn "invalid extension provided by $ext";
+      } else {
+        $sys = merge $provided, $sys;
+      }
     } else {
       warn "couldn't load extension $ext: $@\n";
     }

@@ -9,12 +9,14 @@ sub provides {
   return {
     'use' => sub {
        my $lib = shift;
+
        $lib =~ s/\./\//g;
        $lib .= ".js";
        $tx->context->eval_file( $tx->host->file( 'code', $lib ) );
        if ($@) {
         die $@;
        }
+
     }
   }
 }
