@@ -26,7 +26,8 @@ sub provides {
         ( $_ => $tx->request->headers->header($_) )
       } $tx->request->headers->names },
       'queryString' => $tx->request->url->query->to_string,
-      'cookies' => $cookies
+      'cookies' => $cookies,
+      'content' => $tx->request->body
     }  
   };
 }
