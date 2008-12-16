@@ -15,6 +15,11 @@ sub provides {
   return {
     datastore => {
 
+      ## okay, so this is a really nasty big hack, until I can come up with
+      ##   something better.  It may be that I need to create some external
+      ##   indexing or something.  Or maybe being able to pass a function in
+      ##   as a query, that gets md5d and turned into a view, or something
+      ##   crazy like that.  Bah.  Indexing sucks.
       search => sub {
         my $type = shift;
         my $tmpl = shift;
