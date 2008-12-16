@@ -5,6 +5,7 @@ use warnings;
 
 use JavaScript;
 use Module::Load qw();
+use Cache::Memcached::Fast;
 use Hash::Merge::Simple 'merge';
 use base 'Class::Accessor::Chained';
 
@@ -23,6 +24,20 @@ sub new {
   my $class = shift;
   my $self  = {};
   bless $self, $class;
+}
+
+sub cache {
+  my $self = shift;
+
+  ## if we've got a memcache, return it
+  if ( $self->{cache} ) {
+    return $self->{cache};
+  }
+
+  $self->{cache} = Cache::Memcached::Fast->new({  
+    'servers'           => [ { map { ('address' => $_) } split(',', RSP->config->{cache}->{servers}) } ],
+    'namespace'         => $self->host->hostname . ':', ## append the colon for easy reading in mcinsight...
+  });
 }
 
 ##

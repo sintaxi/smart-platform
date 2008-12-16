@@ -14,16 +14,27 @@ sub provides {
 
   return {
     datastore => {
-  
+
       search => sub {
         my $type = shift;
         my $tmpl = shift;
-        my $mv = $class->create_map_view( $type, $tmpl );
+        my $mv;
+        if ( keys %$tmpl ) {
+          $mv = $class->create_map_view( $type, $tmpl );
+        } else {
+          $mv = qq!function() { if ( this.meta.type == '$type' ) emit(this.js.id, this) }!;
+        }
         my $docs = [
-          map { 
-            my $doc = $cdb->newDoc( $_->{id} );
-            $doc->retrieve;
-            $doc->data->{js};
+          map {
+            my $id = $_->{id};
+            my $obj = eval { JSON::XS::decode_json( $tx->cache->get( $id ) ) };
+            if (!$obj) {
+              my $doc = $cdb->newDoc( $_->{id} );
+              $doc->retrieve;
+              $obj = $doc->data->{js};
+              $tx->cache->set( $id, JSON::XS::encode_json( $obj ) );
+            }
+            $obj;
           } @{ $cdb->tempView({ 'map' => $mv })->{rows} } 
         ];
         return $docs;
@@ -34,7 +45,11 @@ sub provides {
         my $type = shift;
         my $id   = shift;
         
-        my $doc = $cdb->newDoc( $class->cid( $type, $id ) );
+        my $cid = $class->cid( $type, $id );
+
+        $tx->cache->delete( $cid );
+
+        my $doc = $cdb->newDoc( $cid );
         $doc->retrieve;
         $doc->delete;
       },
@@ -46,13 +61,17 @@ sub provides {
         
         if (!$type) { die "no type"; }
         if (!$id)   { die "no id"; }
-        
-        my $cid = $class->cid( $type, $id );
-        print "CouchDB ID for type $type & id $id is $cid\n";
-        my $doc = $cdb->newDoc( $cid );
-        $doc->retrieve;
 
-        return $doc->data->{js};
+        my $cid = $class->cid( $type, $id );
+
+        my $obj = eval { JSON::XS::decode_json( $tx->cache->get( $cid ) ) };
+        if ( !$obj ) {
+          my $doc = $cdb->newDoc( $cid );
+          $doc->retrieve;
+          $obj = $doc->data->{js};
+          $tx->cache->set( $cid,  JSON::XS::encode_json( $obj ) );
+        }
+        return $obj;
       },
   
       ## Saves a document to CouchDB
@@ -61,15 +80,18 @@ sub provides {
         my $obj   = shift;
         my $trans = shift;
         
-        print "GOING TO SAVE OBJECT $obj OF TYPE $type\n";
-        
         if (!$obj->{id}) { die "no id" }
         
         my $id  = $class->cid( $type, $obj->{id} );
+        my $saved = $tx->cache->set( $id, JSON::XS::encode_json( $obj ) );
+        if ( $saved && $trans ) {
+          return;
+        }
+
         my $doc = $cdb->newDoc( $id );      
+        $doc->data->{meta} = { type => $type };
         eval {
           $doc->retrieve;
-          $doc->data->{meta} = { type => $type };
           $doc->data->{js} = $obj;
           $doc->update;
         };
@@ -125,7 +147,8 @@ function() {
   $text .= $type . "') && this.matches( ";
   
   $text .= JSON::XS::encode_json( $template );
-  $text .= q!) ) this.emit();}!;
+  $text .= q!) ) this.emit();
+  }!;
 
   return $text;
 }
