@@ -53,19 +53,16 @@ sub _strip_hostname {
 ##
 sub extensions {
   my $self = shift;
-  return (
-    'RSP::Extension::HTTP',
-    'RSP::Extension::CouchDB',
-    'RSP::Extension::HTTPRequest',
-    'RSP::Extension::JSONEncoder',
-    'RSP::Extension::FileSystem',
-    'RSP::Extension::OpenId',
-    'RSP::Extension::UUID',
-    'RSP::Extension::Import',
-    'RSP::Extension::Console',
-    'RSP::Extension::Template',
-    'RSP::Extension::MD5',
-  );
+  my $global = RSP->config->{_}->{extensions} || '';
+  my $host   = RSP->config->{ $self->hostname }->{extensions} || '';
+  
+  return map {
+    s/\s//g;
+    'RSP::Extension::' . $_ 
+  } (
+     split(/,/, $global),
+     split(/,/, $global)
+    );
 }
 
 ##
