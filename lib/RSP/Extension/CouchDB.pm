@@ -29,6 +29,7 @@ sub provides {
         } else {
           $mv = qq!function() { if ( this.meta.type == '$type' ) emit(this.js.id, this) }!;
         }
+                
         my $docs = [
           map {
             my $id = $_->{id};
@@ -71,10 +72,15 @@ sub provides {
 
         my $obj = eval { JSON::XS::decode_json( $tx->cache->get( $cid ) ) };
         if ( !$obj ) {
-          my $doc = $cdb->newDoc( $cid );
-          $doc->retrieve;
-          $obj = $doc->data->{js};
-          $tx->cache->set( $cid,  JSON::XS::encode_json( $obj ) );
+          eval {
+            my $doc = $cdb->newDoc( $cid );
+            $doc->retrieve;
+            $obj = $doc->data->{js};
+            $tx->cache->set( $cid,  JSON::XS::encode_json( $obj ) );
+          };
+          if ($@) {
+            return undef;
+          }
         }
         return $obj;
       },
@@ -103,6 +109,7 @@ sub provides {
         if ($@) {
           $doc->data->{js} = $obj;
           $doc->create;
+          return 1;
         }
       }
 

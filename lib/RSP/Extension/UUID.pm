@@ -5,13 +5,13 @@ use warnings;
 
 use Data::UUID::Base64URLSafe;
 
-my $ug = Data::UUID::Base64URLSafe->new;
 
 sub provides {
   my $class = shift;
   my $tx    = shift;
   return {
     'uuid' => sub {
+      my $ug = Data::UUID::Base64URLSafe->new;
       return $ug->create_b64_urlsafe;
     }
   }

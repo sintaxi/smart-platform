@@ -27,6 +27,9 @@ sub jsclass {
 
 sub properties {
   return {
+    'contents' => {
+      'getter' => 'RSP::JSObject::File::as_string',
+    },
     'filename' => {
       'getter' => 'RSP::JSObject::File::filename',
     },

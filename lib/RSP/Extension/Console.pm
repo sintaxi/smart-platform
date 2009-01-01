@@ -9,7 +9,8 @@ sub provides {
   return {
     'console' => {
       'log' => sub {
-        print @_, "\n";
+        my $mesg = shift;
+        $tx->log( $mesg );
       }
     }
   }

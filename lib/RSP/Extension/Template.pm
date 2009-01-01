@@ -46,8 +46,13 @@ sub provides {
         RECURSION => 1
       );
       my $buf;
+            
+      $tt->process($procstring, $templateData, \$buf) or do { 
+        my $error = $tt->error;
+        warn("template threw an error: $error");
+        die $error;
+      };
       
-      $tt->process($procstring, $templateData, \$buf) or die $tt->error;
       return $buf;    
     }
   };

@@ -187,4 +187,10 @@ sub host {
 }
 
 
+sub log {
+  my $self = shift;
+  my $mesg = shift;
+  print STDERR sprintf("[%s] %s\n", $self->host->hostname, $mesg);
+}
+
 1;

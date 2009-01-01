@@ -23,8 +23,8 @@ sub provides {
       'query'  => $tx->request->query_params->to_hash,
       'body'   => $tx->request->body_params->to_hash,
       'headers'=> { map {
-        ( $_ => $tx->request->headers->header($_) )
-      } $tx->request->headers->names },
+        ( lc($_) => $tx->request->headers->header($_) )
+      } @{$tx->request->headers->names} },
       'queryString' => $tx->request->url->query->to_string,
       'cookies' => $cookies,
       'content' => $tx->request->body
