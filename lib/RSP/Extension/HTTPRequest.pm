@@ -5,6 +5,12 @@ use warnings;
 
 use base 'RSP::Extension';
 
+sub should_provide {
+  my $class = shift;
+  my $tx    = shift;
+  return $tx->isa('RSP::Transaction::Mojo');
+}
+
 sub provides {
   my $class = shift;
   my $tx    = shift;
