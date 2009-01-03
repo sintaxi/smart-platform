@@ -88,8 +88,8 @@ sub bootstrap {
 ## this handles all the javascripty stuff
 ##
 sub run {
-  my $self = shift;
-  my $response = $self->context->call('main');
+  my $self = shift;  
+  my $response = $self->context->call( $self->host->entrypoint, @_ );
   if ($@) {
     if (ref($@) && ref($@) eq "JavaScript::Error") {
       die "$@->{message} at $@->{fileName} line $@->{lineNumber}";

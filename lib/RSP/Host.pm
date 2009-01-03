@@ -47,6 +47,14 @@ sub _strip_hostname {
 }
 
 ##
+## this is the name of the function that we call in the JavaScript
+##  context to start the transaction processing
+##
+sub entrypoint {
+  return "main";
+}
+
+##
 ## returns a list of extensions that need 
 ## to be built into the client.  This is 
 ## a list of classnames.
