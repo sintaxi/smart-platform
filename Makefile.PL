@@ -9,7 +9,7 @@ WriteMakefile(
     'Hash::Merge::Simple' => 0,
     'Template'            => 0,
     'Digest::MD5'         => 0,
-    'JSON:XS'             => 0,
+    'JSON::XS'             => 0,
     'Scalar::Util'        => 0,
     'JavaScript'          => 0,
     'Module::Load'        => 0,
@@ -18,6 +18,6 @@ WriteMakefile(
     'CouchDB::Client'       => 0,
     'Net::OpenID::Consumer' => 0,
     'Class::Accessor::Chained' => 0,
-    'Data::UUID::Base64URLSafe' = 0,
+    'Data::UUID::Base64URLSafe' => 0,
   }
 );
