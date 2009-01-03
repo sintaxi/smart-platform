@@ -28,9 +28,23 @@ sub new {
 
 sub process_transaction {
   my $self = shift;
+
+  $self->assert_transaction_ready;
+
   $self->bootstrap;
   $self->run;
   $self->end;
+}
+
+sub assert_transaction_ready {
+  my $self = shift;
+  if (!$self->request) {
+    die "no request object";
+  }
+  
+  if (!$self->response) {
+    die "no response object";
+  }  
 }
 
 sub cache {
