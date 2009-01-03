@@ -7,14 +7,16 @@ use base 'Mojo';
 our $VERSION = '1.2';
 use Application::Config 'rsp.conf';
 
+use RSP::Transaction::Mojo;
+
 sub handler {
   my ($self, $tx) = @_;
 
   my $request = $tx->req;  
   eval {
-    my $rsptx = RSP::Transaction->new
-                                ->request( $tx->req )
-                                ->response( $tx->res );
+    my $rsptx = RSP::Transaction::Mojo->new
+                                      ->request( $tx->req )
+                                      ->response( $tx->res );
 
     $rsptx->process_transaction;
     $rsptx = undef;

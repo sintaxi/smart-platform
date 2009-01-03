@@ -6,7 +6,6 @@ use warnings;
 use lib 'lib';
 
 use RSP;
-use RSP::Transaction;
 use Mojo::Server::Daemon::Prefork;
 
 my $server = Mojo::Server::Daemon::Prefork->new;
