@@ -6,6 +6,9 @@ use warnings;
 use Digest::MD5 'md5_hex';
 use CouchDB::Client;
 
+use base 'RSP::Extension';
+
+
 sub provides {
   my $class = shift;
   my $tx    = shift;

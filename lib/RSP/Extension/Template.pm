@@ -20,6 +20,8 @@ use warnings;
 use Template;
 use Scalar::Util qw( blessed );
 
+use base 'RSP::Extension';
+
 use Template::Plugins;
 
 $Template::Plugins::STD_PLUGINS = {};

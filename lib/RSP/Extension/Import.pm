@@ -3,6 +3,8 @@ package RSP::Extension::Import;
 use strict;
 use warnings;
 
+use base 'RSP::Extension';
+
 sub provides {
   my $class = shift;
   my $tx    = shift;

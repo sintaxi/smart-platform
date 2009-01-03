@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Data::UUID::Base64URLSafe;
-
+use base 'RSP::Extension';
 
 sub provides {
   my $class = shift;

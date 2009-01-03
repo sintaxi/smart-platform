@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use Digest::MD5 qw( md5_hex md5_base64 );
 
+use base 'RSP::Extension';
+
 sub provides {
   my $class = shift;
   my $tx    = shift;

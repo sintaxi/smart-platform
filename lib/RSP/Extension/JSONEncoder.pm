@@ -5,6 +5,8 @@ use warnings;
 
 use JSON::XS;
 
+use base 'RSP::Extension';
+
 my $encoders = [
   JSON::XS->new->utf8,
   JSON::XS->new->utf8->pretty

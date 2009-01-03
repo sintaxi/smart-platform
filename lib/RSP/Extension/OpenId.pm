@@ -21,12 +21,12 @@ use LWPx::ParanoidAgent;
 use Net::OpenID::Consumer;
 use Data::UUID::Base64URLSafe;
 
+use base 'RSP::Extension';
+
 sub decode_uri {
   my $stringtodecode=shift;
-  print "ENCODED STRING IS $stringtodecode\n";
   $stringtodecode =~ tr/\+/ /s;
   $stringtodecode =~ s/%([A-F0-9][A-F0-9])/pack("C", hex())/ieg;
-  print "DECODED STRING IS $stringtodecode\n";
   return $stringtodecode;
 }
 

@@ -20,6 +20,9 @@ use warnings;
 use LWPx::ParanoidAgent;
 use HTTP::Request;
 
+use base 'RSP::Extension';
+
+
 our $VERSION = '1.00';
 
 sub provides {

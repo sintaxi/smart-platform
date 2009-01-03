@@ -144,15 +144,17 @@ sub import_extensions {
   my $self = shift;
   my $sys  = {};
   foreach my $ext (@_) {
-    Module::Load::load( $ext );
+    eval { Module::Load::load( $ext ); };
     if (!$@) {
-      my $provided = $ext->provides( $self );
-      if ( !$provided ) {
-        warn "no extensions provided by $ext";
-      } elsif (!ref($provided) || ref($provided) ne 'HASH') {
-        warn "invalid extension provided by $ext";
-      } else {
-        $sys = merge $provided, $sys;
+      if ( $ext->should_provide( $self ) ) {
+        my $provided = $ext->provides( $self );
+        if ( !$provided ) {
+          warn "no extensions provided by $ext";
+        } elsif (!ref($provided) || ref($provided) ne 'HASH') {
+          warn "invalid extension provided by $ext";
+        } else {
+          $sys = merge $provided, $sys;
+        }
       }
     } else {
       warn "couldn't load extension $ext: $@\n";

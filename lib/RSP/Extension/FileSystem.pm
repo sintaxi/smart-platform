@@ -20,6 +20,8 @@ use warnings;
 use Scalar::Util 'weaken';
 use RSP::JSObject::File;
 
+use base 'RSP::Extension';
+
 sub provides {
   my $class = shift;
   my $tx    = shift;
