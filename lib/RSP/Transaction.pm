@@ -11,7 +11,7 @@ use base 'Class::Accessor::Chained';
 
 our $HOST_CLASS = RSP->config->{_}->{host_class} || 'RSP::Host';
 
-__PACKAGE__->mk_accessors(qw( request response runtime context ));
+__PACKAGE__->mk_accessors(qw( request response runtime context hostclass ));
 
 sub import {
   Module::Load::load( $HOST_CLASS );
@@ -24,6 +24,13 @@ sub new {
   my $class = shift;
   my $self  = {};
   bless $self, $class;
+}
+
+sub process_transaction {
+  my $self = shift;
+  $self->bootstrap;
+  $self->run;
+  $self->end;
 }
 
 sub cache {
@@ -179,8 +186,9 @@ sub import_extensions {
 sub host {
   my $self = shift;  
   
+  my $host_class = $self->hostclass || $HOST_CLASS;
   if ( !$self->{host} ) {
-    $self->{host} = $HOST_CLASS->new( $self ); 
+    $self->{host} = $host_class->new( $self ); 
   }
   
   return $self->{host};

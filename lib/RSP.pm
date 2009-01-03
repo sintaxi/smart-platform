@@ -15,9 +15,8 @@ sub handler {
     my $rsptx = RSP::Transaction->new
                                 ->request( $tx->req )
                                 ->response( $tx->res );
-    $rsptx->bootstrap;
-    $rsptx->run;
-    $rsptx->end;
+
+    $rsptx->process_transaction;
     $rsptx = undef;
   };
   if ($@) {
