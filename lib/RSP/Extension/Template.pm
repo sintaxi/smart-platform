@@ -43,7 +43,7 @@ sub provides {
       }
       my $tt = Template->new( 
         PLUGINS => {},
-        INCLUDE_PATH => [ $tx->host->webroot ],
+        INCLUDE_PATH => [ $tx->host->web ],
         ABSOLUTE     => 1,
         RECURSION => 1
       );

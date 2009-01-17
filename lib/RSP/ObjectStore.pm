@@ -44,6 +44,15 @@ sub new {
   bless $self, $class;
 }
 
+sub dbfile {
+  my $self = shift;
+  if ($self->{dbfile}) { return $self->{dbfile} }
+  return File::Spec->catfile(
+    RSP->root,
+    RSP->config->{db}->{Root}
+  );
+}
+
 sub log {
   my $self = shift;
   if ( $self->{transaction} ) {
@@ -55,7 +64,7 @@ sub log {
 
 sub storage {
   my $self = shift;
-  $self->{storage} ||= RSP::ObjectStore::Storage->new( $self->{dbfile} || $self->{transaction}->dbfile );
+  $self->{storage} ||= RSP::ObjectStore::Storage->new( $self->dbfile );
 }
 
 sub cache {

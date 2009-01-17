@@ -3,6 +3,7 @@ package RSP;
 use strict;
 use warnings;
 
+use Cwd;
 use base 'Mojo';
 our $VERSION = '1.2';
 use Application::Config 'rsp.conf';
@@ -27,6 +28,15 @@ sub handler {
     $tx->res->body($@);
   }
   return $tx;
+}
+
+sub root {
+  my $self = shift;
+  my $root = $self->config->{_}->{root};
+  if (!$root) {
+    $root = getcwd();
+  }
+  return $root;
 }
 
 1;

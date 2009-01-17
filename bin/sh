@@ -4,18 +4,10 @@ use lib 'lib';
 
 use RSP;
 use Term::ReadLine;
-use RSP::Transaction;
-use Mojo::Message::Request;
+use RSP::Transaction::Shell;
 
-my $tx = RSP::Transaction->new;
-my $req = Mojo::Message::Request->new;
-if (!$req) { print "couldn't create the request\n"; }
-$req->headers( Mojo::Headers->new );
-$req->headers->add_line('Host', $ARGV[0] );
-$tx->request( $req );
-
-
-
+my $tx = RSP::Transaction::Shell->new;
+$tx->hostname( $ARGV[0] );
 $tx->bootstrap();
 
 my $trl = Term::ReadLine->new('rsp shell');
@@ -31,5 +23,6 @@ while( defined( $_ = $trl->readline( $prompt ) ) ) {
   $trl->addhistory($_);
 }
 
+$tx->end;
 
 
