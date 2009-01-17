@@ -6,6 +6,8 @@ use warnings;
 use MIME::Types;
 my $mimetypes = MIME::Types->new;
 
+use base 'RSP::JSObject';
+
 sub new {
   my $class = shift;
   my $fn    = shift;
@@ -15,6 +17,42 @@ sub new {
   }
   my $self  = { file => $fn, original => $jsface };
   bless $self, $class;
+}
+
+sub jsclass {
+  return "RealFile";
+}
+
+sub properties {
+  return {
+    'contents' => {
+      'getter' => 'RSP::JSObject::File::as_string',
+    },
+    'filename' => {
+      'getter' => 'RSP::JSObject::File::filename',
+    },
+    'mimetype' => {
+      'getter' => 'RSP::JSObject::File::mimetype',
+    },
+    'size' => {
+      'getter' => 'RSP::JSObject::File::size',
+    },
+    'mtime' =>{
+      'getter' => 'RSP::JSObject::File::mtime',
+    },
+    'exists' => {
+      'getter' => 'RSP::JSObject::File::exists',
+    }
+  };
+}
+
+sub methods {
+  return {
+    'toString' => sub {
+      my $self = shift;
+      return $self->filename;
+    }
+  };
 }
 
 sub as_function {

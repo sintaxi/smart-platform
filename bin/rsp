@@ -1,0 +1,13 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use lib 'lib';
+
+use RSP;
+use Mojo::Server::Daemon::Prefork;
+
+my $server = Mojo::Server::Daemon::Prefork->new;
+$server->app_class( 'RSP' );
+$server->run;

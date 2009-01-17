@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+
+use lib 'lib';
+
+use RSP;
+use Term::ReadLine;
+use RSP::Transaction;
+use Mojo::Message::Request;
+
+my $tx = RSP::Transaction->new;
+my $req = Mojo::Message::Request->new;
+if (!$req) { print "couldn't create the request\n"; }
+$req->headers( Mojo::Headers->new );
+$req->headers->add_line('Host', $ARGV[0] );
+$tx->request( $req );
+
+
+
+$tx->bootstrap();
+
+my $trl = Term::ReadLine->new('rsp shell');
+my $prompt = '$ ';
+while( defined( $_ = $trl->readline( $prompt ) ) ) {
+  my $res = $tx->context->eval( $_ );
+  warn( $@ ) if $@;
+  if ( !ref( $res ) ) {
+    print $res, "\n";
+  } else {
+    use Data::Dumper; print Dumper( $res );
+  }
+  $trl->addhistory($_);
+}
+
+
+

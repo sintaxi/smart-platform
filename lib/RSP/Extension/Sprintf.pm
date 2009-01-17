@@ -3,16 +3,17 @@ package RSP::Extension::Sprintf;
 use strict;
 use warnings;
 
-sub provide {
+use base 'RSP::Extension';
+
+sub provides {
   my $class = shift;
   my $tx    = shift;
-  return (
+  return {
     'sprintf' => sub {
-      my $pattern = shift;
-      my $result = sprintf($pattern, @_);
-      return $result;
+      my $mesg = shift;
+      return sprintf( $mesg, @_ );
     }
-  );
+  }
 }
 
 1;
