@@ -3,6 +3,7 @@ package RSP::JSObject::File;
 use strict;
 use warnings;
 
+use Carp qw( croak );
 use MIME::Types;
 my $mimetypes = MIME::Types->new;
 
@@ -14,7 +15,7 @@ sub new {
   my $jsface = shift; ## javascript facing name
 
   if (!-e $fn) {
-    die "$!: $jsface";
+    croak "$!: $jsface";
   }
   my $self  = { file => $fn, original => $jsface };
 

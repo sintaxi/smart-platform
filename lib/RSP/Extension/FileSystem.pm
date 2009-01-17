@@ -33,6 +33,7 @@ sub provides {
       'get' => sub {
         my $rsp_path  = shift;
         my $real_path = $tx->host->file( 'web', $rsp_path );
+        $tx->log( "RSP Path is $rsp_path, real path is $real_path" );
         return RSP::JSObject::File->new( $real_path, $rsp_path );
       }
     }

@@ -94,17 +94,15 @@ sub cleanup_js_environment {
 sub bootstrap {
   my $self = shift;
   
-  $self->initialize_js_environment;    
+  $self->initialize_js_environment;
   $self->import_extensions( $self->host->extensions );
   
   my $bs_file = $self->host->bootstrap_file;
   if (!-e $bs_file) {
-    print "could not bootstrap $bs_file\n";
     die $!;
   }
   $self->context->eval_file( $bs_file );
   if ($@) {
-    print "could not bootstrap $bs_file\n";
     die $@;
   }
 }

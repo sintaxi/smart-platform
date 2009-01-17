@@ -3,6 +3,7 @@ package RSP::Host;
 use strict;
 use warnings;
 
+use Cwd;
 use File::Spec;
 use base 'Class::Accessor::Chained';
 
@@ -19,7 +20,7 @@ sub new {
 
   bless $self, $class;
   
-  $self->hostname( $self->_strip_hostname( $tx->request->headers->host ) );
+  $self->hostname( $tx->hostname );
 
   return $self;
 }
@@ -36,15 +37,7 @@ sub namespace {
   return $self->{namespace};
 }
 
-##
-## strips the port number of a hostname, if there is one
-##
-sub _strip_hostname {
-  my $self = shift;
-  my $host = shift || die "no hostname";
-  $host =~ s/:.+$//;
-  return $host;
-}
+
 
 ##
 ## this is the name of the function that we call in the JavaScript
@@ -78,7 +71,7 @@ sub extensions {
 ##
 sub bootstrap_file {
   my $self = shift;
-  File::Spec->catfile( $self->coderoot, "bootstrap.js" );
+  File::Spec->catfile( $self->code, "bootstrap.js" );
 }
 
 ##
@@ -90,16 +83,16 @@ sub file {
   my $self = shift;
   my $type = shift;
   my $path = shift;
-  my $meth = $type . "root";
+  my $meth = $type;
   File::Spec->catfile( $self->$meth, $path );
 }
 
 ##
 ## returns the root of the code directory
 ##
-sub coderoot {
+sub code {
   my $self = shift;
-  File::Spec->catfile( $self->hostroot, "js" );
+  File::Spec->catfile( $self->root, "js" );
 }
 
 ##
@@ -109,24 +102,28 @@ sub coderoot {
 ##
 sub actual_host {
   my $self = shift;  
-  return RSP->config->{$self->hostname}->{alternate} || $self->hostname;  
+  my $cnf  = RSP->config->{ $self->hostname };
+  if ($cnf && exists $cnf->{alternate}) {
+    return $cnf->{alternate};
+  }
+  return $self->hostname;  
 }
 
 ##
 ## returns the root of the web directory
 ##
-sub webroot {
+sub web {
   my $self = shift;
-  File::Spec->catfile( $self->hostroot, "web" );
+  File::Spec->catfile( $self->root, "web" );
 }
 
 ##
 ## returns the root of the host
 ##
-sub hostroot {
+sub root {
   my $self = shift;
-  my $root = RSP->config->{rsp}->{hostroot};
-  File::Spec->catfile( $root, $self->actual_host );
+  my $host_root = RSP->config->{rsp}->{hostroot};
+  File::Spec->catfile( RSP->root, $host_root, $self->actual_host );
 }
 
 ##
