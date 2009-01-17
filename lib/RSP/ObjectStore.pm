@@ -49,7 +49,9 @@ sub dbfile {
   if ($self->{dbfile}) { return $self->{dbfile} }
   return File::Spec->catfile(
     RSP->root,
-    RSP->config->{db}->{Root}
+    RSP->config->{db}->{root},
+    $self->{transaction}->host->hostname,
+    'data.db'
   );
 }
 

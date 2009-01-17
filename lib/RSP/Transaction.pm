@@ -99,7 +99,7 @@ sub bootstrap {
   
   my $bs_file = $self->host->bootstrap_file;
   if (!-e $bs_file) {
-    die $!;
+    die "$!: $bs_file";
   }
   $self->context->eval_file( $bs_file );
   if ($@) {
