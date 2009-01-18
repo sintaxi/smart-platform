@@ -72,7 +72,7 @@ sub storage {
 sub cache {
   my $self = shift;
   my $type = shift;
-  Cache::Memcached::Fast->new( { servers => $mdservers, namespace => join(":", $self->{transaction}->host, $type) . ':' } );
+  $self->{transaction}->cache;
 }
 
 sub write {

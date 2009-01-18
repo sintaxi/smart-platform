@@ -10,9 +10,7 @@ sub hostname {
   my $self = shift;
   if (!$self->{hostname}) {
     my $mapmeth = RSP->config->{mojo}->{hostmapper} || 'hostname';
-    print "using $mapmeth to determine application hostname\n";
     $self->{hostname} = RSP::Transaction::Mojo::HostMap->$mapmeth( $self->request );
-    print "hostname is $self->{hostname}\n";
   }
   return $self->{hostname};
 }
