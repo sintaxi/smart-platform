@@ -30,7 +30,7 @@ my $namespace = "test-datastore.reasonablysmart.com";
 use_ok( 'RSP::Datastore' );
 ok( my $ds  = RSP::Datastore->new );
 ok( my $ns  = $ds->create_namespace( $namespace ), "created a namespace");
-ok( my $ns2 = $ds->namespace( $namespace ), "got a namespace");
+ok( my $ns2 = $ds->get_namespace( $namespace ), "got a namespace");
 ok( $ns->write( $type, $objects->[0] ), "write an object" );
 is( $ns->read( $type, $objects->[0]->{id} ), $objects->[0], "read an object");
 ok( $ns2->remove( $type, $objects->[0]->{id} ), "removed an object" );
