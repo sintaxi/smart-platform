@@ -86,6 +86,7 @@ sub create_type_table {
     confess $@;
   }
   $self->conn->commit;
+  $self->tables->{$type} = 1;
 }
 
 sub tables_for_type {

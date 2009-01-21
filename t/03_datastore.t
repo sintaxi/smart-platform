@@ -106,5 +106,12 @@ foreach my $obj (@$objects) {
   is( scalar( @$results ), 2, "got two results back");
 }
 
+## finally, we need to test storing another type of object now...
+{
+  ok( $ns->write("foo", { id => 'afooobject', 'bar' => 'baz' }), "wrote it");
+  ok( $ns->read("foo", "afooobject"), "read it");
+  ok( $ns->remove("foo", "afooobject"), "removed it");
+}
+
 ok( $ds->remove_namespace( $namespace ), "removing namespace");
 
