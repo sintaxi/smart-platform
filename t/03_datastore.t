@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More 'no_plan';
+use Test::More tests => 42;
 
 my $objects = [
 	       {
@@ -111,6 +111,14 @@ foreach my $obj (@$objects) {
   ok( $ns->write("foo", { id => 'afooobject', 'bar' => 'baz' }), "wrote it");
   ok( $ns->read("foo", "afooobject"), "read it");
   ok( $ns->remove("foo", "afooobject"), "removed it");
+}
+
+## and is storing and retrieving deep objects working...
+{
+  my $o = { id => 'anotherfoo', 'bar' => [ 'baz' ] };
+  ok( $ns->write("foo", $o ), "wrote it");
+  ok( my $dbo = $ns->read("foo", "anotherfoo"), "read it");
+  is_deeply( $dbo, $o );
 }
 
 ok( $ds->remove_namespace( $namespace ), "removing namespace");

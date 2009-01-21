@@ -179,7 +179,11 @@ sub read_one_object {
       if (!$obj) {
 	$obj = { id => $id };
       }
-      $obj->{$row->{ propname }} = $row->{propval};
+      my $val = $row->{propval};
+      if ($table =~ /_o$/) {
+	$val = JSON::XS::decode_json( $val );
+      }
+      $obj->{$row->{ propname }} = $val;
     }
     $sth->finish;
   }
