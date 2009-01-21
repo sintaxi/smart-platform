@@ -76,10 +76,21 @@ sub create_type_table {
   $self->conn->begin_work;
   eval {
     $self->conn->do("CREATE TABLE ${type}_ids ( id CHAR(50) PRIMARY KEY NOT NULL ) TYPE=InnoDB");
-    $self->conn->do("CREATE TABLE ${type}_prop_i ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval LONG ) TYPE=InnoDB");
+
+    $self->conn->do("CREATE TABLE ${type}_prop_i ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval BIGINT ) TYPE=InnoDB");
+    $self->conn->do("CREATE INDEX ${type}_prop_i_id_propname ON ${type}_prop_i (id, propname)");
+    $self->conn->do("CREATE INDEX ${type}_prop_i_propname_propval ON ${type}_prop_i (propname, propval)");
+
     $self->conn->do("CREATE TABLE ${type}_prop_f ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval FLOAT ) TYPE=InnoDB");
+    $self->conn->do("CREATE INDEX ${type}_prop_f_id_propname ON ${type}_prop_f (id, propname)");
+    $self->conn->do("CREATE INDEX ${type}_prop_f_propname_propval ON ${type}_prop_f (propname, propval)");
+
     $self->conn->do("CREATE TABLE ${type}_prop_s ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval VARCHAR(256) ) TYPE=InnoDB");
+    $self->conn->do("CREATE INDEX ${type}_prop_s_id_propname ON ${type}_prop_s (id, propname)");
+    $self->conn->do("CREATE INDEX ${type}_prop_s_propname_propval ON ${type}_prop_s (propname, propval)");
+
     $self->conn->do("CREATE TABLE ${type}_prop_o ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval TEXT ) TYPE=InnoDB");
+    $self->conn->do("CREATE INDEX ${type}_prop_o_id_propname ON ${type}_prop_o (id, propname)");
   };
   if ($@) {
     $self->conn->rollback;
