@@ -52,13 +52,12 @@ foreach my $obj (@$objects) {
 }
 
 ## simplest query possible, key = value
-SKIP: {
-  skip "not yet implemented", 5;
+{
   ok( my $results = $ns->query( $type, { name => 'katrien' } ), "queried for objects");
   isa_ok( $results, 'ARRAY', "results is an array" );
   is( scalar( @$results ), 1, "got one result back");
   is( $results->[0]->{id}, "katrien", "object is the correct one (by id)" );
-  is_deeply( $results->[0], $objects->[1], "object is the same as what was stored" ); 
+  is_deeply( $results->[0], $objects->[2], "object is the same as what was stored" ); 
 }
 
 ## slightly more complicated, age > n

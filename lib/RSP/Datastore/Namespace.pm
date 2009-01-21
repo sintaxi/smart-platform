@@ -9,8 +9,9 @@ use RSP::Transaction;
 use DBI;
 use JSON::XS;
 use SQL::Abstract;
+use Set::Object;
 use Carp qw( confess );
-use Scalar::Util::Numeric qw( isint isfloat );
+use Scalar::Util::Numeric qw( isnum isint isfloat );
 use Digest::MD5 qw( md5_hex );
 use base 'Class::Accessor::Chained';
 
@@ -216,16 +217,9 @@ sub write_one_object {
       next if $key eq 'id';
       my $val = $obj->{$key};
       my $svals = { id => $id,  propname => $key, propval => $val };
-      my $table;
-      if ( isint( $val ) ) {
-	$table = sprintf("%s_prop_i", $type);
-      } elsif ( isfloat( $val ) ) {
-	$table = sprintf("%s_prop_f", $type);
-      } elsif ( ref( $val ) ) {
-	$table = sprintf("%s_prop_o", $type);
+      my $table = $self->table_for( $type, value => $val );      
+      if ( $self->valtype( $val ) eq 'ref' ) {
 	$svals->{propval} = JSON::XS::encode_json( $val );
-      } else {
-	$table = sprintf("%s_prop_s", $type);		
       }
       my ($stmt, @bind) = $self->sa->insert($table, $svals);
       my $sth = $self->conn->prepare_cached($stmt);      
@@ -250,8 +244,89 @@ sub delete {
 
 sub query {
   my $self  = shift;
+  my $type  = shift;
   my $query = shift;
   my $opts  = shift;
+  if (!$type) {
+    confess "no type";
+  }
+  if (!$query) {
+    confess "no query";
+  }
+  my @objects;
+
+  my @sets;
+  foreach my $key (keys %$query) {
+    my $set = $self->query_one_set( $type, $key, $query->{$key} );    
+    push @sets, $set unless $set->is_null;
+  }
+  if (!@sets) {
+    return [];
+  } else {
+    my $set = shift @sets;
+    while( my $nset = shift @sets ) {
+      $set = $set->intersection( $nset );
+    }
+    foreach my $id (@$set) {
+      push @objects, $self->read( $type, $id );
+    }
+  }
+
+  return \@objects;
+}
+
+sub table_for {
+  my $self  = shift;
+  my $type  = shift;
+  my $args  = { @_ };
+  if (!$args->{value}) { 
+    confess "no value";
+  }
+  my $dt = $self->valtype( $args->{value} );
+  my $lookup = {
+		'int' => 'i',
+		'float' => 'f',
+		'ref' => 'o',
+		'string' => 's'
+	       };
+  return "${type}_prop_$lookup->{$dt}";
+}
+
+sub valtype {
+  my $self = shift;
+  my $val  = shift;
+  if ( ref( $val ) ) {
+    return 'ref';
+  } elsif (isnum($val)) {
+    if ( isint( $val ) ) {
+      return 'int';
+    } else {
+      return 'float';
+    }
+  } else {
+    return 'string';
+  }
+}
+
+sub query_one_set {
+  my $self = shift;
+  my $type = shift;
+  my $key  = shift;
+  my $val  = shift;
+  my $table;
+  if (!ref($val)) {
+    my $set  = Set::Object->new;
+    $table = $self->table_for( $type, value => $val );
+    my ($stmt, @bind) = $self->sa->select($table, ['id'], { propname => $key, propval => $val });
+    my $sth = $self->conn->prepare_cached( $stmt );
+    $sth->execute(@bind);
+    while( my $row = $sth->fetchrow_arrayref() ) {
+      $set->insert($row->[0]);
+    }
+    $sth->finish;
+#    print "SET FROM QUERY $stmt (@bind) IS ", join(", ", @$set), "\n";
+    return $set;
+  }
 }
 
 1;
