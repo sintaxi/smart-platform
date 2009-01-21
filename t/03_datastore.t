@@ -38,7 +38,7 @@ ok( my $ns  = $ds->create_namespace( $namespace ), "created a namespace");
 ok( my $ns2 = $ds->get_namespace( $namespace ), "got a namespace");
 ok( $ns->write( $type, $objects->[0] ), "write an object" );
 
-use Data::Dumper; diag(Dumper($objects->[0]));
+#use Data::Dumper; diag(Dumper($objects->[0]));
 is_deeply( $ns->read( $type, $objects->[0]->{id} ), $objects->[0], "read an object");
 ok( $ns2->remove( $type, $objects->[0]->{id} ), "removed an object" );
 eval {
@@ -46,7 +46,7 @@ eval {
 };
 ok( $@, "reading an object that does not exists throws an error");
 
-diag("writing multiple objects");
+#diag("writing multiple objects");
 foreach my $obj (@$objects) {
   $ns->write( $type, $obj );
 }
@@ -84,21 +84,26 @@ foreach my $obj (@$objects) {
   is( scalar(@$results), 2, "got two results back");
 }
 
+# one more query test.  Querying with nothing should yeild everything.
+{
+  ok( my $results = $ns->query( $type, {} ), "blank query");
+  isa_ok( $results, 'ARRAY', "results is an array");
+  is( scalar(@$results), 3, "got all three objects back" );
+}
+
 ## we should get things out in the same order they went in
-SKIP: {
-  skip "not yet implemented", 4;
+{
   ok( my $results = $ns->query( $type, {}, { sort => 'name' } ), "sort by key" );
   isa_ok( $results, 'ARRAY', "results is an array" );
-  is( scalar( @$results ), 3, "got one result back");
+  is( scalar( @$results ), 3, "got three result back");
   is_deeply( $results, $objects, "order is correct")
 }
 
 ## test limiting to a count.  In this case, 2.
-SKIP: {
-  skip "not yet implemented", 3;
+{
   ok( my $results = $ns->query( $type, {}, { limit => 2 } ), "limit to n" );
   isa_ok( $results, 'ARRAY', "results is an array" );
-  is( scalar( @$results ), 2, "got one result back");
+  is( scalar( @$results ), 2, "got two results back");
 }
 
 ok( $ds->remove_namespace( $namespace ), "removing namespace");

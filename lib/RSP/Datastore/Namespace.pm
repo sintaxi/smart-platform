@@ -265,9 +265,16 @@ sub query {
   }
   my @objects;
   if (ref($query) eq 'HASH') {
-    my $set = $self->query_set_and( $type, $query );
-    foreach my $id (@$set) {
-      push @objects, $self->read( $type, $id );
+    if (keys %$query == 0) {
+      my $set = $self->all_ids_for( $type );
+      foreach my $id (@$set) {
+	push @objects, $self->read($type, $id);
+      }
+    } else {
+      my $set = $self->query_set_and( $type, $query );
+      foreach my $id (@$set) {
+	push @objects, $self->read( $type, $id );
+      }
     }
   } elsif (ref($query) eq 'ARRAY') {
     my $set = $self->query_set_or( $type, $query );
@@ -281,7 +288,27 @@ sub query {
     @objects = sort { $a->{ $opts->{sort} } cmp $b->{ $opts->{sort } } } @objects;
   }
 
+  if ( $opts->{limit} ) {
+#    print "LIMITING ARRAY TO $opts->{limit}\n";
+#    print "STARTING SIZE IS ", scalar(@objects), "\n";
+    splice(@objects, 0, $opts->{limit} - 1 );
+  }
+
   return \@objects;
+}
+
+sub all_ids_for {
+  my $self = shift;
+  my $type = shift;
+  my ($stmt, @bind) = $self->sa->select("${type}_ids", ['id']);
+  my $sth = $self->conn->prepare_cached($stmt);
+  $sth->execute( @bind );
+  my $set = Set::Object->new;
+  while( my $row = $sth->fetchrow_arrayref() ) {
+    $set->insert( $row->[0] );
+  }
+  $sth->finish;
+  return $set;
 }
 
 sub query_set_or {
@@ -397,7 +424,7 @@ sub query_one_set {
     $set->insert($row->[0]);
   }
   $sth->finish;
-  print "SET FROM QUERY $stmt (@bind) IS ", join(", ", @$set), "\n";
+#  print "SET FROM QUERY $stmt (@bind) IS ", join(", ", @$set), "\n";
   return $set;
 }
 
