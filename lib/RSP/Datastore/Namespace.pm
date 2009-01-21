@@ -75,10 +75,11 @@ sub create_type_table {
   }
   $self->conn->begin_work;
   eval {
-    $self->conn->do("CREATE TABLE ${type}_prop_i ( id CHAR(50), propname CHAR(25), propval LONG ) TYPE=InnoDB");
-    $self->conn->do("CREATE TABLE ${type}_prop_f ( id CHAR(50), propname CHAR(25), propval FLOAT ) TYPE=InnoDB");
-    $self->conn->do("CREATE TABLE ${type}_prop_s ( id CHAR(50), propname CHAR(25), propval VARCHAR(256) ) TYPE=InnoDB");
-    $self->conn->do("CREATE TABLE ${type}_prop_o ( id CHAR(50), propname CHAR(25), propval TEXT ) TYPE=InnoDB");
+    $self->conn->do("CREATE TABLE ${type}_ids ( id CHAR(50) PRIMARY KEY NOT NULL ) TYPE=InnoDB");
+    $self->conn->do("CREATE TABLE ${type}_prop_i ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval LONG ) TYPE=InnoDB");
+    $self->conn->do("CREATE TABLE ${type}_prop_f ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval FLOAT ) TYPE=InnoDB");
+    $self->conn->do("CREATE TABLE ${type}_prop_s ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval VARCHAR(256) ) TYPE=InnoDB");
+    $self->conn->do("CREATE TABLE ${type}_prop_o ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval TEXT ) TYPE=InnoDB");
   };
   if ($@) {
     $self->conn->rollback;
@@ -134,6 +135,10 @@ sub _remove_in_transaction {
     $sth->execute( @bind );
     $sth->finish;
   }
+  my ($stmt, @bind) = $self->sa->delete("${type}_ids", $where);
+  my $sth = $self->conn->prepare_cached( $stmt );
+  $sth->execute(@bind);
+  $sth->finish;
   $self->cache->remove( "${type}:${id}" );
 }
 
@@ -224,7 +229,12 @@ sub write_one_object {
       my ($stmt, @bind) = $self->sa->insert($table, $svals);
       my $sth = $self->conn->prepare_cached($stmt);      
       $sth->execute(@bind);
+      $sth->finish;
     }
+    my ($stmt, @bind) = $self->sa->insert("${type}_ids", { id => $id });
+    my $sth = $self->conn->prepare_cached($stmt);
+    $sth->execute(@bind);
+    $sth->finish;
     $self->cache->set( "${type}:${id}", JSON::XS::encode_json( $obj ) );
   };
   if ($@) {
@@ -246,7 +256,7 @@ sub query {
   my $self  = shift;
   my $type  = shift;
   my $query = shift;
-  my $opts  = shift;
+  my $opts  = shift || {};
   if (!$type) {
     confess "no type";
   }
@@ -264,6 +274,11 @@ sub query {
     foreach my $id (@$set) {
       push @objects, $self->read( $type, $id );
     }
+  }
+
+  if ( $opts->{sort} ) {
+    ## okay, time to get sorting...
+    @objects = sort { $a->{ $opts->{sort} } cmp $b->{ $opts->{sort } } } @objects;
   }
 
   return \@objects;
