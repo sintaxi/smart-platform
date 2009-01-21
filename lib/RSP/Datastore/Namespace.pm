@@ -28,7 +28,8 @@ sub create {
   my $ns    = shift;
   my $self  = $class->new;
   $self->namespace( md5_hex($ns) );
-  $self->conn( DBI->connect_cached("dbi:mysql:host=localhost","root","autoload") );
+  my $host = RSP->config->{mysql}->{host};
+  $self->conn( DBI->connect_cached("dbi:mysql:host=$host", RSP->config->{mysql}->{username}, RSP->config->{mysql}->{password}) );
   $self->conn->do("create database " . $self->namespace);  
   $self->conn->do("use " . $self->namespace);
 
@@ -42,7 +43,8 @@ sub connect {
   my $self  = $class->new;
   my $db    = md5_hex($ns);
   $self->namespace( $db );
-  $self->conn( DBI->connect_cached("dbi:mysql:host=localhost;database=$db","root","autoload") );
+  my $host = RSP->config->{mysql}->{host};
+  $self->conn( DBI->connect_cached("dbi:mysql:host=$host;database=$db", RSP->config->{mysql}->{username}, RSP->config->{mysql}->{password}) );
 
   $self->cache( RSP::Transaction->cache( $ns ) );
 
