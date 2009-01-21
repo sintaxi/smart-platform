@@ -53,16 +53,29 @@ sub assert_transaction_ready {
 
 sub cache {
   my $self = shift;
+  if (ref( $self )) {
+    ## if we've got a memcache, return it
+    if ( $self->{cache} ) {
+      return $self->{cache};
+    }
+    
+    $self->{cache} = Cache::Memcached::Fast->new({  
+      'servers'           => [ { map { ('address' => $_) } split(',', RSP->config->{cache}->{servers}) } ],
+      'namespace'         => $self->host->hostname . ':', ## append the colon for easy reading in mcinsight...
+    });
 
-  ## if we've got a memcache, return it
-  if ( $self->{cache} ) {
     return $self->{cache};
+  } else {
+    my $hostname = shift;
+    if (!$hostname) {
+      die "no hostname";
+    }
+    ## this is from an static call, so we need to construct every time, not ideal, but we can live with it
+    return Cache::Memcached::Fast->new({
+      'servers'           => [ { map { ('address' => $_) } split(',', RSP->config->{cache}->{servers}) } ],
+      'namespace'         => $hostname . ':', ## append the colon for easy reading in mcinsight... 
+    });
   }
-
-  $self->{cache} = Cache::Memcached::Fast->new({  
-    'servers'           => [ { map { ('address' => $_) } split(',', RSP->config->{cache}->{servers}) } ],
-    'namespace'         => $self->host->hostname . ':', ## append the colon for easy reading in mcinsight...
-  });
 }
 
 ##

@@ -3,6 +3,9 @@ package RSP::Datastore::Namespace;
 use strict;
 use warnings;
 
+use RSP;
+use RSP::Transaction;
+
 use DBI;
 use JSON::XS;
 use SQL::Abstract;
@@ -11,7 +14,7 @@ use Scalar::Util::Numeric qw( isint isfloat );
 use Digest::MD5 qw( md5_hex );
 use base 'Class::Accessor::Chained';
 
-__PACKAGE__->mk_accessors(qw(namespace conn tables sa));
+__PACKAGE__->mk_accessors(qw(namespace conn tables sa cache));
 
 sub new {
   my $class = shift;
@@ -27,6 +30,8 @@ sub create {
   $self->conn( DBI->connect_cached("dbi:mysql:host=localhost","root","autoload") );
   $self->conn->do("create database " . $self->namespace);  
   $self->conn->do("use " . $self->namespace);
+
+  $self->cache( RSP::Transaction->cache( $ns ) );
   return $self;
 }
 
@@ -37,6 +42,9 @@ sub connect {
   my $db    = md5_hex($ns);
   $self->namespace( $db );
   $self->conn( DBI->connect_cached("dbi:mysql:host=localhost;database=$db","root","autoload") );
+
+  $self->cache( RSP::Transaction->cache( $ns ) );
+
   return $self;
 }
 
@@ -125,6 +133,7 @@ sub _remove_in_transaction {
     $sth->execute( @bind );
     $sth->finish;
   }
+  $self->cache->remove( "${type}:${id}" );
 }
 
 sub read {
@@ -148,6 +157,10 @@ sub read_one_object {
   my $self = shift;
   my $type = shift;
   my $id   = shift;
+  my $cached = eval { JSON::XS::decode_json( $self->cache->get( "${type}:${id}" ) ); };
+  if ( $cached ) {
+    return $cached;
+  }
   my $fields = ['propname', 'propval'];
   my $where  = { id => $id };
   my $obj;
@@ -198,6 +211,7 @@ sub write_one_object {
   $self->conn->begin_work;
   eval {
     my $fields = [ 'id', 'propame', 'propval' ];
+    $self->_remove_in_transaction( $type, $id );
     foreach my $key (keys %$obj) {
       next if $key eq 'id';
       my $val = $obj->{$key};
@@ -217,6 +231,7 @@ sub write_one_object {
       my $sth = $self->conn->prepare_cached($stmt);      
       $sth->execute(@bind);
     }
+    $self->cache->set( "${type}:${id}", JSON::XS::encode_json( $obj ) );
   };
   if ($@) {
     $self->conn->rollback;
