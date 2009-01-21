@@ -248,4 +248,10 @@ sub delete {
   $self->conn->do("DROP DATABASE " . $self->namespace);
 }
 
+sub query {
+  my $self  = shift;
+  my $query = shift;
+  my $opts  = shift;
+}
+
 1;
