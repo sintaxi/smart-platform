@@ -254,25 +254,65 @@ sub query {
     confess "no query";
   }
   my @objects;
-
-  my @sets;
-  foreach my $key (keys %$query) {
-    my $set = $self->query_one_set( $type, $key, $query->{$key} );    
-    push @sets, $set unless $set->is_null;
-  }
-  if (!@sets) {
-    return [];
-  } else {
-    my $set = shift @sets;
-    while( my $nset = shift @sets ) {
-      $set = $set->intersection( $nset );
+  if (ref($query) eq 'HASH') {
+    my $set = $self->query_set_and( $type, $query );
+    foreach my $id (@$set) {
+      push @objects, $self->read( $type, $id );
     }
+  } elsif (ref($query) eq 'ARRAY') {
+    my $set = $self->query_set_or( $type, $query );
     foreach my $id (@$set) {
       push @objects, $self->read( $type, $id );
     }
   }
 
   return \@objects;
+}
+
+sub query_set_or {
+  my $self = shift;
+  my $type = shift;
+  my $query = shift;
+
+  my @sets;
+  foreach my $val (@$query) {
+    my @qsets = $self->query_set_and( $type, $val );
+    if (@qsets) {
+      push @sets, @qsets;
+    }
+  }
+  if (!@sets) {
+    return Set::Object->new;
+  } else {
+    my $set = shift @sets;
+    while( my $nset = shift @sets ) {
+      $set = $set->union( $nset );
+    }
+    return $set;
+  }  
+}
+
+sub query_set_and {
+  my $self = shift;
+  my $type = shift;
+  my $query = shift;
+
+  my @sets;
+  foreach my $key (keys %$query) {
+    my @qsets = $self->query_one_set( $type, $key, $query->{$key} );    
+    if (@qsets) {
+      push @sets, @qsets;
+    }
+  }
+  if (!@sets) {
+    return Set::Object->new;
+  } else {
+    my $set = shift @sets;
+    while( my $nset = shift @sets ) {
+      $set = $set->intersection( $nset );
+    }
+    return $set;
+  }
 }
 
 sub table_for {
@@ -314,19 +354,36 @@ sub query_one_set {
   my $key  = shift;
   my $val  = shift;
   my $table;
-  if (!ref($val)) {
-    my $set  = Set::Object->new;
+  my $set  = Set::Object->new;
+
+  ##
+  ## this is hairy.  we have to figure out what datatype we are querying.
+  ##
+  if ( !ref( $val ) ) {
     $table = $self->table_for( $type, value => $val );
-    my ($stmt, @bind) = $self->sa->select($table, ['id'], { propname => $key, propval => $val });
-    my $sth = $self->conn->prepare_cached( $stmt );
-    $sth->execute(@bind);
-    while( my $row = $sth->fetchrow_arrayref() ) {
-      $set->insert($row->[0]);
+  } else {
+    if ( ref($val) eq 'HASH' && keys %$val == 1) {
+      my ($hval) = values (%$val);
+      $table = $self->table_for( $type, value => $hval );
+    } elsif( ref($val) eq 'ARRAY' ) {
+      ## at this point it's easier to duck and recursively query...
+      my @csets = ();
+      foreach my $elem (@$val) {
+	push @csets, $self->query_set_and( $type, { $key => $elem } );
+      }
+      return @csets;
     }
-    $sth->finish;
-#    print "SET FROM QUERY $stmt (@bind) IS ", join(", ", @$set), "\n";
-    return $set;
   }
+
+  my ($stmt, @bind) = $self->sa->select($table, ['id'], { propname => $key, propval => $val });
+  my $sth = $self->conn->prepare_cached( $stmt );
+  $sth->execute(@bind);
+  while( my $row = $sth->fetchrow_arrayref() ) {
+    $set->insert($row->[0]);
+  }
+  $sth->finish;
+  print "SET FROM QUERY $stmt (@bind) IS ", join(", ", @$set), "\n";
+  return $set;
 }
 
 1;

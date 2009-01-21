@@ -61,28 +61,25 @@ foreach my $obj (@$objects) {
 }
 
 ## slightly more complicated, age > n
-SKIP: {
-  skip "not yet implemented", 5;
-  ok( my $results = $ns->query( $type, { age => [ '>', 30 ] } ), "queried for objects");
+{
+  ok( my $results = $ns->query( $type, { age => { '>' => 30 } } ), "queried for objects");
   isa_ok( $results, 'ARRAY', "results is an array" );
   is( scalar( @$results ), 1, "got one result back");
   is( $results->[0]->{id}, "katrien", "object is the correct one (by id)" );
-  is_deeply( $results->[0], $objects->[1], "object is the same as what was stored" );
+  is_deeply( $results->[0], $objects->[2], "object is the same as what was stored" );
 }
 
 ## much more complicated age > n && age < n
-SKIP: {
-  skip "not yet implemented", 4;
-  ok( my $results = $ns->query( $type, { age => [ [ '>', 10 ], [ '<', 32 ] ] } ), "complex query");
+{
+  ok( my $results = $ns->query( $type, { age => [ { '>', 10 }, { '<', 32 } ] } ), "complex query");
   isa_ok( $results, 'ARRAY', "results is an array");
   is( scalar( @$results ), 1, "got one result back");
   is( $results->[0]->{id}, "james", "object is the correct one (by id)" );  
 }
 
 ## finally, this should be an "OR"
-SKIP: {
-  skip "not yet implemented", 3;
-  ok( my $results = $ns->query( $type, [ { id => 'james' }, { id => 'hudson' } ] ), "OR query" );
+{
+  ok( my $results = $ns->query( $type, [ { name => 'James' }, { name => 'Hudson' } ] ), "OR query" );
   isa_ok( $results, "ARRAY", "results is an array");
   is( scalar(@$results), 2, "got two results back");
 }
