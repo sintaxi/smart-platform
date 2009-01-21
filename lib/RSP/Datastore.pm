@@ -29,4 +29,13 @@ sub get_namespace {
   return RSP::Datastore::Namespace->connect( $ns );
 }
 
+sub remove_namespace {
+  my $self = shift;
+  my $ns   = shift;
+  if (!$ns) {
+    die "no namespace";
+  }
+  RSP::Datastore::Namespace->delete( $ns );
+}
+
 1;

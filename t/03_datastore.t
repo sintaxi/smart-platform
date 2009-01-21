@@ -24,15 +24,22 @@ my $objects = [
 	       }
 	      ];
 
+#use Data::Dumper;
+#diag(Dumper($objects));
+
 my $type      = "person";
 my $namespace = "test-datastore.reasonablysmart.com";
 
 use_ok( 'RSP::Datastore' );
 ok( my $ds  = RSP::Datastore->new );
 ok( my $ns  = $ds->create_namespace( $namespace ), "created a namespace");
+#ok( $ns->finish );
+#ok( $ns = $ds->get_namespace( $namespace ), "got a namespace");
 ok( my $ns2 = $ds->get_namespace( $namespace ), "got a namespace");
 ok( $ns->write( $type, $objects->[0] ), "write an object" );
-is( $ns->read( $type, $objects->[0]->{id} ), $objects->[0], "read an object");
+
+use Data::Dumper; diag(Dumper($objects->[0]));
+is_deeply( $ns->read( $type, $objects->[0]->{id} ), $objects->[0], "read an object");
 ok( $ns2->remove( $type, $objects->[0]->{id} ), "removed an object" );
 eval {
   $ns->read( $type, $objects->[0]->{id} );
@@ -45,7 +52,8 @@ foreach my $obj (@$objects) {
 }
 
 ## simplest query possible, key = value
-{
+SKIP: {
+  skip "not yet implemented", 5;
   ok( my $results = $ns->query( $type, { name => 'katrien' } ), "queried for objects");
   isa_ok( $results, 'ARRAY', "results is an array" );
   is( scalar( @$results ), 1, "got one result back");
@@ -54,7 +62,8 @@ foreach my $obj (@$objects) {
 }
 
 ## slightly more complicated, age > n
-{
+SKIP: {
+  skip "not yet implemented", 5;
   ok( my $results = $ns->query( $type, { age => [ '>', 30 ] } ), "queried for objects");
   isa_ok( $results, 'ARRAY', "results is an array" );
   is( scalar( @$results ), 1, "got one result back");
@@ -63,7 +72,8 @@ foreach my $obj (@$objects) {
 }
 
 ## much more complicated age > n && age < n
-{
+SKIP: {
+  skip "not yet implemented", 4;
   ok( my $results = $ns->query( $type, { age => [ [ '>', 10 ], [ '<', 32 ] ] } ), "complex query");
   isa_ok( $results, 'ARRAY', "results is an array");
   is( scalar( @$results ), 1, "got one result back");
@@ -71,14 +81,16 @@ foreach my $obj (@$objects) {
 }
 
 ## finally, this should be an "OR"
-{
+SKIP: {
+  skip "not yet implemented", 3;
   ok( my $results = $ns->query( $type, [ { id => 'james' }, { id => 'hudson' } ] ), "OR query" );
   isa_ok( $results, "ARRAY", "results is an array");
   is( scalar(@$results), 2, "got two results back");
 }
 
 ## we should get things out in the same order they went in
-{
+SKIP: {
+  skip "not yet implemented", 4;
   ok( my $results = $ns->query( $type, {}, { sort => 'name' } ), "sort by key" );
   isa_ok( $results, 'ARRAY', "results is an array" );
   is( scalar( @$results ), 3, "got one result back");
@@ -86,10 +98,12 @@ foreach my $obj (@$objects) {
 }
 
 ## test limiting to a count.  In this case, 2.
-{
+SKIP: {
+  skip "not yet implemented", 3;
   ok( my $results = $ns->query( $type, {}, { limit => 2 } ), "limit to n" );
   isa_ok( $results, 'ARRAY', "results is an array" );
   is( scalar( @$results ), 2, "got one result back");
 }
 
+ok( $ds->remove_namespace( $namespace ), "removing namespace");
 

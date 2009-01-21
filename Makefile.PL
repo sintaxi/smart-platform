@@ -20,6 +20,7 @@ WriteMakefile(
     'Net::OpenID::Consumer' => 0,
     'Class::Accessor::Chained' => 0,
     'Data::UUID::Base64URLSafe' => 0,
+    'Scalar::Util::Numeric' => 0,
   }
 );
 
