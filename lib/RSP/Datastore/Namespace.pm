@@ -10,7 +10,7 @@ use DBI;
 use JSON::XS;
 use SQL::Abstract;
 use Set::Object;
-use Carp qw( confess );
+use Carp qw( confess cluck );
 use Scalar::Util::Numeric qw( isnum isint isfloat );
 use Digest::MD5 qw( md5_hex );
 use base 'Class::Accessor::Chained';
@@ -53,7 +53,7 @@ sub connect {
 
 sub has_type_table {
   my $self = shift;
-  my $type = shift;
+  my $type = lc(shift);
   if (!$type) {
     confess "no type";
   }
@@ -71,27 +71,27 @@ sub has_type_table {
 
 sub create_type_table {
   my $self = shift;
-  my $type = shift;
+  my $type = lc(shift);
   if (!$type) {
     confess "no type";
   }
   $self->conn->begin_work;
   eval {
-    $self->conn->do("CREATE TABLE ${type}_ids ( id CHAR(50) PRIMARY KEY NOT NULL ) TYPE=InnoDB");
+    $self->conn->do("CREATE TABLE ${type}_ids ( id CHAR(50) ) TYPE=InnoDB");
 
-    $self->conn->do("CREATE TABLE ${type}_prop_i ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval BIGINT ) TYPE=InnoDB");
+    $self->conn->do("CREATE TABLE ${type}_prop_i ( id CHAR(50), propname CHAR(25), propval BIGINT ) TYPE=InnoDB");
     $self->conn->do("CREATE INDEX ${type}_prop_i_id_propname ON ${type}_prop_i (id, propname)");
     $self->conn->do("CREATE INDEX ${type}_prop_i_propname_propval ON ${type}_prop_i (propname, propval)");
 
-    $self->conn->do("CREATE TABLE ${type}_prop_f ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval FLOAT ) TYPE=InnoDB");
+    $self->conn->do("CREATE TABLE ${type}_prop_f ( id CHAR(50), propname CHAR(25), propval FLOAT ) TYPE=InnoDB");
     $self->conn->do("CREATE INDEX ${type}_prop_f_id_propname ON ${type}_prop_f (id, propname)");
     $self->conn->do("CREATE INDEX ${type}_prop_f_propname_propval ON ${type}_prop_f (propname, propval)");
 
-    $self->conn->do("CREATE TABLE ${type}_prop_s ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval VARCHAR(256) ) TYPE=InnoDB");
+    $self->conn->do("CREATE TABLE ${type}_prop_s ( id CHAR(50), propname CHAR(25), propval VARCHAR(256) ) TYPE=InnoDB");
     $self->conn->do("CREATE INDEX ${type}_prop_s_id_propname ON ${type}_prop_s (id, propname)");
     $self->conn->do("CREATE INDEX ${type}_prop_s_propname_propval ON ${type}_prop_s (propname, propval)");
 
-    $self->conn->do("CREATE TABLE ${type}_prop_o ( id CHAR(50) PRIMARY KEY NOT NULL, propname CHAR(25), propval TEXT ) TYPE=InnoDB");
+    $self->conn->do("CREATE TABLE ${type}_prop_o ( id CHAR(50), propname CHAR(25), propval TEXT ) TYPE=InnoDB");
     $self->conn->do("CREATE INDEX ${type}_prop_o_id_propname ON ${type}_prop_o (id, propname)");
   };
   if ($@) {
@@ -104,7 +104,7 @@ sub create_type_table {
 
 sub tables_for_type {
   my $self = shift;
-  my $type = shift;
+  my $type = lc(shift);
   if (!$type) {
     confess "no type";
   }
@@ -118,7 +118,7 @@ sub tables_for_type {
 
 sub remove {
   my $self = shift;
-  my $type = shift;
+  my $type = lc(shift);
   my $id   = shift;
   if (!$type) {
     confess "no type";
@@ -129,6 +129,9 @@ sub remove {
   $self->conn->begin_work;
   eval {
     $self->_remove_in_transaction( $type, $id );
+    if ( !$self->cache->remove( "${type}:${id}" ) ) {
+      cluck "Could not remove from cache!";
+    }
   };
   if ($@) {
     $self->conn->rollback;
@@ -140,7 +143,7 @@ sub remove {
 
 sub _remove_in_transaction {
   my $self = shift;
-  my $type = shift;
+  my $type = lc(shift);
   my $id   = shift;
   my $where  = { id => $id };
   foreach my $table ($self->tables_for_type( $type )) {
@@ -153,12 +156,11 @@ sub _remove_in_transaction {
   my $sth = $self->conn->prepare_cached( $stmt );
   $sth->execute(@bind);
   $sth->finish;
-  $self->cache->remove( "${type}:${id}" );
 }
 
 sub read {
   my $self = shift;
-  my $type = shift;
+  my $type = lc(shift);
   my $id   = shift;
   if (!$type) {
     confess "no type";
@@ -166,23 +168,66 @@ sub read {
   if (!$id) {
     confess "no id";
   }
+
+  print "Trying to read( $type, $id )\n";
+  my $cache  = $self->cache->get( "${type}:${id}" );
+  print "cache json is '$cache'\n";
+  if ( $cache ) {
+    print "Cache hit\n";
+    my $cached = eval { JSON::XS::decode_json( $cache ); };
+    use Data::Dumper; print Dumper( $cached );
+    return $cached;
+  } else {
+    print "cache miss, or problem with the JSON\n";
+  }
+
   if (!$self->has_type_table( $type )) {
     confess "no such type";
   } else {
-    return $self->read_one_object( $type, $id );
+    my $obj = $self->read_one_object( $type, $id );
+    if (!$obj) {
+      confess "no such object";
+    } 
+    return $obj;
   }  
 }
 
+sub encode_output_val {
+  my $self  = shift;
+  my $table = shift;
+  my $val   = shift;
+  my $chr   = substr($table, -1, 1 );
+#  print "CHR FOR $val is $chr\n";
+  if ( $chr eq 'o' ) {
+    return JSON::XS::decode_json( $val );
+  } elsif ( $chr eq 'i' ) {
+    return 0 + $val;
+  } elsif ( $chr eq 'f' ) {
+    return 0.00 + $val;
+  } elsif ( $chr eq 's' ) {
+    return "".$val;
+  } else {
+    return $val;
+  }
+}
+
+
 sub read_one_object {
   my $self = shift;
-  my $type = shift;
+  my $type = lc(shift);
   my $id   = shift;
-  my $cached = eval { JSON::XS::decode_json( $self->cache->get( "${type}:${id}" ) ); };
-  if ( $cached ) {
-    return $cached;
-  }
   my $fields = ['propname', 'propval'];
   my $where  = { id => $id };
+  
+  #my ($stmt, @bind) = $self->sa->select("${type}_ids", ['count(id)'], $where);
+  #my $sth = $self->conn->prepare($stmt);
+  #$sth->execute(@bind);
+  #if ( $sth->fetchrow_arrayref()->[0] < 1 ) {
+  #  confess "no such object";
+  #} else {
+  #  print "we have ids!";
+  #}
+  
   my $obj;
   foreach my $table ($self->tables_for_type( $type )) {
     my ($stmt, @bind) = $self->sa->select($table, $fields, $where);
@@ -190,43 +235,58 @@ sub read_one_object {
     $sth->execute( @bind );
     while( my $row = $sth->fetchrow_hashref() ) {
       if (!$obj) {
-	$obj = { id => $id };
+        $obj = { id => $id };
       }
-      my $val = $row->{propval};
-      if ($table =~ /_o$/) {
-	$val = JSON::XS::decode_json( $val );
-      }
-      $obj->{$row->{ propname }} = $val;
+      my $val = $row->{propval};            
+      $obj->{ $row->{ propname } } = $self->encode_output_val( $table, $val );
     }
     $sth->finish;
   }
   if (!$obj) {
     confess "no such object $type:$id";
   }
+  my $json = JSON::XS::encode_json( $obj );
+  print "writing json to cache ($type, $id)\n$json\n";
+  $self->cache->set( "${type}:${id}",  $json );
   return $obj;
 }
 
 sub write {
-  my $self = shift;
-  my $type = shift;
-  my $obj  = shift;
+  my $self  = shift;
+  my $type  = shift;
+  my $obj   = shift;
+  my $trans = shift;
   if (!$type) {
     confess "no type";
   }
   if (!$obj) {
     confess "no object";
   }
+  
+  print "Writing $type object $obj->{id}\n";
+  use Data::Dumper; print Dumper( $obj );
+  
+  if ( $trans ) {
+    my $id = $obj->{id};
+    if ( $self->cache->set( "${type}:${id}", JSON::XS::encode_json( $obj ) ) ) {
+      return 1;
+    } else {
+      print "problem writing to transient store, falling back to persistant\n";
+    }
+  }
+  
   if (!$self->has_type_table( $type )) {
     $self->create_type_table( $type );
     $self->write_one_object( $type, $obj );
   } else {
     $self->write_one_object( $type, $obj );
   }
+  return 1;
 }
 
 sub write_one_object {
   my $self = shift;
-  my $type = shift;
+  my $type = lc(shift);
   my $obj  = shift;
   my $id   = $obj->{id};
   if (!$id) {
@@ -242,7 +302,7 @@ sub write_one_object {
       my $svals = { id => $id,  propname => $key, propval => $val };
       my $table = $self->table_for( $type, value => $val );      
       if ( $self->valtype( $val ) eq 'ref' ) {
-	$svals->{propval} = JSON::XS::encode_json( $val );
+        $svals->{propval} = JSON::XS::encode_json( $val );
       }
       my ($stmt, @bind) = $self->sa->insert($table, $svals);
       my $sth = $self->conn->prepare_cached($stmt);      
@@ -253,7 +313,9 @@ sub write_one_object {
     my $sth = $self->conn->prepare_cached($stmt);
     $sth->execute(@bind);
     $sth->finish;
-    $self->cache->set( "${type}:${id}", JSON::XS::encode_json( $obj ) );
+    if (!$self->cache->set( "${type}:${id}", JSON::XS::encode_json( $obj ) )) {
+      print "For some reason we couldn't set the cache\n";
+    } 
   };
   if ($@) {
     $self->conn->rollback;
@@ -317,11 +379,17 @@ sub query {
 
 sub all_ids_for {
   my $self = shift;
-  my $type = shift;
+  my $type = lc(shift);
+
+  my $set = Set::Object->new;
+  
+  if ( !$self->has_type_table( $type ) ) {
+    return $set;
+  } 
+  
   my ($stmt, @bind) = $self->sa->select("${type}_ids", ['id']);
   my $sth = $self->conn->prepare_cached($stmt);
   $sth->execute( @bind );
-  my $set = Set::Object->new;
   while( my $row = $sth->fetchrow_arrayref() ) {
     $set->insert( $row->[0] );
   }
@@ -331,7 +399,7 @@ sub all_ids_for {
 
 sub query_set_or {
   my $self = shift;
-  my $type = shift;
+  my $type = lc(shift);
   my $query = shift;
 
   my @sets;
@@ -354,7 +422,7 @@ sub query_set_or {
 
 sub query_set_and {
   my $self = shift;
-  my $type = shift;
+  my $type = lc(shift);
   my $query = shift;
 
   my @sets;
@@ -379,7 +447,7 @@ sub table_for {
   my $self  = shift;
   my $type  = shift;
   my $args  = { @_ };
-  if (!$args->{value}) { 
+  if (!exists $args->{value}) { 
     confess "no value";
   }
   my $dt = $self->valtype( $args->{value} );
@@ -388,7 +456,7 @@ sub table_for {
 		'float' => 'f',
 		'ref' => 'o',
 		'string' => 's'
-	       };
+  };
   return "${type}_prop_$lookup->{$dt}";
 }
 
@@ -410,7 +478,7 @@ sub valtype {
 
 sub query_one_set {
   my $self = shift;
-  my $type = shift;
+  my $type = lc(shift);
   my $key  = shift;
   my $val  = shift;
   my $table;

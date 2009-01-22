@@ -3,24 +3,24 @@
 use strict;
 use warnings;
 
-use Test::More tests => 42;
+use Test::More tests => 43;
 
 my $objects = [
 	       {
-		'id' => 'hudson',
-		'name' => 'Hudson',
-		'age'  => 1.5,
+          'id' => 'hudson', 
+          'name' => 'Hudson',
+          'age'  => 1.5,
 	       },
 	       {
-		'id' => 'james',
-		'name' => 'James',
-		'age'  => 29,
+          'id' => 'james',
+          'name' => 'James',
+          'age'  => 29,
 		
 	       },
 	       {
-		'id'   => 'katrien',
-		'name' => 'Katrien',
-		'age'  => 32,
+          'id'   => 'katrien',
+          'name' => 'Katrien',
+          'age'  => 32,
 	       }
 	      ];
 
@@ -33,19 +33,25 @@ my $namespace = "test-datastore.reasonablysmart.com";
 use_ok( 'RSP::Datastore' );
 ok( my $ds  = RSP::Datastore->new );
 ok( my $ns  = $ds->create_namespace( $namespace ), "created a namespace");
+diag( $ns->namespace );
 #ok( $ns->finish );
 #ok( $ns = $ds->get_namespace( $namespace ), "got a namespace");
 ok( my $ns2 = $ds->get_namespace( $namespace ), "got a namespace");
+
 ok( $ns->write( $type, $objects->[0] ), "write an object" );
 
 #use Data::Dumper; diag(Dumper($objects->[0]));
 is_deeply( $ns->read( $type, $objects->[0]->{id} ), $objects->[0], "read an object");
-ok( $ns2->remove( $type, $objects->[0]->{id} ), "removed an object" );
+sleep 1;
+ok( $ns2->remove( $type, 'hudson' ), "removed an object" );
+sleep 3; # are we getting a timing problem?
 eval {
-  $ns->read( $type, $objects->[0]->{id} );
+  my $badresult = $ns->read( $type, 'hudson' );
+  require Data::Dumper;
+  diag( Data::Dumper::Dumper( $badresult ) );
 };
 ok( $@, "reading an object that does not exists throws an error");
-
+#exit;
 #diag("writing multiple objects");
 foreach my $obj (@$objects) {
   $ns->write( $type, $obj );
@@ -119,6 +125,13 @@ foreach my $obj (@$objects) {
   ok( $ns->write("foo", $o ), "wrote it");
   ok( my $dbo = $ns->read("foo", "anotherfoo"), "read it");
   is_deeply( $dbo, $o );
+  ok( $ns->remove("foo",$o->{id}), "removed another foo...");
+}
+
+{
+  foreach my $o (@$objects) {
+    $ns->remove( $type, $o->{id} );
+  }
 }
 
 ok( $ds->remove_namespace( $namespace ), "removing namespace");
