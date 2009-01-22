@@ -167,7 +167,7 @@ sub search {
   
   my $opts  = shift || {};
   
-  my $md = $self->cache( $type );
+  #my $md = $self->cache( $type );
   my $set;
   
   eval {
