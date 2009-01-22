@@ -42,9 +42,9 @@ ok( $ns->write( $type, $objects->[0] ), "write an object" );
 
 #use Data::Dumper; diag(Dumper($objects->[0]));
 is_deeply( $ns->read( $type, $objects->[0]->{id} ), $objects->[0], "read an object");
-sleep 1;
+#sleep 1;
 ok( $ns2->remove( $type, 'hudson' ), "removed an object" );
-sleep 3; # are we getting a timing problem?
+#sleep 3; # are we getting a timing problem?
 eval {
   my $badresult = $ns->read( $type, 'hudson' );
   require Data::Dumper;

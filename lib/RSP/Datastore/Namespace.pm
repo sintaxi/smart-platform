@@ -169,16 +169,10 @@ sub read {
     confess "no id";
   }
 
-  print "Trying to read( $type, $id )\n";
   my $cache  = $self->cache->get( "${type}:${id}" );
-  print "cache json is '$cache'\n";
   if ( $cache ) {
-    print "Cache hit\n";
     my $cached = eval { JSON::XS::decode_json( $cache ); };
-    use Data::Dumper; print Dumper( $cached );
     return $cached;
-  } else {
-    print "cache miss, or problem with the JSON\n";
   }
 
   if (!$self->has_type_table( $type )) {
@@ -262,16 +256,10 @@ sub write {
   if (!$obj) {
     confess "no object";
   }
-  
-  print "Writing $type object $obj->{id}\n";
-  use Data::Dumper; print Dumper( $obj );
-  
   if ( $trans ) {
     my $id = $obj->{id};
     if ( $self->cache->set( "${type}:${id}", JSON::XS::encode_json( $obj ) ) ) {
       return 1;
-    } else {
-      print "problem writing to transient store, falling back to persistant\n";
     }
   }
   
@@ -314,7 +302,7 @@ sub write_one_object {
     $sth->execute(@bind);
     $sth->finish;
     if (!$self->cache->set( "${type}:${id}", JSON::XS::encode_json( $obj ) )) {
-      print "For some reason we couldn't set the cache\n";
+      cluck "we couldn't set the cache\n";
     } 
   };
   if ($@) {
