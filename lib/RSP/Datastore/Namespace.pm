@@ -240,8 +240,9 @@ sub read_one_object {
     confess "no such object $type:$id";
   }
   my $json = JSON::XS::encode_json( $obj );
-  print "writing json to cache ($type, $id)\n$json\n";
-  $self->cache->set( "${type}:${id}",  $json );
+  if (!$self->cache->set( "${type}:${id}",  $json )) {
+    cluck("could not write $type object $id to cache");
+  }
   return $obj;
 }
 
@@ -260,6 +261,8 @@ sub write {
     my $id = $obj->{id};
     if ( $self->cache->set( "${type}:${id}", JSON::XS::encode_json( $obj ) ) ) {
       return 1;
+    } else {
+      cluck("could not write transient $type object $id to cache, falling back to persistent store");
     }
   }
   
@@ -302,7 +305,7 @@ sub write_one_object {
     $sth->execute(@bind);
     $sth->finish;
     if (!$self->cache->set( "${type}:${id}", JSON::XS::encode_json( $obj ) )) {
-      cluck "we couldn't set the cache\n";
+      cluck "could not write $type object $id to cache";
     } 
   };
   if ($@) {
