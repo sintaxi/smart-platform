@@ -44,6 +44,17 @@ sub new {
   bless $self, $class;
 }
 
+sub dbfile {
+  my $self = shift;
+  if ($self->{dbfile}) { return $self->{dbfile} }
+  return File::Spec->catfile(
+    RSP->root,
+    RSP->config->{db}->{root},
+    $self->{transaction}->host->hostname,
+    'data.db'
+  );
+}
+
 sub log {
   my $self = shift;
   if ( $self->{transaction} ) {
@@ -55,13 +66,13 @@ sub log {
 
 sub storage {
   my $self = shift;
-  $self->{storage} ||= RSP::ObjectStore::Storage->new( $self->{dbfile} || $self->{transaction}->dbfile );
+  $self->{storage} ||= RSP::ObjectStore::Storage->new( $self->dbfile );
 }
 
 sub cache {
   my $self = shift;
   my $type = shift;
-  Cache::Memcached::Fast->new( { servers => $mdservers, namespace => join(":", $self->{transaction}->host, $type) . ':' } );
+  $self->{transaction}->cache;
 }
 
 sub write {
@@ -156,7 +167,7 @@ sub search {
   
   my $opts  = shift || {};
   
-  my $md = $self->cache( $type );
+  #my $md = $self->cache( $type );
   my $set;
   
   eval {

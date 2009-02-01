@@ -20,17 +20,18 @@ use warnings;
 use Template;
 use Scalar::Util qw( blessed );
 
+use base 'RSP::Extension';
+
 use Template::Plugins;
 
 $Template::Plugins::STD_PLUGINS = {};
 $Template::Plugins::PLUGIN_BASE = '';
 
-sub provide {
+sub provides {
   my $class = shift;
   my $tx    = shift;
-  return (
+  return {
     'template' => sub {
-      $tx->profile('template');
       my $template = shift;
       my $templateData = shift;
       
@@ -42,17 +43,21 @@ sub provide {
       }
       my $tt = Template->new( 
         PLUGINS => {},
-        INCLUDE_PATH => [ $tx->webroot ],
+        INCLUDE_PATH => [ $tx->host->web ],
         ABSOLUTE     => 1,
         RECURSION => 1
       );
       my $buf;
+            
+      $tt->process($procstring, $templateData, \$buf) or do { 
+        my $error = $tt->error;
+        warn("template threw an error: $error");
+        die $error;
+      };
       
-      $tt->process($procstring, $templateData, \$buf) or warn $tt->error;
-      $tx->profile('template');
       return $buf;    
     }
-  );
+  };
 }
 
 1;
