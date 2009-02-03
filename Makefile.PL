@@ -16,7 +16,6 @@ WriteMakefile(
     'Module::Load'        => 0,
     'LWPx::ParanoidAgent' => 0,
     'Cache::Memcached::Fast' => 0,
-    'CouchDB::Client'       => 0,
     'Net::OpenID::Consumer' => 0,
     'Class::Accessor::Chained' => 0,
     'Data::UUID::Base64URLSafe' => 0,
