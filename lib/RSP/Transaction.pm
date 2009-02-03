@@ -17,6 +17,10 @@ our $HOST_CLASS = RSP->config->{_}->{host_class} || 'RSP::Host';
 
 __PACKAGE__->mk_accessors(qw( request response runtime context hostclass ops ));
 
+##
+## make sure we have the appropriate host class loaded
+##  when we compile.
+##
 sub import {
   my $class = shift;
   Module::Load::load( $HOST_CLASS );
@@ -34,6 +38,9 @@ sub new {
   bless $self, $class;
 }
 
+##
+## process a transaction, and clean it up afterwards
+##
 sub process_transaction {
   my $self = shift;
 
@@ -44,6 +51,10 @@ sub process_transaction {
   $self->end;
 }
 
+##
+## simply asserts we have all the information
+##   to run a transaction.
+##
 sub assert_transaction_ready {
   my $self = shift;
   if (!$self->request) {
@@ -55,9 +66,14 @@ sub assert_transaction_ready {
   }
 }
 
+##
+## sets up the memcache for this request
+##  any use of memcache that is connected via something
+##  other than this method is dangerous and shouldn't be done.
+##
 sub cache {
   my $self = shift;
-  if (ref( $self )) {
+  if (ref( $self )) { ## instance method
     ## if we've got a memcache, return it
     if ( $self->{cache} ) {
       return $self->{cache};
@@ -69,7 +85,7 @@ sub cache {
     });
 
     return $self->{cache};
-  } else {
+  } else { ## static call
     my $hostname = shift;
     if (!$hostname) {
       die "no hostname";
@@ -77,7 +93,7 @@ sub cache {
     ## this is from an static call, so we need to construct every time, not ideal, but we can live with it
     return Cache::Memcached::Fast->new({
       'servers'           => [ { map { ('address' => $_) } split(',', RSP->config->{cache}->{servers}) } ],
-      'namespace'         => $hostname . ':', ## append the colon for easy reading in mcinsight... 
+      'namespace'         => $hostname . ':', ## append the colon for easy reading in mcinsight...
     });
   }
 }
@@ -97,7 +113,7 @@ sub initialize_js_environment {
 					sub {
 					  $self->{ops}++;
 					  if ( $self->ops > $self->host->op_threshold ) {
-					    return 0;
+					    die "op threshold exceeded";
 					  }
 					  return 1;
 					}
@@ -137,7 +153,7 @@ sub bootstrap {
 ## this handles all the javascripty stuff
 ##
 sub run {
-  my $self = shift;  
+  my $self = shift;
   my $response = $self->context->call( $self->host->entrypoint, @_ );
   if ($@) {
     if (ref($@) && ref($@) eq "JavaScript::Error") {
@@ -227,17 +243,20 @@ sub import_extensions {
 ## instantiates or simply returns the RSP::Host object
 ##
 sub host {
-  my $self = shift;  
-  
+  my $self = shift;
+
   ## allow for more "pluggable" host classes...
   my $host_class = $self->hostclass || $HOST_CLASS;
   if ( !$self->{host} ) {
-    $self->{host} = $host_class->new( $self ); 
+    $self->{host} = $host_class->new( $self );
   }
-  
+
   return $self->{host};
 }
 
+##
+## naive logging function that will do for now.
+##
 sub log {
   my $self = shift;
   my $mesg = shift;
