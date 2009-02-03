@@ -108,7 +108,7 @@ sub bootstrap {
   my $self = shift;
   
   $self->initialize_js_environment;
-  $self->import_extensions( $self->host->extensions );
+  $self->import_extensions( $self->context, $self->host->extensions );
   
   my $bs_file = $self->host->bootstrap_file;
   if (!-e $bs_file) {
@@ -153,6 +153,7 @@ sub end {
 ##
 sub import_extensions {
   my $self = shift;
+  my $cx   = shift;
   my $sys  = {};
   foreach my $ext (@_) {
     eval { Module::Load::load( $ext ); };
@@ -171,7 +172,7 @@ sub import_extensions {
       warn "couldn't load extension $ext: $@\n";
     }
   }
-  $self->context->bind_value( 'system' => $sys );
+  $cx->bind_value( 'system' => $sys );
 }
 
 ##
