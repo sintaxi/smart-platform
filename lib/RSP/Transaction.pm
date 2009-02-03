@@ -7,11 +7,15 @@ use JavaScript;
 use Module::Load qw();
 use Cache::Memcached::Fast;
 use Hash::Merge::Simple 'merge';
+
+use RSP::Consumption::Ops;
+use RSP::Consumption::Bandwidth;
+
 use base 'Class::Accessor::Chained';
 
 our $HOST_CLASS = RSP->config->{_}->{host_class} || 'RSP::Host';
 
-__PACKAGE__->mk_accessors(qw( request response runtime context hostclass ));
+__PACKAGE__->mk_accessors(qw( request response runtime context hostclass ops ));
 
 sub import {
   my $class = shift;
@@ -45,10 +49,10 @@ sub assert_transaction_ready {
   if (!$self->request) {
     die "no request object";
   }
-  
+
   if (!$self->response) {
     die "no response object";
-  }  
+  }
 }
 
 sub cache {
@@ -58,7 +62,7 @@ sub cache {
     if ( $self->{cache} ) {
       return $self->{cache};
     }
-    
+
     $self->{cache} = Cache::Memcached::Fast->new({  
       'servers'           => [ { map { ('address' => $_) } split(',', RSP->config->{cache}->{servers}) } ],
       'namespace'         => $self->host->hostname . ':', ## append the colon for easy reading in mcinsight...
@@ -89,6 +93,15 @@ sub initialize_js_environment {
   $self->context( $self->runtime->create_context );
   $self->context->set_version( "1.8" );
   $self->context->toggle_options(qw( xml strict jit ));
+  $self->runtime->set_interrupt_handler(
+					sub {
+					  $self->{ops}++;
+					  if ( $self->ops > $self->host->op_threshold ) {
+					    return 0;
+					  }
+					  return 1;
+					}
+				       );
 }
 
 ##
@@ -106,10 +119,10 @@ sub cleanup_js_environment {
 ##
 sub bootstrap {
   my $self = shift;
-  
+
   $self->initialize_js_environment;
   $self->import_extensions( $self->context, $self->host->extensions );
-  
+
   my $bs_file = $self->host->bootstrap_file;
   if (!-e $bs_file) {
     die "$!: $bs_file";
@@ -142,7 +155,44 @@ sub run {
 ##
 sub end {
   my $self = shift;
+  $self->report_consumption;
   $self->cleanup_js_environment;
+}
+
+##
+## returns the ops consumed by the transaction
+##
+sub ops_consumed {
+  my $self = shift;
+  return $self->ops;
+}
+
+##
+## returns the bandwidth consumed by the transaction
+##
+sub bw_consumed {
+  my $self = shift;
+  return 0;
+}
+
+##
+## writes the consumption report to the queue
+##
+sub report_consumption {
+  my $self = shift;
+
+  my $opreport = RSP::Consumption::Ops->new();
+  $opreport->count( $self->ops_consumed );
+  $opreport->host( $self->hostname );
+  $opreport->uri( $self->request->url->path->to_string );
+
+  my $bwreport = RSP::Consumption::Bandwidth->new();
+  $bwreport->count( $self->bw_consumed );
+  $bwreport->host( $self->hostname );
+  $bwreport->uri( $self->request->url->path->to_string );
+
+  $self->log( $opreport->as_json );
+  $self->log( $bwreport->as_json );
 }
 
 ##
@@ -187,7 +237,6 @@ sub host {
   
   return $self->{host};
 }
-
 
 sub log {
   my $self = shift;

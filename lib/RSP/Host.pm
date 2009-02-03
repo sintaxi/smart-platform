@@ -19,10 +19,18 @@ sub new {
   my $self  = {};
 
   bless $self, $class;
-  
+
   $self->hostname( $tx->hostname );
 
   return $self;
+}
+
+##
+## op thresholds...
+##
+sub op_threshold {
+  my $self = shift;
+  $self->{oplimit} ||= RSP->config->{ $self->hostname }->{oplimit} || RSP->config->{rsp}->{oplimit} || 100_000;
 }
 
 ##
@@ -36,8 +44,6 @@ sub namespace {
   }
   return $self->{namespace};
 }
-
-
 
 ##
 ## this is the name of the function that we call in the JavaScript

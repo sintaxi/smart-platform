@@ -62,4 +62,24 @@ sub encode_response {
   }
 }
 
+##
+## this is mojo specific
+##
+sub bw_consumed {
+  my $self = shift;
+  my $ib = $self->inbound_bw_consumed;
+  my $ob = $self->outbound_bw_consumed;
+  return $ib + $ob;
+}
+
+sub outbound_bw_consumed {
+  my $self = shift;
+  bytes::length( $self->response->build() );
+}
+
+sub inbound_bw_consumed {
+  my $self = shift;
+  bytes::length( $self->request->build() );
+}
+
 1;
