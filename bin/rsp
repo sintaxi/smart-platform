@@ -8,6 +8,8 @@ use lib 'lib';
 use RSP;
 use Mojo::Server::Daemon::Prefork;
 
+$0 = "rsp";
+
 my $server = Mojo::Server::Daemon::Prefork->new();
 if ( RSP->config->{server}->{port} ) {
   $server->port( RSP->config->{server}->{port} );
