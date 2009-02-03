@@ -38,6 +38,9 @@ sub properties {
     'size' => {
       'getter' => 'RSP::JSObject::File::size',
     },
+    'length' => {
+      'getter' => 'RSP::JSObject::File::size',
+    },
     'mtime' =>{
       'getter' => 'RSP::JSObject::File::mtime',
     },
