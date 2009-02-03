@@ -137,8 +137,6 @@ sub run {
   }
 }
 
-
-
 ##
 ## terminates the transaction
 ##
