@@ -13,7 +13,6 @@ use RSP::Transaction::Mojo;
 sub handler {
   my ($self, $tx) = @_;
 
-  my $request = $tx->req;  
   eval {
     my $rsptx = RSP::Transaction::Mojo->new
                                       ->request( $tx->req )
