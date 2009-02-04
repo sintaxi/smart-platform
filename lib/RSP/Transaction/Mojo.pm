@@ -35,7 +35,7 @@ sub encode_response {
       $self->response->headers->add_line( $key, $value );
     }
   }
-  
+
   ##
   ## if we have a simple body string, use that, otherwise
   ##  we need to be a bit more clever

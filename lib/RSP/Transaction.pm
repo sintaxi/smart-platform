@@ -58,10 +58,12 @@ sub process_transaction {
 sub assert_transaction_ready {
   my $self = shift;
   if (!$self->request) {
+    $self->log("no request object");
     die "no request object";
   }
 
   if (!$self->response) {
+    $self->log("no response object");
     die "no response object";
   }
 }
@@ -88,6 +90,7 @@ sub cache {
   } else { ## static call
     my $hostname = shift;
     if (!$hostname) {
+      $self->log("no hostname");
       die "no hostname";
     }
     ## this is from an static call, so we need to construct every time, not ideal, but we can live with it
@@ -113,6 +116,7 @@ sub initialize_js_environment {
 					sub {
 					  $self->{ops}++;
 					  if ( $self->ops > $self->host->op_threshold ) {
+					    $self->log("op threshold exceeded");
 					    die "op threshold exceeded";
 					  }
 					  return 1;
@@ -141,10 +145,12 @@ sub bootstrap {
 
   my $bs_file = $self->host->bootstrap_file;
   if (!-e $bs_file) {
+    $self->log("$!: $bs_file");
     die "$!: $bs_file";
   }
   $self->context->eval_file( $bs_file );
   if ($@) {
+    $self->log($@);
     die $@;
   }
 }
@@ -157,8 +163,10 @@ sub run {
   my $response = $self->context->call( $self->host->entrypoint, @_ );
   if ($@) {
     if (ref($@) && ref($@) eq "JavaScript::Error") {
+      $self->log("$@->{message} at $@->{fileName} line $@->{lineNumber}");
       die "$@->{message} at $@->{fileName} line $@->{lineNumber}";
     } else {
+      $self->log($@);
       die $@;
     }
   } else {
@@ -260,7 +268,8 @@ sub host {
 sub log {
   my $self = shift;
   my $mesg = shift;
-  print STDERR sprintf("[%s] %s\n", $self->host->hostname, $mesg);
+  my ($package, $file, $line) = caller;
+  print STDERR sprintf("[%s:%s:%s] %s\n", $self->host->hostname, $file, $line, $mesg);
 }
 
 1;
