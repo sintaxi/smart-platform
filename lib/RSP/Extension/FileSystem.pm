@@ -10,7 +10,7 @@ sub provides {
   my $class = shift;
   my $tx    = shift;
 
-  RSP::JSObject::File->bind( $tx->context );
+  RSP::JSObject::File->bind( $tx );
   
   return {
     'filesystem' => {

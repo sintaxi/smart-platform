@@ -5,7 +5,8 @@ use warnings;
 
 sub bind {
   my $class = shift;
-  my $cx    = shift or die("no context to bind to");
+  my $tx    = shift;
+  my $cx    = $tx->context;
   $cx->bind_class(
     name => $class->jsclass,
     package => $class,
