@@ -21,7 +21,7 @@ sub new {
 }
 
 sub jsclass {
-  return "RealFile";
+  return "File";
 }
 
 sub properties {
