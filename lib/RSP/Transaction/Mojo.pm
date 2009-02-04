@@ -15,7 +15,10 @@ sub hostname {
   return $self->{hostname};
 }
 
-
+##
+## turns the response from the code into the Mojo::Message object
+## that the web server needs.
+##
 sub encode_response {
   my $self = shift;
   my $response = shift;
