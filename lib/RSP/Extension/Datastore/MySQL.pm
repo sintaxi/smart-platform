@@ -1,4 +1,4 @@
-package RSP::Extension::MySQL;
+package RSP::Extension::DataStore::MySQL;
 
 use strict;
 use warnings;
@@ -12,14 +12,13 @@ sub provides {
   my $self  = bless { transaction => $tx }, $class;
   return {
     'datastore' => {
-    
       'write'  => sub { 
         $_[0] = lc($_[0]);
         return $self->namespace->write( @_ );
        },
       'remove' => sub {
         $_[0] = lc($_[0]);
-        return $self->namespace->remove( @_ );        
+        return $self->namespace->remove( @_ );
        },
       'search' => sub { 
         $_[0] = lc($_[0]);

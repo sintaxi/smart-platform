@@ -6,7 +6,7 @@ use warnings;
 use Scalar::Util qw( blessed );
 
 use MogileFS::Client;
-use RSP::JSObject::MediaFile;
+use RSP::JSObject::MediaFile::Mogile;
 
 use base 'RSP::Extension';
 
@@ -14,7 +14,10 @@ sub provides {
   my $class = shift;
   my $tx    = shift;
 
-  RSP::JSObject::MediaFile->bind( $tx );
+  ##
+  ## bind the mediafile type to the context.
+  ##
+  RSP::JSObject::MediaFile::Mogile->bind( $tx );
 
   return {
 	  mediastore => {
@@ -25,11 +28,17 @@ sub provides {
 	 };
 }
 
+##
+## returns the domain of the transaction for mogilefs
+##
 sub domain_from_tx {
   my ($self, $tx) = @_;
   return $tx->hostname;
 }
 
+##
+## returns a connection to mogilefs
+##
 sub getmogile {
   my $self = shift;
   my $tx   = shift;
@@ -39,13 +48,24 @@ sub getmogile {
 					 );
 }
 
+##
+## writes a file to the media store.
+##
 sub write {
   my ($self, $tx, $name, $data) = @_;
   if (!defined($name)) { $tx->log("no name"); die "no name" }
   if (!defined($data)) { $tx->log("no data"); die "no data" }
+
+  ## clear the cache so that we can be sure we are writing the
+  ##   clean data.
   RSP::JSObject::MediaFile->clearcache( $tx, $name );
+
+  my $mog = eval { $self->getmogile( $tx ) };
+  if ($@ || !$mog) {
+    $tx->log("an error occurred when trying to get a mogile handle: $@");
+    die "an error occurred when trying to get a mogile handle: $@";
+  }
   eval {
-    my $mog = $self->getmogile( $tx );
     if ( blessed( $data ) ) {
       if ( !$mog->store_file($name, undef, $data->fullpath) ) {
 	$tx->log("an error occurred when attempting to write " . $data->filename . " " . $mog->errcode);
@@ -65,24 +85,28 @@ sub write {
   return 1;
 }
 
+##
+## removes a file from the media store
+##
 sub remove {
   my ($self, $tx, $name) = @_;
   my $file = $self->get( $tx, $name );
   $file->remove();
 }
 
+##
+## gets a file from the media store
+##
 sub get {
   my ($self, $tx, $name) = @_;
   if (!defined($name)) { $tx->log("no name"); die "no name" }
 
   my $mog   = eval { $self->getmogile( $tx ) };
-  if ($@) {
+  if ($@ || !$mog) {
     $tx->log("an error occurred when trying to get a mogile handle: $@");
     die "an error occurred when trying to get a mogile handle: $@";
   }
-  my @paths = eval {
-    my @paths = $mog->get_paths( $name, { noverify => 1 });
-  };
+  my @paths = eval { $mog->get_paths( $name, { noverify => 1 }) };
   if ($@) {
     $tx->log("an error occurred when trying to read $name: " . $mog->errcode);
     die "an error occurred when trying to read $name: " . $mog->errcode;
