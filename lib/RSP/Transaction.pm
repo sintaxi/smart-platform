@@ -82,7 +82,7 @@ sub cache {
     }
 
     $self->{cache} = Cache::Memcached::Fast->new({  
-      'servers'           => [ { map { ('address' => $_) } split(',', RSP->config->{cache}->{servers}) } ],
+      'servers'           => [ { map { ('address' => $_) } split(',', RSP->config->{rsp}->{memcached}) } ],
       'namespace'         => $self->host->hostname . ':', ## append the colon for easy reading in mcinsight...
     });
 
@@ -95,7 +95,7 @@ sub cache {
     }
     ## this is from an static call, so we need to construct every time, not ideal, but we can live with it
     return Cache::Memcached::Fast->new({
-      'servers'           => [ { map { ('address' => $_) } split(',', RSP->config->{cache}->{servers}) } ],
+      'servers'           => [ { map { ('address' => $_) } split(',', RSP->config->{rsp}->{memcached}) } ],
       'namespace'         => $hostname . ':', ## append the colon for easy reading in mcinsight...
     });
   }

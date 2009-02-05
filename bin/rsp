@@ -11,8 +11,8 @@ use Mojo::Server::Daemon::Prefork;
 $0 = "rsp";
 
 my $server = Mojo::Server::Daemon::Prefork->new();
-if ( RSP->config->{server}->{port} ) {
-  $server->port( RSP->config->{server}->{port} );
+if ( RSP->config->{mojo}->{port} ) {
+  $server->port( RSP->config->{mojo}->{port} );
 }
 $server->app_class( 'RSP' );
 $server->run;
