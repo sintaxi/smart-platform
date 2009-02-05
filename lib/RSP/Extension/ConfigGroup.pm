@@ -7,7 +7,7 @@ use base 'RSP::Extension';
 
 use Module::Load qw();
 
-sub provides {
+sub providing_class {
   my $class = shift;
   my $group = RSP->config->{rsp}->{storage};
   my $name  = substr($class, rindex($class, "Extension::")+length("Extension::"));
@@ -15,22 +15,9 @@ sub provides {
   my $full  = "RSP::Extension::" . $name . '::' . $real;
   eval { Module::Load::load( $full ) };
   if ($@) {
-    die "couldn't load $name extension $full";
+    die "couldn't load $name extension $full: $@";
   }
-  return $full->provides( @_ );
-}
-
-sub should_provide {
-  my $class = shift;
-  my $group = RSP->config->{rsp}->{storage};
-  my $name  = substr($class, rindex($class, "Extension::")+length("Extension::"));
-  my $real  = RSP->config->{$group}->{$name};
-  my $full  = "RSP::Extension::" . $name . '::' . $real;
-  eval { Module::Load::load( $full ) };
-  if ($@) {
-    die "couldn't load $name extension $full";
-  }
-  return $full->should_provide( @_ );
+  return $full;
 }
 
 1;

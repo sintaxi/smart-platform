@@ -8,24 +8,13 @@ use Scalar::Util qw( blessed );
 use MogileFS::Client;
 use RSP::JSObject::MediaFile::Mogile;
 
-use base 'RSP::Extension';
+use base 'RSP::Extension::MediaStore';
 
-sub provides {
-  my $class = shift;
-  my $tx    = shift;
-
-  ##
-  ## bind the mediafile type to the context.
-  ##
-  RSP::JSObject::MediaFile::Mogile->bind( $tx );
-
-  return {
-	  mediastore => {
-			 write  => sub { $class->write( $tx, @_ ) },
-			 remove => sub { $class->remove( $tx, @_ ) },
-			 get    => sub { $class->get( $tx, @_ ) },
-			}
-	 };
+##
+## we should bind this class...
+##
+sub bind_class {
+  return 'RSP::JSObject::MediaFile::Mogile';
 }
 
 ##

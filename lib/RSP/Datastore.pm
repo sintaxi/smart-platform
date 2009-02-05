@@ -13,29 +13,35 @@ sub new {
 
 sub create_namespace {
   my $self = shift;
+  my $type = shift;
   my $ns   = shift;
   if (!$ns) {
     die "no namespace";
   }
-  return RSP::Datastore::Namespace->create( $ns )
+  my $cl = 'RSP::Datastore::Namespace::' . $type;
+  return $cl->create( $ns )
 }
 
 sub get_namespace {
   my $self = shift;
+  my $type = shift;
   my $ns   = shift;
   if (!$ns) {
     die "no namespace";
   }
-  return RSP::Datastore::Namespace->connect( $ns );
+  my $cl = 'RSP::Datastore::Namespace::' . $type;
+  return $cl->connect( $ns );
 }
 
 sub remove_namespace {
   my $self = shift;
+  my $type = shift;
   my $ns   = shift;
   if (!$ns) {
     die "no namespace";
   }
-  RSP::Datastore::Namespace->delete( $ns );
+  my $cl = 'RSP::Datastore::Namespace::' . $type;
+  $cl->delete( $ns );
 }
 
 1;

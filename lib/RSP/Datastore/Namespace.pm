@@ -3,16 +3,7 @@ package RSP::Datastore::Namespace;
 use strict;
 use warnings;
 
-use RSP;
-use RSP::Transaction;
-
-use DBI;
-use JSON::XS;
-use SQL::Abstract;
-use Set::Object;
 use Carp qw( confess cluck );
-use Scalar::Util::Numeric qw( isnum isint isfloat );
-use Digest::MD5 qw( md5_hex );
 use base 'Class::Accessor::Chained';
 
 __PACKAGE__->mk_accessors(qw(namespace conn tables sa cache));
@@ -21,34 +12,6 @@ sub new {
   my $class = shift;
   my $self  = { tables => {}, sa => SQL::Abstract->new };
   bless $self, $class;
-}
-
-sub create {
-  my $class = shift;
-  my $ns    = shift;
-  my $self  = $class->new;
-  $self->namespace( md5_hex($ns) );
-  my $host = RSP->config->{mysql}->{host};
-  $self->conn( DBI->connect_cached("dbi:mysql:host=$host", RSP->config->{mysql}->{username}, RSP->config->{mysql}->{password}) );
-  $self->conn->do("create database " . $self->namespace);  
-  $self->conn->do("use " . $self->namespace);
-
-  $self->cache( RSP::Transaction->cache( $ns ) );
-  return $self;
-}
-
-sub connect {
-  my $class = shift;
-  my $ns    = shift;
-  my $self  = $class->new;
-  my $db    = md5_hex($ns);
-  $self->namespace( $db );
-  my $host = RSP->config->{mysql}->{host};
-  $self->conn( DBI->connect_cached("dbi:mysql:host=$host;database=$db", RSP->config->{mysql}->{username}, RSP->config->{mysql}->{password}) );
-
-  $self->cache( RSP::Transaction->cache( $ns ) );
-
-  return $self;
 }
 
 sub has_type_table {
@@ -60,7 +23,7 @@ sub has_type_table {
   if (!keys %{ $self->tables }) {
     my $sth  = $self->conn->prepare_cached("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=?");
     $sth->execute( $self->namespace );
-    while( my $row = $sth->fetchrow_arrayref ) {      
+    while( my $row = $sth->fetchrow_arrayref ) {
       my $typename = $row->[0];
       $typename =~ s/\_prop.+$//; 
       $self->tables->{ $typename } = 1;

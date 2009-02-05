@@ -3,6 +3,11 @@ package RSP::Extension;
 use strict;
 use warnings;
 
+## most of the time this will just be the first argument...
+sub providing_class {
+  return shift;
+}
+
 sub should_provide {
   my $class = shift;
   my $tx    = shift;

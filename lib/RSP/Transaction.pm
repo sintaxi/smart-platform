@@ -109,9 +109,8 @@ sub cache {
 sub initialize_js_environment {
   my $self = shift;
   $self->runtime( JavaScript::Runtime->new( $self->host->alloc_size ) );
-  $self->context( $self->runtime->create_context );
-  $self->context->set_version( "1.8" );
-  $self->context->toggle_options(qw( xml strict jit ));
+
+  ## there is a faster way of doing this...
   $self->runtime->set_interrupt_handler(
 					sub {
 					  $self->{ops}++;
@@ -122,6 +121,10 @@ sub initialize_js_environment {
 					  return 1;
 					}
 				       );
+
+  $self->context( $self->runtime->create_context );
+  $self->context->set_version( "1.8" );
+  $self->context->toggle_options(qw( xml strict jit ));
 }
 
 ##
@@ -229,9 +232,10 @@ sub import_extensions {
   my $sys  = {};
   foreach my $ext (@_) {
     eval { Module::Load::load( $ext ); };
+    my $ext_class = $ext->providing_class;
     if (!$@) {
-      if ( $ext->should_provide( $self ) ) {
-        my $provided = $ext->provides( $self );
+      if ( $ext_class->should_provide( $self ) ) {
+        my $provided = $ext_class->provides( $self );
         if ( !$provided ) {
           warn "no extensions provided by $ext";
         } elsif (!ref($provided) || ref($provided) ne 'HASH') {
