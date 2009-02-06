@@ -14,7 +14,6 @@ sub provides {
   ##
   $class->bind_class->bind( $tx );
 
-
   return {
 	  mediastore => {
 			 write  => sub { $class->write( $tx, @_ ) },
