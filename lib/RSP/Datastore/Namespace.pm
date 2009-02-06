@@ -3,6 +3,7 @@ package RSP::Datastore::Namespace;
 use strict;
 use warnings;
 
+use Scalar::Util::Numeric qw( isnum isint isfloat );
 use Carp qw( confess cluck );
 use base 'Class::Accessor::Chained';
 

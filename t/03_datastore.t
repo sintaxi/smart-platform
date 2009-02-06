@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 43;
+use Test::More tests => 44;
 
 my $objects = [
 	       {
@@ -31,12 +31,11 @@ my $type      = "person";
 my $namespace = "test-datastore.reasonablysmart.com";
 
 use_ok( 'RSP::Datastore' );
+use_ok( 'RSP::Datastore::Namespace::MySQL' );
 ok( my $ds  = RSP::Datastore->new );
-ok( my $ns  = $ds->create_namespace( $namespace ), "created a namespace");
+ok( my $ns  = $ds->create_namespace( 'MySQL', $namespace ), "created a namespace");
 diag( $ns->namespace );
-#ok( $ns->finish );
-#ok( $ns = $ds->get_namespace( $namespace ), "got a namespace");
-ok( my $ns2 = $ds->get_namespace( $namespace ), "got a namespace");
+ok( my $ns2 = $ds->get_namespace( 'MySQL', $namespace ), "got a namespace");
 
 ok( $ns->write( $type, $objects->[0] ), "write an object" );
 
@@ -134,5 +133,5 @@ foreach my $obj (@$objects) {
   }
 }
 
-ok( $ds->remove_namespace( $namespace ), "removing namespace");
+ok( $ds->remove_namespace( 'MySQL', $namespace ), "removing namespace");
 
