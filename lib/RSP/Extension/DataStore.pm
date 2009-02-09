@@ -3,6 +3,7 @@ package RSP::Extension::DataStore;
 use strict;
 use warnings;
 
+use RSP;
 use base 'RSP::Extension::ConfigGroup';
 
 sub provides {
@@ -12,20 +13,20 @@ sub provides {
   return {
     'datastore' => {
       'write'  => sub { 
-        $_[0] = lc($_[0]);
-        return $self->namespace->write( @_ );
+	my $type = lc( shift );
+        return $self->namespace->write( $type, @_ );
        },
       'remove' => sub {
-        $_[0] = lc($_[0]);
-        return $self->namespace->remove( @_ );
+	my $type = lc( shift );
+        return $self->namespace->remove( $type, @_ );
        },
       'search' => sub {
-        $_[0] = lc($_[0]);
-        return $self->namespace->query( @_ );
+	my $type = lc( shift );
+        return $self->namespace->query( $type, @_ );
        },
       'get'    => sub {
-        $_[0] = lc($_[0]);
-        return $self->namespace->read( @_ );
+	my $type = lc( shift );
+        return $self->namespace->read( $type, @_ );
        }
     }
   };

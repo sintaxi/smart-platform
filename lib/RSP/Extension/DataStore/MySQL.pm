@@ -13,7 +13,7 @@ sub namespace {
   my $tx   = $self->{transaction};
   if (!$self->{namespace}) {
     my $ds = RSP::Datastore->new;
-    my $ns = $ds->get_namespace( 'MySQL', $tx->host->hostname );
+    my $ns = $ds->get_namespace( 'MySQL', $tx->hostname );
     $self->{namespace} = $ns;
   }
   return $self->{namespace};

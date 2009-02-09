@@ -23,7 +23,7 @@ sub create {
   $self->namespace( md5_hex($ns) );
   my $host = RSP->config->{mysql}->{host};
   $self->conn( DBI->connect_cached("dbi:mysql:host=$host", RSP->config->{mysql}->{username}, RSP->config->{mysql}->{password}) );
-  $self->conn->do("create database " . $self->namespace);  
+  $self->conn->do("create database " . $self->namespace);
   $self->conn->do("use " . $self->namespace);
 
   $self->cache( RSP::Transaction->cache( $ns ) );
@@ -38,6 +38,12 @@ sub connect {
   $self->namespace( $db );
   my $host = RSP->config->{mysql}->{host};
   $self->conn( DBI->connect_cached("dbi:mysql:host=$host;database=$db", RSP->config->{mysql}->{username}, RSP->config->{mysql}->{password}) );
+
+  if (!$self->conn) {
+    ## if we couldn't get a connection, chances are it's because
+    ## we're missing the database, lets create one and see if that resolves it...
+    $self = $class->create( $ns );
+  }
 
   $self->cache( RSP::Transaction->cache( $ns ) );
 
