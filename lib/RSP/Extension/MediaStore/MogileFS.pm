@@ -5,6 +5,7 @@ use warnings;
 
 use Scalar::Util qw( blessed );
 
+use MogileFS::Admin;
 use MogileFS::Client;
 use RSP::JSObject::MediaFile::Mogile;
 
@@ -38,16 +39,47 @@ sub getmogile {
 }
 
 ##
+## returns an administrative connection to mogilefs
+##
+sub getmogile_adm {
+  my $self = shift;
+  my $tx   = shift;
+  $tx->{mogile_adm} ||= MogileFS::Admin->new(
+					 hosts => [ split(',', RSP->config->{mogilefs}->{trackers}) ]
+					);
+}
+
+##
 ## writes a file to the media store.
 ##
 sub write {
+  my ( $self, $tx, $name, $data ) = @_;
+  eval { $self->_write( $tx, $name, $data ) };
+  if ($@) {
+    if ( $@ =~ /unreg_domain/ ) {
+#      local $MogileFS::DEBUG = 2;
+      my $domain = $self->domain_from_tx( $tx );
+      my $adm = $self->getmogile_adm( $tx );
+      if (!$adm->create_domain( $domain )) {
+	die "could not register unregistered domain: " . $adm->errstr;
+      } else {
+	$self->_write( $tx, $name, $data );
+      }
+    } else {
+      die $@;
+    }
+  }
+  return 1;
+}
+
+sub _write {
   my ($self, $tx, $name, $data) = @_;
   if (!defined($name)) { $tx->log("no name"); die "no name" }
   if (!defined($data)) { $tx->log("no data"); die "no data" }
 
   ## clear the cache so that we can be sure we are writing the
   ##   clean data.
-  RSP::JSObject::MediaFile->clearcache( $tx, $name );
+  $self->bind_class->clearcache( $tx, $name );
 
   my $mog = eval { $self->getmogile( $tx ) };
   if ($@ || !$mog) {
@@ -80,7 +112,11 @@ sub write {
 sub remove {
   my ($self, $tx, $name) = @_;
   my $file = $self->get( $tx, $name );
-  $file->remove();
+  eval { $file->remove(); };
+  if ($@) {
+    die $@;
+  }
+  return 1;
 }
 
 ##
@@ -101,7 +137,7 @@ sub get {
     die "an error occurred when trying to read $name: " . $mog->errcode;
   }
   if (@paths) {
-    return RSP::JSObject::MediaFile->new( $mog, $tx, $name, \@paths );
+    return $self->bind_class->new( $mog, $tx, $name, \@paths );
   } else {
     return undef;
   }

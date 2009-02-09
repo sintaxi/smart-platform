@@ -18,7 +18,7 @@ $SIG{__DIE__} = sub {
 
 my ($fname, $data) = ("foobar", "bazbashfoo");
 
-my $tx = Mock::Transaction->new( 'test.reasonablysmart.com' );
+my $tx = Mock::Transaction->new( 'test.smart.joyent.com' );
 
 ok( my $ext_class = RSP::Extension::MediaStore->providing_class );
 diag("providing class is $ext_class");
@@ -29,6 +29,7 @@ is( ref( $provided->{write} ), 'CODE' );
 
 ok( $provided->{write}->( $fname, $data ) );
 ok( my $fobj = $provided->{get}->( $fname ) );
+ok( $provided->{remove}->( $fname ) );
 
-
+ok( $ext_class->getmogile_adm->delete_domain($tx->hostname), "domain should be gone...");
 
