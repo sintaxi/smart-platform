@@ -57,7 +57,6 @@ sub write {
   eval { $self->_write( $tx, $name, $data ) };
   if ($@) {
     if ( $@ =~ /unreg_domain/ ) {
-#      local $MogileFS::DEBUG = 2;
       my $domain = $self->domain_from_tx( $tx );
       my $adm = $self->getmogile_adm( $tx );
       if (!$adm->create_domain( $domain )) {
@@ -87,6 +86,7 @@ sub _write {
     die "an error occurred when trying to get a mogile handle: $@";
   }
   eval {
+    ## if we have a file object instead of just some data...
     if ( blessed( $data ) ) {
       if ( !$mog->store_file($name, undef, $data->fullpath) ) {
 	$tx->log("an error occurred when attempting to write " . $data->filename . " " . $mog->errcode);

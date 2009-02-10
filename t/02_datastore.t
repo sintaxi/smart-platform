@@ -10,8 +10,8 @@ use Mock::Transaction;
 use Carp qw( confess );
 
 $SIG{__DIE__} = sub {
-		 confess @_;
-		};
+  confess @_;
+};
 
 my $tx = Mock::Transaction->new( 'test.smart.joyent.com' );
 
