@@ -55,7 +55,7 @@ sub encode_response {
       ## it's a blended object, most likely ( at this point ) a file.
       ##   suck the data up and use that
       ##
-      $self->response->body( $body->as_string );
+      $self->response->body( $body->as_string( type => $self->response->headers->content_type ) );
     } else {
       ##
       ## we don't know what to do with it.
