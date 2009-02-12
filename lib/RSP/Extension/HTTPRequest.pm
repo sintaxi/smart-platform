@@ -27,12 +27,15 @@ sub provides {
     }
   }
 
+  my %body  = %{$tx->request->body_params->to_hash};
+  my %query = %{$tx->request->query_params->to_hash};
+
   my $request = {};
   eval {
     $request->{uri}     = $tx->request->url->path->to_string;
     $request->{method}  = $tx->request->method;
-    $request->{query}   = $tx->request->query_params->to_hash;
-    $request->{body}    = $tx->request->body_params->to_hash;
+    $request->{query}   = \%query,
+    $request->{body}    = \%body,
     $request->{cookies} = $cookies;
 
 
