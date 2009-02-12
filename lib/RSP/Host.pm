@@ -30,7 +30,18 @@ sub new {
 ##
 sub op_threshold {
   my $self = shift;
-  $self->{oplimit} ||= RSP->config->{ $self->hostname }->{oplimit} || RSP->config->{rsp}->{oplimit} || 100_000;
+  $self->{oplimit} ||= RSP->config->{ 'host:'.$self->hostname }->{oplimit} || RSP->config->{rsp}->{oplimit} || 100_000;
+}
+
+##
+## should report consumption?
+##
+sub should_report_consumption {
+  my $self = shift;
+  if ( RSP->config->{ 'host:'.$self->hostname }->{ noconsumption } ) {
+    return 0;
+  }
+  return 1;
 }
 
 ##
@@ -61,7 +72,7 @@ sub entrypoint {
 sub extensions {
   my $self = shift;
   my $global = RSP->config->{_}->{extensions} || '';
-  my $host   = RSP->config->{ $self->hostname }->{extensions} || '';
+  my $host   = RSP->config->{ 'host:'.$self->hostname }->{extensions} || '';
   
   return map {
     s/\s//g;
@@ -107,8 +118,8 @@ sub code {
 ##  an 'alternate' name
 ##
 sub actual_host {
-  my $self = shift;  
-  my $cnf  = RSP->config->{ $self->hostname };
+  my $self = shift;
+  my $cnf  = RSP->config->{ 'host:'.$self->hostname };
   if ($cnf && exists $cnf->{alternate}) {
     return $cnf->{alternate};
   }
