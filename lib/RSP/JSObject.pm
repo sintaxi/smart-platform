@@ -5,6 +5,8 @@ use warnings;
 
 use base 'Class::Accessor::Chained';
 
+our @BOUND_CLASSES = ();
+
 sub bind {
   my $class = shift;
   my $tx    = shift;
@@ -19,6 +21,13 @@ sub bind {
     $opts->{constructor} = $class->can('constructor')->();
   }
   $cx->bind_class( %$opts );
+  push @BOUND_CLASSES, $class->jsclass;
+}
+
+sub unbind {
+  my $class = shift;
+  my $cx    = shift;
+  $cx->unbind_value( $_ ) foreach @BOUND_CLASSES;
 }
 
 sub jsclass {
