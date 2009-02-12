@@ -7,7 +7,7 @@ use JavaScript;
 use Module::Load qw();
 use Cache::Memcached::Fast;
 use Hash::Merge::Simple 'merge';
-
+use Scalar::Util qw( weaken );
 use RSP::Consumption::Ops;
 use RSP::Consumption::Bandwidth;
 
@@ -15,7 +15,7 @@ use base 'Class::Accessor::Chained';
 
 our $HOST_CLASS = RSP->config->{_}->{host_class} || 'RSP::Host';
 
-__PACKAGE__->mk_accessors(qw( request response runtime context hostclass ops ));
+__PACKAGE__->mk_accessors(qw( runtime context hostclass ops ));
 
 ##
 ## make sure we have the appropriate host class loaded
@@ -36,6 +36,32 @@ sub new {
   my $class = shift;
   my $self  = {};
   bless $self, $class;
+}
+
+##
+## need to implement this by hand for weak refs.
+##
+sub request {
+  my $self = shift;
+  if (@_) {
+    $self->{request} = shift;
+    weaken( $self->{request} );
+    return $self;
+  }
+  return $self->{request};
+}
+
+##
+## by hand for weak refs also.
+##
+sub response {
+  my $self = shift;
+  if (@_) {
+    $self->{response} = shift;
+    weaken( $self->{response} );
+    return $self;
+  }
+  return $self->{response};
 }
 
 ##
@@ -133,6 +159,13 @@ sub initialize_js_environment {
 ##
 sub cleanup_js_environment {
   my $self = shift;
+
+  ## unset the interrupt handler
+  $self->runtime->set_interrupt_handler( undef );
+  $self->context->unbind_value( 'system' );
+
+  RSP::JSObject->unbind( $self->context );
+
   $self->context->DESTROY;
   $self->runtime->DESTROY;
 }
@@ -183,6 +216,9 @@ sub run {
 sub end {
   my $self = shift;
   $self->report_consumption;
+
+  undef( $self->{cache} );
+
   $self->cleanup_js_environment;
 }
 
@@ -207,6 +243,8 @@ sub bw_consumed {
 ##
 sub report_consumption {
   my $self = shift;
+
+  return unless $self->host->should_report_consumption;
 
   my $opreport = RSP::Consumption::Ops->new();
   $opreport->count( $self->ops_consumed );
@@ -237,9 +275,9 @@ sub import_extensions {
       if ( $ext_class->should_provide( $self ) ) {
         my $provided = $ext_class->provides( $self );
         if ( !$provided ) {
-          warn "no extensions provided by $ext";
+	  ## perhaps we should do something?
         } elsif (!ref($provided) || ref($provided) ne 'HASH') {
-          warn "invalid extension provided by $ext";
+          #warn "invalid extension provided by $ext";
         } else {
           $sys = merge $provided, $sys;
         }
@@ -271,9 +309,9 @@ sub host {
 ##
 sub log {
   my $self = shift;
-  my $mesg = shift;
+  my $mesg = sprintf(shift, @_);
   my ($package, $file, $line) = caller;
-  print STDERR sprintf("[%s:%s:%s] %s\n", $self->host->hostname, $file, $line, $mesg);
+  print STDERR sprintf("[%s:%s:%s:%s] %s\n", $$, $self->host->hostname, $file, $line, $mesg);
 }
 
 1;
