@@ -6,13 +6,33 @@ use warnings;
 use lib 'lib';
 
 use RSP;
-use Mojo::Server::Daemon::Prefork;
+use Mojo::Server::Daemon;
 
 $0 = "rsp";
 
-my $server = Mojo::Server::Daemon::Prefork->new();
-if ( RSP->config->{mojo}->{port} ) {
-  $server->port( RSP->config->{mojo}->{port} );
-}
+my $server = Mojo::Server::Daemon->new();
 $server->app_class( 'RSP' );
-$server->run;
+
+if ( RSP->config->{mojo}->{port} ) {
+
+  my $port = RSP->config->{mojo}->{port};
+  if ( $port =~ /\-/ ) {
+    my ($start, $end) = split(/\-/, $port);
+    my @range = ($start..$end);
+    print "configuring " . (scalar(@range)-1) . " ports from $start to $end\n";
+    foreach my $port ( @range ) {
+      $SIG{CHLD} = $SIG{HUP} = "IGNORE";
+      if (!fork()) {
+	$server->port( $port );
+	$server->run;
+	exit;
+      }
+    }
+  } else {
+    $server->port( RSP->config->{mojo}->{port} );
+    $server->run;
+  }
+} else {
+  $server->run;
+}
+
