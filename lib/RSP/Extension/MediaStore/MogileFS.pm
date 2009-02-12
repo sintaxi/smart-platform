@@ -139,6 +139,7 @@ sub get {
   if (@paths) {
     return $self->bind_class->new( $mog, $tx, $name, \@paths );
   } else {
+    $tx->log("didn't get any paths back from mogile for file '$name'");
     return undef;
   }
 }
