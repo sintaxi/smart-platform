@@ -4,6 +4,7 @@ WriteMakefile(
   NAME => 'RSP',
   VERSION_FROM => 'lib/RSP.pm',
   PREREQ_PM => {
+    'Imager'              => 0,
     'Application::Config' => 0,
     'Mojo'                => 0,
     'MIME::Types'         => 0,
@@ -20,6 +21,7 @@ WriteMakefile(
     'Class::Accessor::Chained' => 0,
     'Data::UUID::Base64URLSafe' => 0,
     'Scalar::Util::Numeric' => 0,
+    'Image::Math::Constrain' => 0,
   }
 );
 
