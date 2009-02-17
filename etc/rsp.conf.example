@@ -1,10 +1,8 @@
 root=/Users/james/Documents/Joyent/Projects/rsp
-extensions=HTTPRequest,HTTP,MediaStore,DataStore,FileSystem,Sprintf,JSONEncoder,UUID,Import,Console,Template,MD5,Image,OpenId
-
+extensions=HTTP,MediaStore,DataStore,FileSystem,Sprintf,JSONEncoder,UUID,Import,Console,Template,MD5,Image,OpenId
 
 [mogilefs]
 trackers=localhost:6001
-
 
 [rsp]
 hostroot=git
