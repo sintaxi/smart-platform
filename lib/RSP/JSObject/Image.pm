@@ -12,7 +12,7 @@ use base 'RSP::JSObject';
 __PACKAGE__->mk_accessors(qw( imager file mimetype ));
 
 sub jsclass {
-  return 'RSPImage';
+  return 'Image';
 }
 
 sub constructor {
