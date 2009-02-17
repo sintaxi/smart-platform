@@ -1,4 +1,5 @@
 *~
+etc/rsp.conf
 git/
 Makefile
 blib
