@@ -66,6 +66,65 @@ sub encode_response {
 }
 
 ##
+## return the HTTP request object translated into something that
+##  JavaScript can process
+##
+sub build_entrypoint_arguments {
+  my $self = shift;
+
+  my $cookies = {};
+  if ( $self->request->cookies ) {
+    foreach my $cookie ( @{ $self->request->cookies } ) {
+      my $name  = $cookie->name;
+      my $value = $cookie->value->to_string;
+      $cookies->{$name} = "$value";
+    }
+  }
+
+  my %body  = %{$self->request->body_params->to_hash};
+  my %query = %{$self->request->query_params->to_hash};
+
+  my $request = {};
+  eval {
+    $request->{type}    = 'HTTP';
+    $request->{uri}     = $self->request->url->path->to_string;
+    $request->{method}  = $self->request->method;
+    $request->{query}   = \%query,
+    $request->{body}    = \%body,
+    $request->{cookies} = $cookies;
+
+    ## if we've got a multipart request, don't bother with
+    ## the content.
+    if ( $self->request->is_multipart ) {
+      ## map the uploads to RSP file objects
+      $request->{uploads} = {
+			     map {
+			       my $name = $_->name;
+			       my $file = $_->file;
+			       ( $name => RSP::JSObject::File->new( $file->path, basename( $_->filename ) ) )
+			     } @{ $self->request->uploads }
+			    };
+    } else {
+      $request->{content} = $self->request->body;
+    }
+
+    $request->{headers} = {
+			   map {
+			     ( lc($_) => $self->request->headers->header($_) )
+			   } @{ $self->request->headers->names }
+			  };
+
+    $request->{queryString} = $self->request->url->query->to_string;
+  };
+
+  if ($@) {
+    print "couldn't bind request: $@\n";
+  }
+
+  return $request;
+}
+
+##
 ## this is mojo specific
 ##
 sub bw_consumed {

@@ -192,11 +192,20 @@ sub bootstrap {
 }
 
 ##
+## builds arguments for the entrypoint, by default these are empty.
+## the HTTP binding should provide the HTTP request, the async binding
+## should provide the async request, etc, etc.
+##
+sub build_entrypoint_arguments {
+  return ();
+}
+
+##
 ## this handles all the javascripty stuff
 ##
 sub run {
   my $self = shift;
-  my $response = $self->context->call( $self->host->entrypoint, @_ );
+  my $response = $self->context->call( $self->host->entrypoint, $self->build_entrypoint_arguments );
   if ($@) {
     if (ref($@) && ref($@) eq "JavaScript::Error") {
       $self->log("$@->{message} at $@->{fileName} line $@->{lineNumber}");
