@@ -3,6 +3,8 @@ package RSP::Extension;
 use strict;
 use warnings;
 
+use RSF::Error;
+
 ## most of the time this will just be the first argument...
 sub providing_class {
   return shift;

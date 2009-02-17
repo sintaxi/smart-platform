@@ -1,5 +1,5 @@
 root=/Users/james/Documents/Joyent/Projects/rsp
-extensions=HTTP,MediaStore,DataStore,FileSystem,Sprintf,JSONEncoder,UUID,Import,Console,Template,MD5,Image,OpenId
+extensions=Console,DataStore,FileSystem,HTTP,Image,Import,JSONEncoder,MD5,MediaStore,OpenId,SendMail,Sprintf,UUID
 
 [mogilefs]
 trackers=localhost:6001

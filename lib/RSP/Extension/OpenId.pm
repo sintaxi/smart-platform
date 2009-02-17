@@ -73,8 +73,10 @@ sub provides {
 
       returned => sub {
         my $sec = shift;
-        if (!$sec) { die "no secret" }
-        my ($host, $port) = split(/:/, $tx->request->headers->host);        
+        if (!$sec) { 
+	  RSP::Error->throw("no secret");
+	}
+        my ($host, $port) = split(/:/, $tx->request->headers->host);
         my $trust_root = $tx->request->url->clone;
         $trust_root->scheme('http');
         $trust_root->host( $host );
@@ -83,17 +85,14 @@ sub provides {
         }
         $trust_root->path(Mojo::Path->new);
         $trust_root->query( Mojo::Parameters->new );
-        
-        $tx->log("trust root is " . $trust_root->to_string);
-        $tx->log("Consumer Secret is $sec");
-        
+
         my $csr = Net::OpenID::Consumer->new(
           ua    => LWPx::ParanoidAgent->new,
           args  => $tx->request->url->query->to_hash || {},
           consumer_secret => $sec,
           required_root   => $trust_root->to_string,
         );
-        
+
         if (my $setup_url = $csr->user_setup_url) {
           return { setup => $setup_url }
         } elsif ($csr->user_cancel) {

@@ -3,6 +3,7 @@ package RSP::Extension::ConfigGroup;
 use strict;
 use warnings;
 
+use RSP::Error;
 use base 'RSP::Extension';
 
 use Module::Load qw();
@@ -15,7 +16,7 @@ sub providing_class {
   my $full  = "RSP::Extension::" . $name . '::' . $real;
   eval { Module::Load::load( $full ) };
   if ($@) {
-    die "couldn't load $name extension $full: $@";
+    RSP::Error->throw("couldn't load $name extension $full: $@");
   }
   return $full;
 }

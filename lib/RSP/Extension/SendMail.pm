@@ -15,14 +15,15 @@ sub provide {
         my $headers = shift;
         my $body    = shift;
         if (!$headers->{To}) {
-          die "no 'To' header";
+          RSF::Error->throw("no 'To' header");
         } elsif ( !$headers->{From} ) {
-          die "no 'From' header";
+          RSF::Error->throw("no 'From' header");
         } elsif( !$headers->{Subject} ) {
-          die "no 'Subject' header";
+          RSF::Error->throw("no 'Subject' header");
         }
+
         if (!$body) {
-          die "no body";
+          RSF::Error->throw("no body");
         }
         
         my $message = Email::Simple->create;

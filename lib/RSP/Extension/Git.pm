@@ -76,7 +76,7 @@ sub provide {
         my $origin = shift;
         my $host   = shift;
         {
-          Git::Wrapper->new( $tx->gitroot )->clone( $origin, $host ) or die "could not clone host";
+          Git::Wrapper->new( $tx->gitroot )->clone( $origin, $host ) or RSP::Error->throw("could not clone host");
         }
         my $gw = Git::Wrapper->new( File::Spec->catfile( $tx->gitroot, $host ) );
         $gw->update_server_info();
@@ -90,7 +90,7 @@ sub provide {
         };
         if ($@) {
           $tx->log( $@ );
-          return 0;
+	  RSP::Error->throw($@);
         }
         
         return 1;
@@ -110,6 +110,7 @@ sub provide {
         };
         if ($@) {
           $tx->log("could not update: " . $@);
+	  RSP::Error->throw( "could not update:" . $@ );
         }
         return 1;
       },
@@ -139,7 +140,6 @@ sub provide {
                                     ->name( '*', '.*' )
                                     ->in( File::Spec->catfile( $tx->gitroot, $host ) );        
         foreach my $dir (@dirs) {
-          print "rmdir $dir\n";
           rmdir( $dir );
         }
         rmdir( File::Spec->catfile( $tx->gitroot, $host ) );

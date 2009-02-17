@@ -31,7 +31,7 @@ sub provides {
           $ua->request( $r );
         };
         if ($@) {
-          die "error: $@";
+          RSF::Error->throw("error: $@");
         }
         return $class->response_to_object( $response );
       }
