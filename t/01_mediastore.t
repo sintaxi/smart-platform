@@ -27,9 +27,12 @@ ok( my $provided = $ext_class->provides( $tx )->{mediastore} );
 
 is( ref( $provided->{write} ), 'CODE' );
 
-ok( $provided->{write}->( $fname, $data ) );
-ok( my $fobj = $provided->{get}->( $fname ) );
-ok( $provided->{remove}->( $fname ) );
+ok( $provided->{write}->( "test-data", $fname, $data ) );
+ok( my $fobj = $provided->{get}->( "test-data", $fname ) );
+ok( $provided->{remove}->( "test-data", $fname ) );
 
-ok( $ext_class->getmogile_adm->delete_domain($tx->hostname), "domain should be gone...");
+## clean up after ourselves...
+ok( $ext_class->getmogile_adm->delete_domain(
+	$ext_class->domain_from_tx_and_type( $tx, "test-data" )
+    ), "domain should be gone...");
 

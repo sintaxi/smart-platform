@@ -21,9 +21,9 @@ sub bind_class {
 ##
 ## returns the domain of the transaction for mogilefs
 ##
-sub domain_from_tx {
-  my ($self, $tx) = @_;
-  return $tx->hostname;
+sub domain_from_tx_and_type {
+  my ($self, $tx, $type) = @_;
+  return join(':', $tx->hostname, $type);
 }
 
 ##
@@ -32,8 +32,9 @@ sub domain_from_tx {
 sub getmogile {
   my $self = shift;
   my $tx   = shift;
+  my $type = shift;
   $tx->{mogile} ||= MogileFS::Client->new(
-					  domain => $self->domain_from_tx( $tx ),
+					  domain => $self->domain_from_tx_and_type( $tx, $type ),
 					  hosts  => [ split(',', RSP->config->{mogilefs}->{trackers}) ]
 					 );
 }
@@ -53,16 +54,16 @@ sub getmogile_adm {
 ## writes a file to the media store.
 ##
 sub write {
-  my ( $self, $tx, $name, $data ) = @_;
-  eval { $self->_write( $tx, $name, $data ) };
+  my ( $self, $tx, $type, $name, $data ) = @_;
+  eval { $self->_write( $tx, $type, $name, $data ) };
   if ($@) {
     if ( $@ =~ /unreg_domain/ ) {
-      my $domain = $self->domain_from_tx( $tx );
+      my $domain = $self->domain_from_tx_and_type( $tx, $type );
       my $adm = $self->getmogile_adm( $tx );
       if (!$adm->create_domain( $domain )) {
 	die "could not register unregistered domain: " . $adm->errstr;
       } else {
-	$self->_write( $tx, $name, $data );
+	$self->_write( $tx, $type, $name, $data );
       }
     } else {
       die $@;
@@ -72,7 +73,7 @@ sub write {
 }
 
 sub _write {
-  my ($self, $tx, $name, $data) = @_;
+  my ($self, $tx, $type, $name, $data) = @_;
   if (!defined($name)) { $tx->log("no name"); die "no name" }
   if (!defined($data)) { $tx->log("no data"); die "no data" }
 
@@ -80,7 +81,7 @@ sub _write {
   ##   clean data.
   $self->bind_class->clearcache( $tx, $name );
 
-  my $mog = eval { $self->getmogile( $tx ) };
+  my $mog = eval { $self->getmogile( $tx, $type ) };
   if ($@ || !$mog) {
     $tx->log("an error occurred when trying to get a mogile handle: $@");
     die "an error occurred when trying to get a mogile handle: $@";
@@ -110,8 +111,8 @@ sub _write {
 ## removes a file from the media store
 ##
 sub remove {
-  my ($self, $tx, $name) = @_;
-  my $file = $self->get( $tx, $name );
+  my ($self, $tx, $type, $name) = @_;
+  my $file = $self->get( $tx, $type, $name );
   eval { $file->remove(); };
   if ($@) {
     die $@;
@@ -123,10 +124,10 @@ sub remove {
 ## gets a file from the media store
 ##
 sub get {
-  my ($self, $tx, $name) = @_;
+  my ($self, $tx, $type, $name) = @_;
   if (!defined($name)) { $tx->log("no name"); die "no name" }
 
-  my $mog   = eval { $self->getmogile( $tx ) };
+  my $mog   = eval { $self->getmogile( $tx, $type ) };
   if ($@ || !$mog) {
     $tx->log("an error occurred when trying to get a mogile handle: $@");
     die "an error occurred when trying to get a mogile handle: $@";
