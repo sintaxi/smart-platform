@@ -5,6 +5,10 @@ use warnings;
 
 use base 'RSP::Extension';
 
+sub extension_name {
+  return "system.sprintf";
+}
+
 sub provides {
   my $class = shift;
   my $tx    = shift;

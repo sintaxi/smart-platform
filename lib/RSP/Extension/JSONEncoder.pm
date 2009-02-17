@@ -12,17 +12,29 @@ my $encoders = [
   JSON::XS->new->utf8->pretty
 ];
 
+sub extension_name {
+  return "system.json";
+}
+
 sub provides {
   return { 
     'json' => {
       'encode' => sub {
         my $ds  = shift;
         my $enc = shift;
-        return $encoders->[$enc]->encode( $ds );
+	my $ret = eval { $encoders->[$enc]->encode( $ds ) };
+	if ($@) {
+	  RSP::Error->throw( $@ );
+	}
+	return $ret;
       },
       'decode' => sub {
         my $json = shift;
-        return $encoders->[0]->decode( $json );
+        my $ret  = $encoders->[0]->decode( $json );
+	if ($@) {
+	  RSP::Error->throw( $@ );
+	}
+	return $ret;
       }
     }
   }

@@ -6,6 +6,10 @@ use warnings;
 use RSP;
 use base 'RSP::Extension::ConfigGroup';
 
+sub extension_name {
+  return "system.datastore";
+}
+
 sub provides {
   my $class = shift;
   my $tx    = shift;

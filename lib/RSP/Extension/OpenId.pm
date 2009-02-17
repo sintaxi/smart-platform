@@ -18,6 +18,10 @@ sub decode_uri {
   return $stringtodecode;
 }
 
+sub extension_name {
+  return "system.openid";
+}
+
 sub provides {
   my $class = shift;
   my $tx    = shift;

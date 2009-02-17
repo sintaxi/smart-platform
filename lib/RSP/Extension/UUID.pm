@@ -6,6 +6,10 @@ use warnings;
 use Data::UUID::Base64URLSafe;
 use base 'RSP::Extension';
 
+sub extension_name {
+  return "system.uuid";
+}
+
 sub provides {
   my $class = shift;
   my $tx    = shift;

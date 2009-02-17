@@ -6,12 +6,16 @@ use warnings;
 use base 'RSP::Extension';
 use RSP::JSObject::File;
 
+sub extension_name {
+  return "system.filesystem";
+}
+
 sub provides {
   my $class = shift;
   my $tx    = shift;
 
   RSP::JSObject::File->bind( $tx );
-  
+
   return {
     'filesystem' => {
       'get' => sub {

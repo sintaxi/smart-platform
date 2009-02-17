@@ -8,6 +8,10 @@ use Digest::MD5 qw( md5_hex md5_base64 );
 
 use base 'RSP::Extension';
 
+sub extension_name {
+  return "system.digest.md5";
+}
+
 sub provides {
   my $class = shift;
   my $tx    = shift;

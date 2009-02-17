@@ -6,10 +6,16 @@ use Email::Send;
 use Email::Simple;
 use Email::Simple::Creator;
 
-sub provide {
+use base 'RSP::Extension';
+
+sub extension_name {
+  return "system.email";
+}
+
+sub provides {
   my $class = shift;
   my $tx = shift;
-  return (
+  return {
     'email' => {
       'send' => sub {
         my $headers = shift;
@@ -25,7 +31,7 @@ sub provide {
         if (!$body) {
           RSF::Error->throw("no body");
         }
-        
+
         my $message = Email::Simple->create;
         foreach my $key (keys %$headers) {
           $message->header_set($key, $headers->{$key});
@@ -40,7 +46,7 @@ sub provide {
         return 1;
        }
     }
-  );
+  };
 }
 
 1;
