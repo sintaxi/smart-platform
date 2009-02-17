@@ -110,7 +110,7 @@ sub build_entrypoint_arguments {
 
     $request->{headers} = {
 			   map {
-			     ( lc($_) => $self->request->headers->header($_) )
+			     ( $_ => $self->request->headers->header($_) )
 			   } @{ $self->request->headers->names }
 			  };
 
