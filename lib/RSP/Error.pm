@@ -3,21 +3,65 @@ package RSP::Error;
 use strict;
 use warnings;
 
+use base 'RSP::JSObject';
+use Scalar::Util qw( blessed );
+use overload q{""} => \&as_string, fallback => 1;
+
+sub jsclass {
+  return 'PlatformError';
+}
+
+sub properties {
+  return {
+	  'message' => {
+			'getter' => sub { return $_[0]->{message} }
+		       },
+	  'fileName' => {
+			 'getter' => sub { return $_[0]->{fileName} }
+			}
+	 }
+}
+
+sub new {
+  my $class = shift;
+  my $mesg  = shift;
+  my $tx    = shift;
+
+  my $obj;
+  if (blessed( $mesg )) {
+    $obj = $mesg;
+    if ( $tx ) {
+      my $codepath = $tx->host->root;
+      $obj->{fileName} =~ s/$codepath//;
+    }
+  } else {
+    chomp $mesg;
+    my ($package, $filename, $line) = caller(1);
+    $obj = { message => $mesg, fileName => $filename, lineNumber => $line };
+  }
+  return bless $obj, $class;
+}
+
 sub throw {
   my $class = shift;
   my $mesg  = shift;
 
-  chomp $mesg;
-
-  my $pack  = caller();
-  if ( $pack->can("extension_name") ) {
-    $pack = $pack->can('extension_name')->();
+  if ( blessed( $class ) ) {
+    die $class;
+  } else {
+    die $class->new( $mesg );
   }
+}
 
-  if ( $mesg =~ /\s+at ((.+)\.pm) line/) {
-    $mesg =~ s/\s+at ((.+)\.pm) line .+$//;
+sub as_string {
+  my $self = shift;
+  if ( $self->{fileName} && $self->{lineNumber}) {
+    return "$self->{message} in file $self->{fileName} at line $self->{lineNumber}";
+  } elsif ( $self->{fileName} && !$self->{lineNumber} ) {
+    return "$self->{message} in file $self->{fileName}";
+  } else {
+    return $self->{message};
   }
-  die { message => $mesg, fileName => $pack };
 }
 
 1;

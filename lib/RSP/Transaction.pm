@@ -152,6 +152,9 @@ sub initialize_js_environment {
   $self->context( $self->runtime->create_context );
   $self->context->set_version( "1.8" );
   $self->context->toggle_options(qw( xml strict jit ));
+
+  ## bind the error class, so that things start to work again...
+  RSP::Error->bind( $self );
 }
 
 ##
@@ -177,8 +180,6 @@ sub cleanup_js_environment {
 sub bootstrap {
   my $self = shift;
 
-  #$self->log("going to bootstrap file...");
-
   $self->initialize_js_environment;
   $self->import_extensions( $self->context, $self->host->extensions );
 
@@ -187,15 +188,20 @@ sub bootstrap {
     $self->log("$!: $bs_file");
     RSP::Error->throw("$!: $bs_file");
   }
-  #$self->log("going to eval now");
-  eval {
-    $self->context->eval_file( $bs_file );
-  };
+  my $result = $self->context->eval_file( $bs_file );
   if ($@) {
     $self->log($@);
-    RSP::Error->throw($@);
+    my $err = RSP::Error->new( $@, $self );
+    $err->throw;
+
   }
-  #$self->log("here we are!");
+}
+
+##
+## extension_name provides details for the RSP::Error class
+##
+sub extension_name {
+  return "compilation stage";
 }
 
 ##
@@ -212,14 +218,27 @@ sub build_entrypoint_arguments {
 ##
 sub run {
   my $self = shift;
-  my $response = $self->context->call( $self->host->entrypoint, $self->build_entrypoint_arguments );
+  my $response = eval {
+    $self->context->call(
+			 $self->host->entrypoint,
+			 $self->build_entrypoint_arguments
+			);
+  };
   if ($@) {
     $self->log($@);
     if (ref($@) && ref($@) eq "JavaScript::Error") {
-      $self->log("$@->{message} at $@->{fileName} line $@->{lineNumber}");
-      RSP::Error->throw("$@->{message} at $@->{fileName} line $@->{lineNumber}");
-    } else {
       RSP::Error->throw( $@ );
+    } elsif ( $@ =~ /Undefined subroutine/ ) {
+      my $err = RSP::Error->new("Could not call function " . $self->host->entrypoint);
+      $err->{fileName} = undef;
+      $err->{lineNumber} = undef;
+      $err->throw;
+    } else {
+      $@ =~ s/ at (.+)\sline\s(\d+)\.$//;
+      my $err = RSP::Error->new( $@ );
+      $err->{lineNumber} = undef;
+      $err->{fileName} = undef;
+      throw $err;
     }
   } else {
     $self->encode_response( $response );

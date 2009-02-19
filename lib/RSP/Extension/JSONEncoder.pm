@@ -17,6 +17,8 @@ sub extension_name {
 }
 
 sub provides {
+  my $class = shift;
+  my $tx    = shift;
   return { 
     'json' => {
       'encode' => sub {
@@ -24,6 +26,7 @@ sub provides {
         my $enc = shift;
 	my $ret = eval { $encoders->[$enc]->encode( $ds ) };
 	if ($@) {
+	  $tx->log("error: $@");
 	  RSP::Error->throw( $@ );
 	}
 	return $ret;
@@ -32,6 +35,7 @@ sub provides {
         my $json = shift;
         my $ret  = $encoders->[0]->decode( $json );
 	if ($@) {
+	  $tx->log("error: $@");
 	  RSP::Error->throw( $@ );
 	}
 	return $ret;
