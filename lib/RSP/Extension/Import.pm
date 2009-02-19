@@ -26,6 +26,7 @@ sub provides {
        }
        $tx->context->eval_file( $path );
        if ($@) {
+	 $tx->log($@);
 	 RSP::Error->throw($@);
        }
     }

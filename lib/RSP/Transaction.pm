@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use JavaScript;
+use RSP::Error;
 use Module::Load qw();
 use Cache::Memcached::Fast;
 use Hash::Merge::Simple 'merge';
@@ -85,12 +86,12 @@ sub assert_transaction_ready {
   my $self = shift;
   if (!$self->request) {
     $self->log("no request object");
-    die "no request object";
+    RSP::Error->throw("no request object");
   }
 
   if (!$self->response) {
     $self->log("no response object");
-    die "no response object";
+    RSP::Error->throw("no response object");
   }
 }
 
@@ -117,7 +118,7 @@ sub cache {
     my $hostname = shift;
     if (!$hostname) {
       $self->log("no hostname");
-      die "no hostname";
+      RSP::Error->throw("no hostname");
     }
     ## this is from an static call, so we need to construct every time, not ideal, but we can live with it
     return Cache::Memcached::Fast->new({
@@ -142,7 +143,7 @@ sub initialize_js_environment {
 					  $self->{ops}++;
 					  if ( $self->ops > $self->host->op_threshold ) {
 					    $self->log("op threshold exceeded");
-					    die "op threshold exceeded";
+					    RSP::Error->throw("op threshold exceeded");
 					  }
 					  return 1;
 					}
@@ -176,19 +177,25 @@ sub cleanup_js_environment {
 sub bootstrap {
   my $self = shift;
 
+  #$self->log("going to bootstrap file...");
+
   $self->initialize_js_environment;
   $self->import_extensions( $self->context, $self->host->extensions );
 
   my $bs_file = $self->host->bootstrap_file;
   if (!-e $bs_file) {
     $self->log("$!: $bs_file");
-    die "$!: $bs_file";
+    RSP::Error->throw("$!: $bs_file");
   }
-  $self->context->eval_file( $bs_file );
+  #$self->log("going to eval now");
+  eval {
+    $self->context->eval_file( $bs_file );
+  };
   if ($@) {
     $self->log($@);
-    die $@;
+    RSP::Error->throw($@);
   }
+  #$self->log("here we are!");
 }
 
 ##
@@ -207,12 +214,12 @@ sub run {
   my $self = shift;
   my $response = $self->context->call( $self->host->entrypoint, $self->build_entrypoint_arguments );
   if ($@) {
+    $self->log($@);
     if (ref($@) && ref($@) eq "JavaScript::Error") {
       $self->log("$@->{message} at $@->{fileName} line $@->{lineNumber}");
-      die "$@->{message} at $@->{fileName} line $@->{lineNumber}";
+      RSP::Error->throw("$@->{message} at $@->{fileName} line $@->{lineNumber}");
     } else {
-      $self->log($@);
-      die $@;
+      RSP::Error->throw( $@ );
     }
   } else {
     $self->encode_response( $response );
