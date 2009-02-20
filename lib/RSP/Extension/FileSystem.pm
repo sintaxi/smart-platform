@@ -6,7 +6,7 @@ use warnings;
 use base 'RSP::Extension';
 use RSP::JSObject::File;
 
-sub extension_name {
+sub exception_name {
   return "system.filesystem";
 }
 

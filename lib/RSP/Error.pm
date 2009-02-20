@@ -18,8 +18,11 @@ sub properties {
 		       },
 	  'fileName' => {
 			 'getter' => sub { return $_[0]->{fileName} }
-			}
-	 }
+			},
+	  'lineNumber' => {
+			   'getter' => sub { return $_[0]->{lineNumber} }
+			  }
+	 };
 }
 
 sub new {
@@ -37,6 +40,9 @@ sub new {
   } else {
     chomp $mesg;
     my ($package, $filename, $line) = caller(1);
+    if ( $package->can('exception_name') ) {
+      $filename = $package->exception_name;
+    }
     $obj = { message => $mesg, fileName => $filename, lineNumber => $line };
   }
   return bless $obj, $class;

@@ -6,7 +6,7 @@ use warnings;
 use Data::UUID::Base64URLSafe;
 use base 'RSP::Extension';
 
-sub extension_name {
+sub exception_name {
   return "system.uuid";
 }
 

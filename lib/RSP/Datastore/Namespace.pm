@@ -3,8 +3,9 @@ package RSP::Datastore::Namespace;
 use strict;
 use warnings;
 
+use RSP::Error;
 use Scalar::Util::Numeric qw( isnum isint isfloat );
-use Carp qw( confess cluck );
+use Carp qw( cluck );
 use base 'Class::Accessor::Chained';
 
 __PACKAGE__->mk_accessors(qw(namespace conn tables sa cache));
@@ -15,11 +16,15 @@ sub new {
   bless $self, $class;
 }
 
+sub exception_name {
+  return "datastore";
+}
+
 sub has_type_table {
   my $self = shift;
   my $type = lc(shift);
   if (!$type) {
-    confess "no type";
+    RSP::Error->throw("no type");
   }
   if (!keys %{ $self->tables }) {
     my $sth  = $self->conn->prepare_cached("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=?");
@@ -37,7 +42,7 @@ sub create_type_table {
   my $self = shift;
   my $type = lc(shift);
   if (!$type) {
-    confess "no type";
+    RSP::Error->throw("no type");
   }
   $self->conn->begin_work;
   eval {
@@ -60,7 +65,7 @@ sub create_type_table {
   };
   if ($@) {
     $self->conn->rollback;
-    confess $@;
+    RSP::Error->throw("couldn't create type tables");
   }
   $self->conn->commit;
   $self->tables->{$type} = 1;
@@ -70,7 +75,7 @@ sub tables_for_type {
   my $self = shift;
   my $type = lc(shift);
   if (!$type) {
-    confess "no type";
+    RSP::Error->throw("no type");
   }
   my @suffixes = qw( f s o i );
   my @tables = ();
@@ -85,10 +90,10 @@ sub remove {
   my $type = lc(shift);
   my $id   = shift;
   if (!$type) {
-    confess "no type";
+    RSP::Error->throw("no type");
   }
   if (!$id) {
-    confess "no id";
+    RSP::Error->throw("no id");
   }
   $self->conn->begin_work;
   eval {
@@ -99,7 +104,7 @@ sub remove {
   };
   if ($@) {
     $self->conn->rollback;
-    confess $@;
+    RSP::Error->throw($@);
   }
   $self->conn->commit;
   return 1;
@@ -127,10 +132,10 @@ sub read {
   my $type = lc(shift);
   my $id   = shift;
   if (!$type) {
-    confess "no type";
+    RSP::Error->throw("no type");
   }
   if (!$id) {
-    confess "no id";
+    RSP::Error->throw("no id");
   }
 
   my $cache  = $self->cache->get( "${type}:${id}" );
@@ -140,14 +145,14 @@ sub read {
   }
 
   if (!$self->has_type_table( $type )) {
-    confess "no such type";
+    RSP::Error->throw("no such type");
   } else {
     my $obj = $self->read_one_object( $type, $id );
     if (!$obj) {
-      confess "no such object";
-    } 
+      RSP::Error->throw("no such object");
+    }
     return $obj;
-  }  
+  }
 }
 
 sub encode_output_val {
@@ -201,7 +206,7 @@ sub read_one_object {
     $sth->finish;
   }
   if (!$obj) {
-    confess "no such object $type:$id";
+    RSP::Error->throw("no such object $type:$id");
   }
   my $json = JSON::XS::encode_json( $obj );
   if (!$self->cache->set( "${type}:${id}",  $json )) {
@@ -216,10 +221,10 @@ sub write {
   my $obj   = shift;
   my $trans = shift;
   if (!$type) {
-    confess "no type";
+    RSP::Error->throw("no type");
   }
   if (!$obj) {
-    confess "no object";
+    RSP::Error->throw("no object");
   }
   if ( $trans ) {
     my $id = $obj->{id};
@@ -245,7 +250,7 @@ sub write_one_object {
   my $obj  = shift;
   my $id   = $obj->{id};
   if (!$id) {
-    confess "object has no id";
+    RSP::Error->throw("object has no id");
   }
   $self->conn->begin_work;
   eval {
@@ -274,7 +279,7 @@ sub write_one_object {
   };
   if ($@) {
     $self->conn->rollback;
-    confess $@;
+    RSP::Error->throw($@);
   }
   $self->conn->commit;
   return 1;
@@ -293,10 +298,10 @@ sub query {
   my $query = shift;
   my $opts  = shift || {};
   if (!$type) {
-    confess "no type";
+    RSP::Error->throw("no type");
   }
   if (!$query) {
-    confess "no query";
+    RSP::Error->throw("no query");
   }
   my @objects;
   if (ref($query) eq 'HASH') {
@@ -403,7 +408,7 @@ sub table_for {
   my $type  = shift;
   my $args  = { @_ };
   if (!exists $args->{value}) { 
-    confess "no value";
+    RSP::Error->throw("no value");
   }
   my $dt = $self->valtype( $args->{value} );
   my $lookup = {

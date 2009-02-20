@@ -18,7 +18,7 @@ sub decode_uri {
   return $stringtodecode;
 }
 
-sub extension_name {
+sub exception_name {
   return "system.openid";
 }
 

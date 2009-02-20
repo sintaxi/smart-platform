@@ -5,7 +5,7 @@ use warnings;
 
 use base 'RSP::Extension';
 
-sub extension_name {
+sub exception_name {
   return "system.sprintf";
 }
 

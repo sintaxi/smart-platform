@@ -12,7 +12,7 @@ my $encoders = [
   JSON::XS->new->utf8->pretty
 ];
 
-sub extension_name {
+sub exception_name {
   return "system.json";
 }
 

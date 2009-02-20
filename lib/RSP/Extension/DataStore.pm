@@ -6,7 +6,7 @@ use warnings;
 use RSP;
 use base 'RSP::Extension::ConfigGroup';
 
-sub extension_name {
+sub exception_name {
   return "system.datastore";
 }
 
@@ -18,19 +18,19 @@ sub provides {
     'datastore' => {
       'write'  => sub { 
 	my $type = lc( shift );
-        return $self->namespace->write( $type, @_ );
+	return $self->namespace->write( $type, @_ );
        },
       'remove' => sub {
 	my $type = lc( shift );
-        return $self->namespace->remove( $type, @_ );
+	return $self->namespace->remove( $type, @_ );
        },
       'search' => sub {
 	my $type = lc( shift );
-        return $self->namespace->query( $type, @_ );
+	return $self->namespace->query( $type, @_ );
        },
       'get'    => sub {
 	my $type = lc( shift );
-        return $self->namespace->read( $type, @_ );
+	return $self->namespace->read( $type, @_ );
        }
     }
   };

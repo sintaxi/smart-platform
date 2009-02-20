@@ -10,7 +10,7 @@ use base 'RSP::Extension';
 
 our $VERSION = '1.00';
 
-sub extension_name {
+sub exception_name {
   return "system.http";
 }
 

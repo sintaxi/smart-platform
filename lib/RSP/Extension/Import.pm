@@ -6,7 +6,7 @@ use warnings;
 use RSP::Error;
 use base 'RSP::Extension';
 
-sub extension_name {
+sub exception_name {
   return "system.use";
 }
 
