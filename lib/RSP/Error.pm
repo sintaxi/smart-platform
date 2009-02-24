@@ -25,6 +25,12 @@ sub properties {
 	 };
 }
 
+sub methods {
+  return {
+	  'toString' => sub { my $self = shift; return $self->as_string; }
+	 };
+}
+
 sub new {
   my $class = shift;
   my $mesg  = shift;

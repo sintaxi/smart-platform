@@ -250,11 +250,15 @@ sub run {
 ##
 sub end {
   my $self = shift;
+
   $self->report_consumption;
 
   undef( $self->{cache} );
 
   $self->cleanup_js_environment;
+
+##  my $clean = File::Temp->can('cleanup');
+##  $clean->();
 }
 
 ##
@@ -344,7 +348,9 @@ sub host {
 ##
 sub log {
   my $self = shift;
-  my $mesg = sprintf(shift, @_);
+  my $mesg = shift;
+
+  $mesg = sprintf($mesg, @_);
   my ($package, $file, $line) = caller;
   print STDERR sprintf("[%s:%s:%s:%s] %s\n", $$, $self->host->hostname, $file, $line, $mesg);
 }

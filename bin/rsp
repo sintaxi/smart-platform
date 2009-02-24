@@ -6,11 +6,11 @@ use warnings;
 use lib 'lib';
 
 use RSP;
-use Mojo::Server::Daemon;
+use Mojo::Server::Daemon::Prefork;
 
 $0 = "rsp";
 
-my $server = Mojo::Server::Daemon->new();
+my $server = Mojo::Server::Daemon::Prefork->new();
 $server->app_class( 'RSP' );
 
 if ( RSP->config->{mojo}->{port} ) {
