@@ -1,23 +1,53 @@
-extensions=Console,Use,FileSystem,Request,Digest,Datastore,Template,OpenId,UUID,JSON
+root=/Users/james/Documents/Joyent/Projects/rsp
+extensions=Console,DataStore,FileSystem,HTTP,Image,Import,JSONEncoder,MD5,MediaStore,OpenId,Sprintf,UUID,Gitosis
 
-[hosts]
-Root=hosts
-JSRoot=js
-JSBootstrap=bootstrap.js
+[mogilefs]
+trackers=localhost:6001
 
-[db]
-Root=db
-File=data.db
+[rsp]
+hostroot=git
+oplimit=100000
+storage=storage:cluster
+memcached=127.0.0.1:11211
 
-[server]
-Root=/Users/jduncan/Devel/rsp
-User=nobody
-Group=nobody
-MaxClients=10
-MaxRequestsPerClient=200
-MaxRequestsPerConn=10
-Debugging=0
+[mojo]
+hostmapper=hostname
+port=8080
 
-[daemon]
-LocalPort=8181
-Reuse=1
+[keymanager]
+keydir=/tmp/keymanager
+
+[gitosis]
+server=10.0.1.6
+admin=/Users/james/Documents/Joyent/Projects/gitosis-admin
+
+[host:net-amazon-s3-test-001.s3howl]
+alternate=s3howl
+
+[host:127.0.0.1]
+noconsumption=true
+
+[host:scoop]
+alternate=localhost
+oplimit=10000000 # example of a host-specific oplimit
+
+[mysql]
+host=localhost
+username=root
+password=
+
+## The following are storage configurations.
+## They both configure storage extensions, where the cluster implementation is different from
+## local configuration.  It makes the extension list a little more straightforward.  One of
+## these is referenced by the "storage" configuration option in the rsp group.
+[storage:local]
+DataStore=SQLite
+MediaStore=Local
+
+[storage:localdb]
+DataStore=MySQL
+MediaStore=Local
+
+[storage:cluster]
+DataStore=MySQL
+MediaStore=MogileFS
