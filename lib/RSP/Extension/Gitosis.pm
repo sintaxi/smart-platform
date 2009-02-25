@@ -43,57 +43,36 @@ sub provides {
 sub new {
   my $class = shift;
   my $tx    = shift;
-  if ($tx->{ __gitosis__ }) {
-    return $tx->{__gitosis__};
-  }
   my $self = {};
   bless $self, $class;
-  $tx->{__gitosis__} = $self;
-
   return $self;
-}
-
-sub gitosis {
-  my $self = shift;
-  $self->{wrapper} ||= Git::Wrapper->new( RSP->config->{gitosis}->{admin} );
 }
 
 sub write_key {
   my $self = shift;
   my $user = shift;
   my $key  = shift;
-
-  my $gw    = $self->gitosis;
-  my $gadir = $gw->dir;
-  my $kf = File::Spec->catfile( $gadir, "keydir", sprintf("%s.pub", $user) );
-
-  print "The keyfile is $kf\n";
-  my $fh = IO::File->new( $kf, ">" );
+  my $file = File::Spec->catfile(
+				 RSP->config->{keymanager}->{keydir},
+				 sprintf("%s.pub", $user)
+				);
+  my $fh = IO::File->new( $file, ">" );
   if (!$fh) {
-    RSP::Error->throw("couldn't create key file");
+    RSP::Error->throw("could not open keyfile for writing");
   }
-  $fh->print($key);
-  $fh->close;
-
-  eval {
-    print "going to add the file...\n";
-    $gw->add( File::Spec->catfile('keydir', sprintf("%s.pub", $user)) );
-    $gw->commit( { all=>1, message=>"added key for user $user" } );
-    $gw->push();
-  };
-  if ($@) {
-    print "THERE WAS A PROBLEM....\n";
-    RSP::Error->throw( $@ );
-  }
+  $fh->print( $key );
+  $fh->close();
 }
 
 sub check_key {
   my $self = shift;
   my $user = shift;
 
-  my $gadir = $self->gitosis->dir;
-  my $keyfile = File::Spec->catfile( $gadir, "keydir", sprintf("%s.pub", $user) );
-  print "checking to see if the $keyfile exists...\n";
+  my $keyfile = File::Spec->catfile(
+				    RSP->conf->{gitosis},
+				    'keydir',
+				    sprintf('%s.pub', $user)
+				   );
   -e $keyfile
 }
 
