@@ -18,7 +18,6 @@ my $keytmp  = RSP->config->{keymanager}->{keydir};
 my $conf    = RSP->config->{gitosis};
 File::Path::mkpath( $keytmp );
 
-
 if ( fork() ) {
   exit;
 }
@@ -43,8 +42,14 @@ while( 1 ) {
   if ( !$dh ) {
     RSP::Error->throw("couldn't read from $keytmp: $!");
   }
+  ## get a list of files from the directory, omitting, for good reason,
+  ##   the directories . and ..
   my @files = grep { $_ !~ /^\./ } $dh->read();
   if (@files) {
+    ## pull the latest changes
+    $gw->pull('origin', 'master');
+    ## loop through each of the new keyfiles - most often there will not be more
+    ##   than one, but just in case...
     foreach my $file (@files) {
       my $origin = File::Spec->catfile( $keytmp, $file );
       my $dest   = File::Spec->catfile( $gw->dir, 'keydir', $file );
@@ -64,11 +69,14 @@ while( 1 ) {
       }
     }
     ## commit the changes, and push.
-    $gw->commit({ all => 1, message => "added keys: " . join("\n\t", @files)});
-    $gw->push();
+    eval {
+      $gw->commit({ all => 1, message => "added keys: " . join("\n\t", @files)});
+      $gw->push();
+    };
   }
   $dh->close();
-  ## every ten seconds we check for new keys
+  ## every $timeout seconds we check for new files, we'll use a select here, instead of a
+  ##   sleep, because we might want fractions.  Unlikely, but we might.
   select(undef, undef, undef, $timeout);
 }
 
