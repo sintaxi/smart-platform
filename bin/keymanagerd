@@ -48,6 +48,7 @@ while( 1 ) {
     foreach my $file (@files) {
       my $origin = File::Spec->catfile( $keytmp, $file );
       my $dest   = File::Spec->catfile( $gw->dir, 'keydir', $file );
+      my $needsadd = !-e $dest;
       ## first copy the key
       if ( File::Copy::copy( $origin, $dest . ".tmp") ) {
 	## if we can copy it into the keydir, then we move it to the correct
@@ -57,8 +58,10 @@ while( 1 ) {
 	## then we unlink it.
 	unlink( $origin );
       }
-      ## add the file to the git staging area
-      $gw->add('keydir/'.$file);
+      ## add the file to the git staging area, if this is an update
+      if ( $needsadd ) {
+	$gw->add('keydir/'.$file);
+      }
     }
     ## commit the changes, and push.
     $gw->commit({ all => 1, message => "added keys: " . join("\n\t", @files)});
