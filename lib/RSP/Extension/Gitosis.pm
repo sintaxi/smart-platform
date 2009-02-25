@@ -25,11 +25,7 @@ sub provides {
 			      'exists' => sub {
 				my $user = shift;
 				if (!$user) { RSP::Error->throw('no user specified') }
-				if ( $class->new( $tx )->check_key( $user ) ) {
-				  return 1;
-				} else {
-				  return 0;
-				}
+				return $class->new( $tx )->check_key( $user );
 			      }
 			     },
 		     }
