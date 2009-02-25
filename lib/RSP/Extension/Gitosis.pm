@@ -69,7 +69,7 @@ sub check_key {
   my $user = shift;
 
   my $keyfile = File::Spec->catfile(
-				    RSP->conf->{gitosis},
+				    RSP->config->{gitosis}->{admin},
 				    'keydir',
 				    sprintf('%s.pub', $user)
 				   );
