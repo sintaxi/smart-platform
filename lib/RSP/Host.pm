@@ -73,14 +73,16 @@ sub extensions {
   my $self = shift;
   my $global = RSP->config->{_}->{extensions} || '';
   my $host   = RSP->config->{ 'host:'.$self->hostname }->{extensions} || '';
-  
-  return map {
+
+  my @exts = map {
     s/\s//g;
     'RSP::Extension::' . $_ 
   } (
      split(/,/, $global),
-     split(/,/, $global)
+     split(/,/, $host)
     );
+
+  return @exts;
 }
 
 ##
