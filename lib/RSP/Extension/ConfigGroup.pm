@@ -17,17 +17,28 @@ sub groupname {
   return "storage";
 }
 
-sub providing_class {
+sub providing_class_shortname {
   my $class = shift;
   my $group = RSP->config->{rsp}->{$class->groupname};
   my $name  = $class->group_classname;
   my $real  = RSP->config->{$group}->{$name};
+  return $real;
+}
+
+sub providing_class {
+  my $class = shift;
+  my $name  = $class->group_classname;
+  my $real  = $class->providing_class_shortname;
   my $full  = "RSP::Extension::" . $name . '::' . $real;
   eval { Module::Load::load( $full ) };
   if ($@) {
     RSP::Error->throw("couldn't load $name extension $full: $@");
   }
-  return $full;
+  if ( wantarray() ) {
+    return ($full, $real);
+  } else {
+    return $full;
+  }
 }
 
 1;
