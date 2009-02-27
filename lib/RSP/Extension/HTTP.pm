@@ -14,6 +14,10 @@ sub exception_name {
   return "system.http";
 }
 
+## why does LWPx::ParanoidAgent need this?
+sub LWP::Debug::debug { }
+sub LWP::Debug::trace { }
+
 sub provides {
   my $class = shift;
   my $tx    = shift;
@@ -34,7 +38,7 @@ sub provides {
           $ua->request( $r );
         };
         if ($@) {
-          RSF::Error->throw("error: $@");
+          RSP::Error->throw("error: $@");
         }
         return $class->response_to_object( $response );
       }
