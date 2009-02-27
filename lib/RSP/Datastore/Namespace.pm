@@ -20,22 +20,36 @@ sub exception_name {
   return "datastore";
 }
 
+
+sub fetch_types {
+  my $self = shift;
+  if (!keys %{ $self->tables }) {
+    my $sth  = $self->conn->prepare_cached("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=?");
+    $sth->execute( $self->namespace );
+    while( my $row = $sth->fetchrow_arrayref ) {
+      my $typename = $row->[0];
+      $typename =~ s/\_.+$//; 
+      $self->tables->{ $typename } = 1;
+    }
+  }
+}
+
 sub has_type_table {
   my $self = shift;
   my $type = lc(shift);
   if (!$type) {
     RSP::Error->throw("no type");
   }
-  if (!keys %{ $self->tables }) {
-    my $sth  = $self->conn->prepare_cached("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=?");
-    $sth->execute( $self->namespace );
-    while( my $row = $sth->fetchrow_arrayref ) {
-      my $typename = $row->[0];
-      $typename =~ s/\_prop.+$//; 
-      $self->tables->{ $typename } = 1;
-    }
+  if (!keys %{$self->tables}) {
+    $self->fetch_types;
   }
   return $self->tables->{$type}
+}
+
+sub types {
+  my $self = shift;
+  if (!keys %{$self->tables}) { $self->fetch_types }
+  return keys %{$self->tables};
 }
 
 sub create_type_table {
