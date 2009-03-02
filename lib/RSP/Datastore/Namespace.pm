@@ -20,18 +20,8 @@ sub exception_name {
   return "datastore";
 }
 
-
 sub fetch_types {
-  my $self = shift;
-  if (!keys %{ $self->tables }) {
-    my $sth  = $self->conn->prepare_cached("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=?");
-    $sth->execute( $self->namespace );
-    while( my $row = $sth->fetchrow_arrayref ) {
-      my $typename = $row->[0];
-      $typename =~ s/\_.+$//; 
-      $self->tables->{ $typename } = 1;
-    }
-  }
+  die "abstract method fetch_types called";
 }
 
 sub has_type_table {
@@ -52,38 +42,6 @@ sub types {
   return keys %{$self->tables};
 }
 
-sub create_type_table {
-  my $self = shift;
-  my $type = lc(shift);
-  if (!$type) {
-    RSP::Error->throw("no type");
-  }
-  $self->conn->begin_work;
-  eval {
-    $self->conn->do("CREATE TABLE ${type}_ids ( id CHAR(50) ) TYPE=InnoDB");
-
-    $self->conn->do("CREATE TABLE ${type}_prop_i ( id CHAR(50), propname CHAR(25), propval BIGINT ) TYPE=InnoDB");
-    $self->conn->do("CREATE INDEX ${type}_prop_i_id_propname ON ${type}_prop_i (id, propname)");
-    $self->conn->do("CREATE INDEX ${type}_prop_i_propname_propval ON ${type}_prop_i (propname, propval)");
-
-    $self->conn->do("CREATE TABLE ${type}_prop_f ( id CHAR(50), propname CHAR(25), propval FLOAT ) TYPE=InnoDB");
-    $self->conn->do("CREATE INDEX ${type}_prop_f_id_propname ON ${type}_prop_f (id, propname)");
-    $self->conn->do("CREATE INDEX ${type}_prop_f_propname_propval ON ${type}_prop_f (propname, propval)");
-
-    $self->conn->do("CREATE TABLE ${type}_prop_s ( id CHAR(50), propname CHAR(25), propval VARCHAR(256) ) TYPE=InnoDB");
-    $self->conn->do("CREATE INDEX ${type}_prop_s_id_propname ON ${type}_prop_s (id, propname)");
-    $self->conn->do("CREATE INDEX ${type}_prop_s_propname_propval ON ${type}_prop_s (propname, propval)");
-
-    $self->conn->do("CREATE TABLE ${type}_prop_o ( id CHAR(50), propname CHAR(25), propval TEXT ) TYPE=InnoDB");
-    $self->conn->do("CREATE INDEX ${type}_prop_o_id_propname ON ${type}_prop_o (id, propname)");
-  };
-  if ($@) {
-    $self->conn->rollback;
-    RSP::Error->throw("couldn't create type tables");
-  }
-  $self->conn->commit;
-  $self->tables->{$type} = 1;
-}
 
 sub tables_for_type {
   my $self = shift;
@@ -297,13 +255,6 @@ sub write_one_object {
   }
   $self->conn->commit;
   return 1;
-}
-
-sub delete {
-  my $class = shift;
-  my $ns    = shift;
-  my $self  = $class->connect( $ns );
-  $self->conn->do("DROP DATABASE " . $self->namespace);
 }
 
 sub query {

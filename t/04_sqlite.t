@@ -31,11 +31,11 @@ my $type      = "person";
 my $namespace = "test-datastore.reasonablysmart.com";
 
 use_ok( 'RSP::Datastore' );
-use_ok( 'RSP::Datastore::Namespace::MySQL' );
+use_ok( 'RSP::Datastore::Namespace::SQLite' );
 ok( my $ds  = RSP::Datastore->new );
-ok( my $ns  = $ds->create_namespace( 'MySQL', $namespace ), "created a namespace");
+ok( my $ns  = $ds->create_namespace( 'SQLite', $namespace ), "created a namespace");
 diag( $ns->namespace );
-ok( my $ns2 = $ds->get_namespace( 'MySQL', $namespace ), "got a namespace");
+ok( my $ns2 = $ds->get_namespace( 'SQLite', $namespace ), "got a namespace");
 
 ok( $ns->write( $type, $objects->[0] ), "write an object" );
 
@@ -74,6 +74,7 @@ foreach my $obj (@$objects) {
   is_deeply( $results->[0], $objects->[2], "object is the same as what was stored" );
 }
 
+
 ## much more complicated age > n && age < n
 {
   ok( my $results = $ns->query( $type, { age => [ { '>', 10 }, { '<', 32 } ] } ), "complex query");
@@ -82,12 +83,14 @@ foreach my $obj (@$objects) {
   is( $results->[0]->{id}, "james", "object is the correct one (by id)" );  
 }
 
+
 ## finally, this should be an "OR"
 {
   ok( my $results = $ns->query( $type, [ { name => 'James' }, { name => 'Hudson' } ] ), "OR query" );
   isa_ok( $results, "ARRAY", "results is an array");
   is( scalar(@$results), 2, "got two results back");
 }
+
 
 # one more query test.  Querying with nothing should yeild everything.
 {
@@ -133,5 +136,5 @@ foreach my $obj (@$objects) {
   }
 }
 
-ok( $ds->remove_namespace( 'MySQL', $namespace ), "removing namespace");
+ok( $ds->remove_namespace( 'SQLite', $namespace ), "removing namespace");
 
