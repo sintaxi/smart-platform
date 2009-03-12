@@ -3,7 +3,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
   NAME => 'RSP',
   VERSION_FROM => 'lib/RSP.pm',
-  EXE_FILES => ['bin/rsp'],
+  EXE_FILES => ['bin/rsp','bin/rspkeymanagerd'],
   PREREQ_PM => {
       'DBI'                 => 0,
       'SQL::Abstract'       => 0,

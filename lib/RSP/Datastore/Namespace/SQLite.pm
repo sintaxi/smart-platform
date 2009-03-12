@@ -33,7 +33,7 @@ sub connect {
 
   $self->namespace( $db );
 
-  my $dir = RSP->config->{sqlite}->{data};
+  my $dir = RSP->config->{localstorage}->{data};
   my $dbd = File::Spec->catfile( $dir, substr($db, 0, 2) );
   my $dbf = File::Spec->catfile( $dbd, $ns );
   mkpath( $dbd );

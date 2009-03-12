@@ -5,16 +5,6 @@ use warnings;
 
 use base 'RSP::JSObject';
 
-sub new {
-  my $class = shift;
-  my $mog   = shift;
-  my $tx    = shift;
-  my $name  = shift;
-  my $paths = shift;
-  my $self  = { mog => $mog, tx => $tx, paths => $paths, name => $name };
-  bless $self, $class;
-}
-
 sub jsclass {
   return 'MediaFile';
 }

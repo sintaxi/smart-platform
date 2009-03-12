@@ -3,8 +3,9 @@ package RSP::JSObject::MediaFile::Local;
 use strict;
 use warnings;
 
-use base 'RSP::JSObject::MediaFile', # base API
-         'RSP::JSObject::File';      # already implements a lot of what we need.
+use base 'RSP::JSObject::File',      # already implements a lot of what we need.
+         'RSP::JSObject::MediaFile'; # base API
+
 
 sub clearcache {
   warn("clearcache in " . __PACKAGE__ . " not yet implemented");
