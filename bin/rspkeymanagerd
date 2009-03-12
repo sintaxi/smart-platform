@@ -1,0 +1,83 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use RSP;
+use IO::Dir;
+use Proc::Pidfile;
+use File::Path qw();
+use File::Copy qw();
+use File::Spec;
+use Git::Wrapper;
+
+$0 = "keymanagerd";
+
+my $timeout = RSP->config->{keymanager}->{timeout} || 10;
+my $keytmp  = RSP->config->{keymanager}->{keydir};
+my $conf    = RSP->config->{gitosis};
+File::Path::mkpath( $keytmp );
+
+if ( fork() ) {
+  exit;
+}
+
+## don't have more than one running
+my $pp = Proc::Pidfile->new;
+
+my $gw = Git::Wrapper->new( $conf->{admin} );
+
+## handle sighup to get new configurations
+$SIG{HUP} = sub {
+  print "Re-loading configs\n";
+  $keytmp  = RSP->config->{keymanager}->{keydir};
+  $conf    = RSP->config->{gitosis};
+  $timeout = RSP->config->{keymanager}->{timeout} || 10;
+  $gw      = Git::Wrapper->new( $conf->{admin} );
+  File::Path::mkpath( $keytmp );
+};
+
+while( 1 ) {
+  my $dh = IO::Dir->new( $keytmp );
+  if ( !$dh ) {
+    RSP::Error->throw("couldn't read from $keytmp: $!");
+  }
+  ## get a list of files from the directory, omitting, for good reason,
+  ##   the directories . and ..
+  my @files = grep { $_ !~ /^\./ } $dh->read();
+  if (@files) {
+    ## pull the latest changes
+    $gw->pull('origin', 'master');
+    ## loop through each of the new keyfiles - most often there will not be more
+    ##   than one, but just in case...
+    foreach my $file (@files) {
+      my $origin = File::Spec->catfile( $keytmp, $file );
+      my $dest   = File::Spec->catfile( $gw->dir, 'keydir', $file );
+      my $needsadd = !-e $dest;
+      ## first copy the key
+      if ( File::Copy::copy( $origin, $dest . ".tmp") ) {
+	## if we can copy it into the keydir, then we move it to the correct
+	## name, this makes the filesystem operation atomic, with the assumption
+	## that this final move is within the filesystem.
+	File::Copy::move( $dest.".tmp", $dest );
+	## then we unlink it.
+	unlink( $origin );
+      }
+      ## add the file to the git staging area, if this is an update
+      if ( $needsadd ) {
+	$gw->add('keydir/'.$file);
+      }
+    }
+    ## commit the changes, and push.
+    eval {
+      $gw->commit({ all => 1, message => "added keys: " . join("\n\t", @files)});
+      $gw->push();
+    };
+  }
+  $dh->close();
+  ## every $timeout seconds we check for new files, we'll use a select here, instead of a
+  ##   sleep, because we might want fractions.  Unlikely, but we might.
+  select(undef, undef, undef, $timeout);
+}
+
+undef $pp;
