@@ -34,6 +34,23 @@ sub storage_path {
   File::Spec->catfile( $self->storage_dir( $tx, $type ), $name );
 }
 
+sub storage_dir {
+  my $self = shift;
+  my $tx   = shift;
+  my $type = shift;
+  my $dataroot = RSP->config->{localstorage}->{data};
+  my $nspath   = substr(md5_hex( $tx->hostname ), 0, 2);
+  my $storedir = File::Spec->catfile( $dataroot, $nspath, $tx->hostname, $type );
+}
+
+sub storage_path {
+  my $self = shift;
+  my $tx   = shift;
+  my $type = shift;
+  my $name = shift;
+  File::Spec->catfile( $self->storage_dir( $tx, $type ), $name );
+}
+
 sub write {
   my ( $self, $tx, $type, $name, $data ) = @_;
   if (!defined( $name )) { die "no name" }
