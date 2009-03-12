@@ -9,6 +9,16 @@ use File::MMagic::XS qw(:compat);
 
 use base 'RSP::JSObject::MediaFile';
 
+sub new {
+  my $class = shift;
+  my $mog   = shift;
+  my $tx    = shift;
+  my $name  = shift;
+  my $paths = shift;
+  my $self  = { mog => $mog, tx => $tx, paths => $paths, name => $name };
+  bless $self, $class;
+}
+
 sub remove {
   my $self = shift;
   $self->{mog}->delete( $self->filename );

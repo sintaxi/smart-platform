@@ -69,6 +69,9 @@ sub as_function {
 sub as_string {
   my $self = shift;
   my $fh   = IO::File->new( $self->{ file } );
+  if (!$fh) {
+      RSP::Error->throw("could not open $self->{file}: $!");
+  }
   my $data = do {
     local $/;
     $fh->getline();
