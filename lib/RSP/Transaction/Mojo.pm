@@ -63,6 +63,13 @@ sub encode_response {
       die "don't know what to do with " . ref($body) . " object";
     }
   }
+
+  ## I guess I should comment this -- if the application doesn't set a content-length header
+  ## then we need to do it for them.  Its just polite.
+  if ( !$self->response->headers->content_length ) {
+    $self->response->headers->content_length( $self->response->content->body_length );
+  }
+
 }
 
 ##
