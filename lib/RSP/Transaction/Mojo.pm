@@ -63,6 +63,11 @@ sub encode_response {
       die "don't know what to do with " . ref($body) . " object";
     }
   }
+
+  if ( !$self->response->headers->content_length ) {
+    $self->response->headers->content_length( $self->response->content->body_length );
+  }
+
 }
 
 ##
