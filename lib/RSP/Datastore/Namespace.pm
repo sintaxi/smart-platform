@@ -296,7 +296,11 @@ sub query {
   if ( $opts->{limit} ) {
 #    print "LIMITING ARRAY TO $opts->{limit}\n";
 #    print "STARTING SIZE IS ", scalar(@objects), "\n";
-    splice(@objects, 0, $opts->{limit} - 1 );
+    my $offset = 0;
+    if ($opts->{offset}) {
+      $offset = $opts->{offset};
+    }
+    splice(@objects, $offset, $opts->{limit} - 1 );
   }
 
   return \@objects;
