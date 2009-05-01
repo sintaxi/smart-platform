@@ -5,6 +5,8 @@ use warnings;
 
 use base 'RSP::JSObject';
 
+sub new {};
+
 sub jsclass {
   return 'MediaFile';
 }

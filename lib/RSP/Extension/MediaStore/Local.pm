@@ -23,7 +23,7 @@ sub storage_dir {
   my $type = shift;
   my $dataroot = RSP->config->{localstorage}->{data};
   my $nspath   = substr(md5_hex( $tx->hostname ), 0, 2);
-  my $storedir = File::Spec->catfile( $dataroot, $nspath, $tx->hostname, $type );
+  my $storedir = File::Spec->catfile( $dataroot, $nspath, $tx->hostname . ".store", $type );
 }
 
 sub storage_path {
@@ -43,16 +43,22 @@ sub write {
 
   my $storedir  = $self->storage_dir( $tx, $type );
   my $storefile = $self->storage_path( $tx, $type, $name );
-  mkpath( $storedir );
+
+  if (!-d $storedir) {
+    mkpath( $storedir );
+  }
   if ( blessed( $data ) ) {
-    File::Copy::copy( $data->filename, $storefile );
+    if (!File::Copy::copy( $data->fullpath, $storefile )) {
+      my $filename = $data->fullpath;
+      RSP::Error->throw("couldn't copy data from $filename to $type/$name: $!");
+    }
   } else {
     my $fh = IO::File->new( $storefile, ">" );
     if (!$fh) {
       RSP::Error->throw("couldn't create file $type/$name: $!");
     }
     $fh->print( $data );
-    $fh->close;
+    $fh->close or RSP::Error->throw("couldn't close the file $type/$name: $!");
   }
   return 1;
 }
@@ -60,14 +66,14 @@ sub write {
 sub get {
   my ( $self, $tx, $type, $name ) = @_;
   my $path = $self->storage_path( $tx, $type, $name );
-  print "Calling bind_class->new with $path & $name (" . $self->bind_class . ")\n";
   my $obj = eval {
     my $obj = $self->bind_class->new( $path, $name );
   };
   if ($@) {
     RSP::Error->throw("could not bind object for file $name: $@");
   }
-  print "Object is $obj\n";
+  print "got media object, the type is " . ref($obj) . "\n";
+  print "jstype is " . $obj->jsclass . "\n";
   return $obj;
 }
 
