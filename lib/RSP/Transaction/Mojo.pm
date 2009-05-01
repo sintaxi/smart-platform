@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use base 'RSP::Transaction';
+use File::Basename;
 use RSP::Transaction::Mojo::HostMap;
 
 sub hostname {
