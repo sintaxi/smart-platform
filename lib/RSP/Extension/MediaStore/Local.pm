@@ -72,8 +72,6 @@ sub get {
   if ($@) {
     RSP::Error->throw("could not bind object for file $name: $@");
   }
-  print "got media object, the type is " . ref($obj) . "\n";
-  print "jstype is " . $obj->jsclass . "\n";
   return $obj;
 }
 
