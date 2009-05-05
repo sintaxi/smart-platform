@@ -25,7 +25,8 @@ WriteMakefile(
       'Class::Accessor::Chained' => 0,
       'Data::UUID::Base64URLSafe' => 0,
       'Scalar::Util::Numeric' => 0,
-      'Image::Math::Constrain' => 0,      
+      'Image::Math::Constrain' => 0,
+      'File::MMagic'           => 0,
   }
 );
 

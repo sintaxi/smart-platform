@@ -65,8 +65,8 @@ sub entrypoint {
 }
 
 ##
-## returns a list of extensions that need 
-## to be built into the client.  This is 
+## returns a list of extensions that need
+## to be built into the client.  This is
 ## a list of classnames.
 ##
 sub extensions {
@@ -125,7 +125,7 @@ sub actual_host {
   if ($cnf && exists $cnf->{alternate}) {
     return $cnf->{alternate};
   }
-  return $self->hostname;  
+  return $self->hostname;
 }
 
 ##
@@ -142,7 +142,13 @@ sub web {
 sub root {
   my $self = shift;
   my $host_root = RSP->config->{rsp}->{hostroot};
-  File::Spec->catfile( RSP->root, $host_root, $self->actual_host );
+  if ( substr( $host_root, 0, 1 ) eq '/' ) {
+    my $root = File::Spec->catfile( $host_root, $self->actual_host );
+    return $root;
+  } else {
+    my $root = File::Spec->catfile( RSP->root, $host_root, $self->actual_host );
+    return $root;
+  }
 }
 
 ##

@@ -13,6 +13,10 @@ $0 = "rsp";
 my $server = Mojo::Server::Daemon->new();
 $server->app_class( 'RSP' );
 
+if ( $ARGV[0] ) {
+  RSP->config->{rsp}->{hostroot} = $ARGV[0];
+}
+
 if ( RSP->config->{mojo}->{port} ) {
 
   my $port = RSP->config->{mojo}->{port};
