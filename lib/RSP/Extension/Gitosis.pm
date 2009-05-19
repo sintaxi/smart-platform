@@ -6,8 +6,6 @@ use warnings;
 use File::Temp;
 use base 'RSP::Extension';
 
-use Git::Wrapper;
-
 sub exception_name {
   return "gitosis";
 }
