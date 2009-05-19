@@ -24,7 +24,7 @@ sub provides {
 	if ( -f $real_path ) {
 	  return RSP::JSObject::File->new( $real_path, $rsp_path );
 	} else {
-	  RSP::Error->throw($!);
+	  RSP::Error->throw("couldn't open file $rsp_path: $!");
 	}
       }
     }
