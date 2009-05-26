@@ -295,8 +295,13 @@ sub report_consumption {
   $bwreport->host( $self->hostname );
   $bwreport->uri( $self->request->url->path->to_string );
 
-  $self->log( $opreport->as_json );
-  $self->log( $bwreport->as_json );
+  if ( RSP->config->{stomp} ) {
+    require RSP::Stomp;
+    RSP::Stomp->report( $opreport, $bwreport )
+  } else {
+    $self->log( $opreport->as_json );
+    $self->log( $bwreport->as_json );
+  }
 }
 
 ##
