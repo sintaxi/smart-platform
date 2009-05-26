@@ -19,7 +19,7 @@ sub handler {
 				    ->response( $tx->res );
 
   eval {
-    $rsptx->process_transaction;    
+    $rsptx->process_transaction;
   };
   if ($@) {
     $tx->res->code( 500 );

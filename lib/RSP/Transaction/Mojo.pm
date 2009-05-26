@@ -41,6 +41,24 @@ sub encode_body {
       $self->response->body(
         $body->as_string( type => $self->response->headers->content_type )
       );
+    } elsif  ( ref($body) && $body->isa('JavaScript::Generator') ) {
+      my $resp = $self->response;
+      $resp->headers->transfer_encoding('chunked');
+      $resp->headers->trailer('X-Test; X-Test2');
+      my $final_call;
+      my $chunked = Mojo::Filter::Chunked->new;
+      $resp->body_cb(sub {
+		       my $self  = shift;
+		       my $result = $body->next();
+		       if (!$result) {
+			 my $header = Mojo::Headers->new;
+			 $header->header('X-Test', 'true');
+			 $header->header('X-Test2', 'really...');
+			 return $chunked->build( $header );
+		       } else {
+			 return $chunked->build( $result );
+		       }
+		     });
     } else {
       ##
       ## we don't know what to do with it.
@@ -62,7 +80,7 @@ sub encode_array_response {
     ($code, $headers, $body) = @resp;
   }
   $self->response->code( $code );
-  
+
   my @headers = @$headers;
   while( my $key = shift @headers ) {
     my $value = shift @headers;
@@ -74,7 +92,7 @@ sub encode_array_response {
       $self->response->headers->add_line( $key, $value );
     }
   }
-  
+
   $self->encode_body( $body );
 }
 
@@ -87,16 +105,22 @@ sub encode_response {
   my $response = shift;
 
   if ( ref( $response ) && ref( $response ) eq 'ARRAY' ) {
+    ## we're encoding a list...
     $self->encode_array_response( $response );
   } else {
+    ## we're encoding a single thing...
     $self->response->headers->content_type( 'text/html' );
     $self->encode_body( $response );
   }
 
-  ## I guess I should comment this -- if the application doesn't set a content-length header
-  ## then we need to do it for them.  Its just polite.
-  if ( !$self->response->headers->content_length ) {
-    $self->response->headers->content_length( $self->response->content->body_length );
+  if ( $self->response->headers->transfer_encoding &&
+       $self->response->headers->transfer_encoding eq 'chunked' ) {
+    $self->response->headers->remove('Content-Length');
+#    $self->response->body("");
+  } else {
+    if ( !$self->response->headers->content_length) {
+      $self->response->headers->content_length( $self->response->content->body_length );
+    }
   }
 
 }
