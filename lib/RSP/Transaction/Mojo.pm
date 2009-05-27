@@ -44,7 +44,7 @@ sub encode_body {
     } elsif  ( ref($body) && $body->isa('JavaScript::Generator') ) {
       my $resp = $self->response;
       $resp->headers->transfer_encoding('chunked');
-      $resp->headers->trailer('X-Test; X-Test2');
+      $resp->headers->trailer('X-Trailing');
       my $final_call;
       my $chunked = Mojo::Filter::Chunked->new;
       $resp->body_cb(sub {
@@ -52,8 +52,7 @@ sub encode_body {
 		       my $result = $body->next();
 		       if (!$result) {
 			 my $header = Mojo::Headers->new;
-			 $header->header('X-Test', 'true');
-			 $header->header('X-Test2', 'really...');
+			 $header->header('X-Trailing', 'true');
 			 return $chunked->build( $header );
 		       } else {
 			 return $chunked->build( $result );
