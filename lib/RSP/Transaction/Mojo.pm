@@ -47,14 +47,26 @@ sub encode_body {
       $resp->headers->trailer('X-Trailing');
       my $final_call;
       my $chunked = Mojo::Filter::Chunked->new;
+      my $bytecount = bytes::length( $resp->build() ) + bytes::length( $self->request->build );
       $resp->body_cb(sub {
-		       my $self  = shift;
+		       my $content  = shift;
 		       my $result = $body->next();
 		       if (!$result) {
 			 my $header = Mojo::Headers->new;
 			 $header->header('X-Trailing', 'true');
+			 $self->end( 1 );  ## cleanup the transaction here because we couldn't do it earlier
+
+			 $bytecount += bytes::length( $header->build );
+			 my $bwreport = RSP::Consumption::Bandwidth->new();
+			 $bwreport->count( $bytecount );
+			 $bwreport->host( $self->hostname );
+			 $bwreport->uri( $self->url );
+
+			 $self->consumption_log( $bwreport );
+
 			 return $chunked->build( $header );
 		       } else {
+			 $bytecount += bytes::length( $result );
 			 return $chunked->build( $result );
 		       }
 		     });
@@ -115,7 +127,6 @@ sub encode_response {
   if ( $self->response->headers->transfer_encoding &&
        $self->response->headers->transfer_encoding eq 'chunked' ) {
     $self->response->headers->remove('Content-Length');
-#    $self->response->body("");
   } else {
     if ( !$self->response->headers->content_length) {
       $self->response->headers->content_length( $self->response->content->body_length );

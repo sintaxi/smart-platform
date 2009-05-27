@@ -16,7 +16,7 @@ use base 'Class::Accessor::Chained';
 
 our $HOST_CLASS = RSP->config->{_}->{host_class} || 'RSP::Host';
 
-__PACKAGE__->mk_accessors(qw( runtime context hostclass ops ));
+__PACKAGE__->mk_accessors(qw( runtime context hostclass ops url ));
 
 ##
 ## make sure we have the appropriate host class loaded
@@ -73,9 +73,11 @@ sub process_transaction {
 
   $self->assert_transaction_ready;
 
+  $self->url( $self->request->url->path->to_string );
+
   $self->bootstrap;
   $self->run;
-#  $self->end;
+  $self->end;
 }
 
 ##
@@ -165,13 +167,17 @@ sub cleanup_js_environment {
   my $self = shift;
 
   ## unset the interrupt handler
-  $self->runtime->set_interrupt_handler( undef );
-  $self->context->unbind_value( 'system' );
+  if ( $self->runtime && $self->context ) {
+    $self->runtime->set_interrupt_handler( undef );
+    $self->context->unbind_value( 'system' );
+  }
 
-  RSP::JSObject->unbind( $self->context );
+#  RSP::JSObject->unbind( $self->context );
 
-  $self->context->DESTROY;
-  $self->runtime->DESTROY;
+  delete $self->{context};
+  delete $self->{runtime};
+#  $self->context->DESTROY;
+#  $self->runtime->DESTROY;
 }
 
 ##
@@ -250,12 +256,13 @@ sub run {
 ##
 sub end {
   my $self = shift;
+  my $post_callback = shift;
 
-  $self->report_consumption;
-
-  undef( $self->{cache} );
-
-  $self->cleanup_js_environment;
+  if ($post_callback || !($self->response->headers->transfer_encoding && $self->response->headers->transfer_encoding eq "chunked")) {
+    $self->report_consumption;
+    undef( $self->{cache} );
+    $self->cleanup_js_environment;
+  }
 }
 
 ##
@@ -282,22 +289,36 @@ sub report_consumption {
 
   return unless $self->host->should_report_consumption;
 
+  my @reports = ();
+
   my $opreport = RSP::Consumption::Ops->new();
   $opreport->count( $self->ops_consumed );
   $opreport->host( $self->hostname );
-  $opreport->uri( $self->request->url->path->to_string );
+  $opreport->uri( $self->url );
+  push @reports, $opreport;
 
-  my $bwreport = RSP::Consumption::Bandwidth->new();
-  $bwreport->count( $self->bw_consumed );
-  $bwreport->host( $self->hostname );
-  $bwreport->uri( $self->request->url->path->to_string );
+  ## the callback has to do it in the case of
+  ## chunked responses...
+  if ( $self->response && $self->request ) {
+    my $bwreport = RSP::Consumption::Bandwidth->new();
+    $bwreport->count( $self->bw_consumed );
+    $bwreport->host( $self->hostname );
+    $bwreport->uri( $self->url );
+    push @reports, $bwreport;
+  }
 
+  $self->consumption_log( @reports );
+}
+
+sub consumption_log {
+  my $self = shift;
   if ( RSP->config->{stomp} ) {
     require RSP::Stomp;
-    RSP::Stomp->report( $opreport, $bwreport )
+    RSP::Stomp->report( @_ );
   } else {
-    $self->log( $opreport->as_json );
-    $self->log( $bwreport->as_json );
+    foreach my $report (@_ ) {
+      $self->log( $report->as_json );
+    }
   }
 }
 
