@@ -45,7 +45,6 @@ sub encode_body {
       my $resp = $self->response;
       $resp->headers->transfer_encoding('chunked');
       $resp->headers->trailer('X-Trailing');
-      my $final_call;
       my $chunked = Mojo::Filter::Chunked->new;
       my $bytecount = bytes::length( $resp->build() ) + bytes::length( $self->request->build );
       $resp->body_cb(sub {
