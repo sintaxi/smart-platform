@@ -75,7 +75,7 @@ sub process_transaction {
 
   $self->bootstrap;
   $self->run;
-  $self->end;
+#  $self->end;
 }
 
 ##
@@ -256,9 +256,6 @@ sub end {
   undef( $self->{cache} );
 
   $self->cleanup_js_environment;
-
-##  my $clean = File::Temp->can('cleanup');
-##  $clean->();
 }
 
 ##
