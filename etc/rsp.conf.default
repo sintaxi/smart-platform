@@ -1,16 +1,27 @@
 root=/Users/james/Documents/Joyent/Projects/rsp
-extensions=Console,DataStore,FileSystem,HTTP,Image,Import,JSONEncoder,MD5,MediaStore,OpenId,Sprintf,UUID
+extensions=Console,DataStore,FileSystem,HTTP,Image,Import,JSONEncoder,Digest,MediaStore,OpenId,Sprintf,UUID,HMAC
+
+##
+## this is the configuration for the stomp broker
+##
+[stomp]
+user=guest
+pass=guest
+host=localhost
+port=61613
 
 [mogilefs]
 trackers=localhost:6001
 
+## note, this is an example of additional extensions being provided to a particular host
 [host:mgmtconsole]
 extensions=Gitosis,DataStore::Global
 
 [rsp]
 hostroot=git
 oplimit=100000
-storage=storage:localdb
+## storage:local is a configuration group, listed below
+storage=storage:local
 memcached=127.0.0.1:11211
 
 [mojo]
@@ -20,26 +31,18 @@ port=8080
 [keymanager]
 keydir=/tmp/keymanager
 
+## information on where gitosis is, for the gitosis extension
 [gitosis]
 server=10.0.1.6
 admin=/Users/james/Documents/Joyent/Projects/gitosis-admin
-
-[host:net-amazon-s3-test-001.s3howl]
-alternate=s3howl
-
-[host:127.0.0.1]
-noconsumption=true
-
-[host:scoop]
-alternate=localhost
-oplimit=10000000 # example of a host-specific oplimit
 
 [mysql]
 host=localhost
 username=root
 password=
 
-[sqlite]
+## this is used for the Local storage extensions.
+[localstorage]
 data=/Users/james/Documents/Joyent/Projects/rsp/data
 
 ## The following are storage configurations.
