@@ -5,6 +5,7 @@ WriteMakefile(
   VERSION_FROM => 'lib/RSP.pm',
   EXE_FILES => ['bin/rsp','bin/rspkeymanagerd'],
   PREREQ_PM => {
+      'Net::Stomp'          => 0,
       'DBI'                 => 0,
       'SQL::Abstract'       => 0,
       'Set::Object'         => 0,
