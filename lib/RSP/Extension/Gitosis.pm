@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use File::Temp;
+use JSON::XS;
 use base 'RSP::Extension';
 
 sub exception_name {
@@ -15,6 +16,9 @@ sub provides {
   my $tx   = shift;
   return {
 	  gitosis => {
+		      repo => {
+			       clone => $class->can('clone')->( $class, $tx )
+			      }
 		      key => {
 			      'write' => sub {
 				my ($user, $key) = @_;
@@ -68,6 +72,24 @@ sub check_key {
 				    sprintf('%s.pub', $user)
 				   );
   -e $keyfile
+}
+
+sub clone {
+  my $class = shift;
+  my $tx    = shift;
+  return sub {
+    my $from = shift;
+    my $to   = shift;
+    my $mesg = {
+		from_project => $from,
+		to_project   => $to
+	       };
+    RSP::Stomp->send(
+		     RSP->config->{amqp}->{repository_management_exchange},
+		     encode_json( $mesg )
+		    );
+    return 1;
+  }
 }
 
 1;
