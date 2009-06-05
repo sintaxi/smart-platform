@@ -1,4 +1,0 @@
-This directory contains hosts for the standalone server.
-
-Each host has its own directory (www.foo.com/), with js/bootstrap.js underneath
-it (www.foo.com/js/bootstrap.js).

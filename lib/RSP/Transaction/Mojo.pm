@@ -135,6 +135,26 @@ sub encode_response {
 }
 
 ##
+## terminates the transaction
+##
+sub end {
+  my $self = shift;
+  my $post_callback = shift;
+
+  if ($post_callback || !($self->response->headers->transfer_encoding && $self->response->headers->transfer_encoding eq "chunked")) {
+    $self->report_consumption;
+    undef( $self->{cache} );
+    $self->cleanup_js_environment;
+  }
+}
+
+sub process_transaction {
+  my $self = shift;
+  $self->url( $self->request->url->path->to_string );
+  $self->SUPER::process_transaction( @_ );
+}
+
+##
 ## return the HTTP request object translated into something that
 ##  JavaScript can process
 ##

@@ -73,8 +73,6 @@ sub process_transaction {
 
   $self->assert_transaction_ready;
 
-  $self->url( $self->request->url->path->to_string );
-
   $self->bootstrap;
   $self->run;
   $self->end;
@@ -258,11 +256,9 @@ sub end {
   my $self = shift;
   my $post_callback = shift;
 
-  if ($post_callback || !($self->response->headers->transfer_encoding && $self->response->headers->transfer_encoding eq "chunked")) {
-    $self->report_consumption;
-    undef( $self->{cache} );
-    $self->cleanup_js_environment;
-  }
+  $self->report_consumption;
+  undef( $self->{cache} );
+  $self->cleanup_js_environment;
 }
 
 ##
