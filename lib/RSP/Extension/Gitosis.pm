@@ -5,6 +5,7 @@ use warnings;
 
 use File::Temp;
 use JSON::XS;
+use RSP::Stomp;
 use base 'RSP::Extension';
 
 sub exception_name {
