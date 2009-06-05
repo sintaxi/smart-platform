@@ -1,0 +1,21 @@
+#!perl
+
+use strict;
+use warnings;
+
+use RSP::Stomp;
+
+my $stomp = RSP::Stomp->connection;
+my $dest  = RSP->config->{amqp}->{repository_management_exchange};
+$stomp->subscribe({
+		   'destination' => $dest,
+		   'ack'         => 'client'
+		  });
+
+while (1) {
+    my $frame = $stomp->receive_frame;
+    print $frame->body . "\n";
+    $stomp->ack({frame=>$frame});
+    last if $frame->body eq 'QUIT';
+}
+$stomp->disconnect;
