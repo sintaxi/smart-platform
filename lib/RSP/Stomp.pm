@@ -12,12 +12,20 @@ sub report {
   my $class = shift;
   my $conn  = $class->connection;
   foreach my $report (@_) {
-    $conn->send({
-		 destination    => 'rsp.consumption',
-		 bytes_message  => 1,
-		 body           => $report->as_json
-		});
+    $class->send( 'rsp.consumption', $report->as_json );
   }
+}
+
+sub send {
+  my $class = shift;
+  my $dest  = shift;
+  my $mesg  = shift;
+  my $conn  = $class->connection;
+  $conn->send({
+	       destination   => $dest,
+	       bytes_message => 1,
+	       body          => $mesg
+	      });
 }
 
 sub connection {
