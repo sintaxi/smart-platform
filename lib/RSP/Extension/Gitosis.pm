@@ -18,7 +18,7 @@ sub provides {
 	  gitosis => {
 		      repo => {
 			       clone => $class->can('clone')->( $class, $tx )
-			      }
+			      },
 		      key => {
 			      'write' => sub {
 				my ($user, $key) = @_;
