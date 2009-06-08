@@ -39,7 +39,7 @@
     <exec_method
         name='stop' 
         type='method' 
-        exec="kill `ps -aef | grep 'rsp$' | ggrep -v  grep | cut -d' ' -f6`"
+        exec=":kill"
         timeout_seconds='60'>
         <method_context working_directory="/opt/local/smart">
 	  <method_credential user="root" group="staff"/>
