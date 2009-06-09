@@ -38,7 +38,13 @@ sub connect {
   my $dbf = File::Spec->catfile( $dbd, $ns );
   mkpath( $dbd );
   $self->dbfile( $dbf );
-  $self->conn( DBI->connect_cached( "dbi:SQLite:dbname=$dbf", "", "", { unicode => 1, RaiseError => 1 ) );
+  $self->conn( DBI->connect_cached(
+		   "dbi:SQLite:dbname=$dbf",
+		   "", 
+		   "", 
+		   { unicode => 1, RaiseError => 1 }
+	       )
+      );
   $self->cache( RSP::Transaction->cache( $ns ) );
   return $self;
 }
