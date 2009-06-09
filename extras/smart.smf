@@ -1,0 +1,53 @@
+<?xml version='1.0'?>
+<!DOCTYPE service_bundle SYSTEM '/usr/share/lib/xml/dtd/service_bundle.dtd.1'>
+<service_bundle type='manifest' name='smart/webserver'>
+  <service name='application/smart/webserver' type='service' version='0'>
+
+    <create_default_instance enabled='true'/>
+    <single_instance />
+
+    <dependency 
+        name='fs' 
+        grouping='require_all' 
+        restart_on='none' 
+        type='service'>
+      <service_fmri value='svc:/system/filesystem/local'/>
+    </dependency>
+
+    <dependency 
+        name='net' 
+        grouping='require_all' 
+        restart_on='none' 
+        type='service'>
+      <service_fmri value='svc:/network/loopback'/>
+    </dependency>
+
+    <exec_method 
+        name='start'
+        type='method' 
+        exec="bin/rsp"
+        timeout_seconds='60'>
+        <method_context working_directory="/opt/local/smart">
+	  <method_credential user="root" group="staff"/>
+	  <method_environment>
+	    <envvar name="LD_LIBRARY_PATH" value="/opt/local/smart/lib"/>
+	    <envvar name="PATH" value="/opt/local/bin:/opt/local/sbin:/usr/xpg4/bin:/usr/bin:/usr/sbin:/usr/sfw/bin:/usr/openwin/bin:/opt/SUNWspro/bin:/usr/ccs/bin"/>
+	  </method_environment>
+        </method_context>
+    </exec_method>
+
+    <exec_method
+        name='stop' 
+        type='method' 
+        exec=":kill"
+        timeout_seconds='60'>
+        <method_context working_directory="/opt/local/smart">
+	  <method_credential user="root" group="staff"/>
+	  <method_environment>
+	    <envvar name="PATH" value="/opt/local/bin:/opt/local/sbin:/usr/xpg4/bin:/usr/bin:/usr/sbin:/usr/sfw/bin:/usr/openwin/bin:/opt/SUNWspro/bin:/usr/ccs/bin"/>
+	  </method_environment>
+        </method_context>
+    </exec_method>
+
+  </service>
+</service_bundle>

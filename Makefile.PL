@@ -3,7 +3,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
   NAME => 'RSP',
   VERSION_FROM => 'lib/RSP.pm',
-  EXE_FILES => ['bin/rsp','bin/rspkeymanagerd'],
+  EXE_FILES => ['bin/rsp','bin/rspkeymanagerd', 'bin/clonewatcher'],
   PREREQ_PM => {
       'Net::Stomp'          => 0,
       'DBI'                 => 0,
