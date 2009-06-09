@@ -293,6 +293,10 @@ sub query {
     @objects = sort { $a->{ $opts->{sort} } cmp $b->{ $opts->{sort } } } @objects;
   }
 
+  if ( $opts->{reverse} ) {
+    @objects = reverse @objects;
+  }
+
   if ( $opts->{limit} ) {
 #    print "LIMITING ARRAY TO $opts->{limit}\n";
 #    print "STARTING SIZE IS ", scalar(@objects), "\n";
