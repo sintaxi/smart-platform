@@ -300,7 +300,7 @@ sub query {
     if ($opts->{offset}) {
       $offset = $opts->{offset};
     }
-    splice(@objects, $offset, $opts->{limit} - 1 );
+    @objects = splice(@objects, $offset, $opts->{limit} - 1 );
   }
 
   return \@objects;
