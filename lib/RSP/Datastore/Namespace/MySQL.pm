@@ -22,7 +22,14 @@ sub create {
   my $self  = $class->new;
   $self->namespace( md5_hex($ns) );
   my $host = RSP->config->{mysql}->{host};
-  $self->conn( DBI->connect_cached("dbi:mysql:host=$host", RSP->config->{mysql}->{username}, RSP->config->{mysql}->{password}) );
+  $self->conn(
+      DBI->connect_cached(
+	  "dbi:mysql:host=$host",
+	  RSP->config->{mysql}->{username},
+	  RSP->config->{mysql}->{password},
+	  { mysql_enable_utf8 => 1 }
+      )
+  );
   $self->conn->do("create database " . $self->namespace);
   $self->conn->do("use " . $self->namespace);
 
