@@ -290,7 +290,17 @@ sub query {
 
   if ( $opts->{sort} ) {
     ## okay, time to get sorting...
-    @objects = sort { $a->{ $opts->{sort} } cmp $b->{ $opts->{sort } } } @objects;
+    @objects = sort { 
+	my $ra = $a->{$opts->{sort}};
+	my $rb = $b->{$opts->{sort}};
+	my $result;
+	if (is_num( $ra )) {
+	  $result = $ra <=> $rb;
+	} else {
+	  $result = $ra cmp $rb;
+	}
+	$result;
+    } @objects;
   }
 
   if ( $opts->{reverse} ) {
