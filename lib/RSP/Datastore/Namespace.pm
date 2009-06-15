@@ -294,12 +294,12 @@ sub query {
 	my $ra = $a->{$opts->{sort}};
 	my $rb = $b->{$opts->{sort}};
 	my $result;
-	if (is_num( $ra )) {
+	if (isnum( $ra )) {
 	  $result = $ra <=> $rb;
 	} else {
 	  $result = $ra cmp $rb;
 	}
-	$result;
+	return $result;
     } @objects;
   }
 
