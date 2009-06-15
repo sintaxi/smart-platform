@@ -307,14 +307,12 @@ sub query {
     @objects = reverse @objects;
   }
 
-  if ( $opts->{limit} ) {
-#    print "LIMITING ARRAY TO $opts->{limit}\n";
-#    print "STARTING SIZE IS ", scalar(@objects), "\n";
+  if ( $opts->{limit}) {
     my $offset = 0;
     if ($opts->{offset}) {
       $offset = $opts->{offset};
     }
-    @objects = splice(@objects, $offset, $opts->{limit} - 1 );
+    @objects = splice(@objects, $offset, $opts->{limit} );
   }
 
   return \@objects;
