@@ -44,3 +44,10 @@ if ( RSP->config->{mojo}->{port} ) {
   $server->run;
 }
 
+package Mojo::Server::Daemon::Prefork;
+
+use POSIX qw( setsid );
+
+1;
+
+

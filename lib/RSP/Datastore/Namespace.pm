@@ -290,21 +290,29 @@ sub query {
 
   if ( $opts->{sort} ) {
     ## okay, time to get sorting...
-    @objects = sort { $a->{ $opts->{sort} } cmp $b->{ $opts->{sort } } } @objects;
+    @objects = sort { 
+	my $ra = $a->{$opts->{sort}};
+	my $rb = $b->{$opts->{sort}};
+	my $result;
+	if (isnum( $ra )) {
+	  $result = $ra <=> $rb;
+	} else {
+	  $result = $ra cmp $rb;
+	}
+	return $result;
+    } @objects;
   }
 
   if ( $opts->{reverse} ) {
     @objects = reverse @objects;
   }
 
-  if ( $opts->{limit} ) {
-#    print "LIMITING ARRAY TO $opts->{limit}\n";
-#    print "STARTING SIZE IS ", scalar(@objects), "\n";
+  if ( $opts->{limit}) {
     my $offset = 0;
     if ($opts->{offset}) {
       $offset = $opts->{offset};
     }
-    @objects = splice(@objects, $offset, $opts->{limit} - 1 );
+    @objects = splice(@objects, $offset, $opts->{limit} );
   }
 
   return \@objects;
