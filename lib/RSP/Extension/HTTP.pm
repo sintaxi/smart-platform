@@ -3,6 +3,7 @@ package RSP::Extension::HTTP;
 use strict;
 use warnings;
 
+use Encode;
 use HTTP::Request;
 use LWPx::ParanoidAgent;
 
@@ -22,25 +23,34 @@ sub provides {
   my $class = shift;
   my $tx    = shift;
   my $ua = LWPx::ParanoidAgent->new;
-  $ua->agent("Reasonably Smart Platform / HTTP / $VERSION");
-  $ua->timeout( 10 );  
+  $ua->agent("Joyent Smart Platform / HTTP / $VERSION");
+  $ua->timeout( 10 );
   return {
     'http' => {
       'request' => sub {
         my $response = eval {
-          my $req = shift;
+	  my @args;
+	  foreach my $part (@_) {
+	    if (!ref($part)) {
+	      push( @args, Encode::encode("utf8", $part ) );
+	    } else {
+	      push( @args, $part );
+	    }
+	  }
+          my $req = shift @args;
           my $r;
           if ( ref( $req ) ) {
             $r = HTTP::Request->new( @$req );
           } else {
-            $r = HTTP::Request->new( $req, @_ );
+            $r = HTTP::Request->new( $req, @args );
           }
           $ua->request( $r );
         };
         if ($@) {
           RSP::Error->throw("error: $@");
         }
-        return $class->response_to_object( $response );
+        my $ro = $class->response_to_object( $response );
+	return $ro;
       }
     }
   };
@@ -50,10 +60,12 @@ sub response_to_object {
   my $class = shift;
   my $response = shift;
   my %headers = %{ $response->{_headers} };
-  return {
-    'headers'=> \%headers,
-    'content' => $response->decoded_content
-  }
+  my $ro = {
+	    'headers' => \%headers,
+	    'content' => $response->decoded_content,
+	    'code'    => $response->code,
+	   };
+  return $ro;
 }
 
 1;

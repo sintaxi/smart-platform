@@ -163,7 +163,7 @@ sub process_transaction {
 sub build_entrypoint_arguments {
   my $self = shift;
 
-  my $cookies = {};
+  my $cookies;
   if ( $self->request->cookies ) {
     foreach my $cookie ( @{ $self->request->cookies } ) {
       my $name  = $cookie->name;
@@ -173,6 +173,10 @@ sub build_entrypoint_arguments {
   }
 
   my %body  = %{$self->request->body_params->to_hash};
+  foreach my $key (keys %body) {
+    $body{$key} = Encode::decode("utf8", $body{$key});
+  }
+
   my %query = %{$self->request->query_params->to_hash};
 
   my $request = {};
@@ -203,7 +207,7 @@ sub build_entrypoint_arguments {
 		  } @{ $self->request->uploads }
 		 };
     } else {
-      $request->{content} = $self->request->body;
+      $request->{content} = Encode::decode( 'utf8', $self->request->body );
     }
 
     $request->{headers} = {
@@ -215,7 +219,7 @@ sub build_entrypoint_arguments {
     $request->{queryString} = $self->request->url->query->to_string;
   };
 
-  _utf8_on( $request );
+#  _utf8_on( $request );
 
   $request->{uploads} = $uploads;
 
