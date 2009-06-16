@@ -3,8 +3,10 @@ package RSP::Transaction::Mojo;
 use strict;
 use warnings;
 
+use Encode;
 use base 'RSP::Transaction';
 use File::Basename;
+use Data::Structure::Util qw( _utf8_on );
 use RSP::Transaction::Mojo::HostMap;
 
 sub hostname {
@@ -174,6 +176,7 @@ sub build_entrypoint_arguments {
   my %query = %{$self->request->query_params->to_hash};
 
   my $request = {};
+  my $uploads = {};
   eval {
     $request->{type}    = 'HTTP';
     $request->{uri}     = $self->request->url->path->to_string;
@@ -184,15 +187,21 @@ sub build_entrypoint_arguments {
 
     ## if we've got a multipart request, don't bother with
     ## the content.
+
     if ( $self->request->is_multipart ) {
       ## map the uploads to RSP file objects
-      $request->{uploads} = {
-			     map {
-			       my $name = $_->name;
-			       my $file = $_->file;
-			       ( $name => RSP::JSObject::File->new( $file->path, basename( $_->filename ) ) )
-			     } @{ $self->request->uploads }
-			    };
+      $uploads = {
+		  map {
+		    my $name = $_->name;
+		    my $file = $_->file;
+		    (
+		     $name => RSP::JSObject::File->new(
+						       $file->path, 
+						       basename( $_->filename )
+						      )
+		    )
+		  } @{ $self->request->uploads }
+		 };
     } else {
       $request->{content} = $self->request->body;
     }
@@ -206,9 +215,9 @@ sub build_entrypoint_arguments {
     $request->{queryString} = $self->request->url->query->to_string;
   };
 
-  if ($@) {
-    print "couldn't bind request: $@\n";
-  }
+  _utf8_on( $request );
+
+  $request->{uploads} = $uploads;
 
   return $request;
 }
