@@ -22,19 +22,22 @@ sub create {
   my $self  = $class->new;
   $self->namespace( md5_hex($ns) );
   my $host = RSP->config->{mysql}->{host};
-  $self->conn(
-      DBI->connect_cached(
-	  "dbi:mysql:host=$host",
-	  RSP->config->{mysql}->{username},
-	  RSP->config->{mysql}->{password},
-	  { mysql_enable_utf8 => 1 }
-      )
-  );
+  $self->conn( $class->perform_connection );
   $self->conn->do("create database " . $self->namespace);
   $self->conn->do("use " . $self->namespace);
-
   $self->cache( RSP::Transaction->cache( $ns ) );
   return $self;
+}
+
+sub perform_connection {
+  my $class = shift;
+  my $host = RSP->config->{mysql}->{host};
+  DBI->connect_cached(
+		      "dbi:mysql:host=$host",
+		      RSP->config->{mysql}->{username},
+		      RSP->config->{mysql}->{password},
+		      { mysql_enable_utf8 => 1 }
+		     )
 }
 
 sub connect {
@@ -43,13 +46,15 @@ sub connect {
   my $self  = $class->new;
   my $db    = md5_hex($ns);
   $self->namespace( $db );
-  my $host = RSP->config->{mysql}->{host};
-  $self->conn( DBI->connect_cached("dbi:mysql:host=$host;database=$db", RSP->config->{mysql}->{username}, RSP->config->{mysql}->{password}) );
+  $self->conn( $class->perform_connection );
 
+  ## if we couldn't get a connection, chances are it's because
+  ## we're missing the database, lets create one and see if that resolves it...
+  ## NOTE: This commented assertion may not be true any more!
   if (!$self->conn) {
-    ## if we couldn't get a connection, chances are it's because
-    ## we're missing the database, lets create one and see if that resolves it...
     $self = $class->create( $ns );
+  } else {
+    $self->conn->do(sprintf("use %s", $self->namespace));
   }
 
   $self->cache( RSP::Transaction->cache( $ns ) );
