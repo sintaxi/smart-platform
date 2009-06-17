@@ -16,24 +16,44 @@ sub provides {
   my $self  = bless { transaction => $tx }, $class;
   return {
     'datastore' => {
-      'write'  => sub { 
-	my $type = lc( shift );
-	return $self->namespace->write( $type, @_ );
-       },
-      'remove' => sub {
-	my $type = lc( shift );
-	return $self->namespace->remove( $type, @_ );
-       },
-      'search' => sub {
-	my $type = lc( shift );
-	return $self->namespace->query( $type, @_ );
-       },
-      'get'    => sub {
-	my $type = lc( shift );
-	return $self->namespace->read( $type, @_ );
-       }
+      'write'  => $self->can('write')->( $self ),
+      'remove' => $self->can('remove')->( $self ),
+      'search' => $self->can('search')->( $self ),
+      'get'    => $self->can('get')->( $self )
     }
   };
+}
+
+sub get {
+  my $self = shift;
+  return sub {
+    my $type = lc( shift );
+    return $self->namespace->read( $type, @_ );
+  }
+}
+
+sub search {
+  my $self = shift;
+  return sub {
+    my $type = lc( shift );
+    return $self->namespace->query( $type, @_ );
+  }
+}
+
+sub remove {
+  my $self = shift;
+  return sub {
+    my $type = lc( shift );
+    return $self->namespace->remove( $type, @_ );
+  }
+}
+
+sub write {
+  my $self = shift;
+  return sub {
+    my $type = lc( shift );
+    return $self->namespace->write( $type, @_ );
+  }
 }
 
 1;
