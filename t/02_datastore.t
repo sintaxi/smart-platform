@@ -29,6 +29,9 @@ is( ref( $provided->{remove} ), "CODE", "got a remove method" );
 is( ref( $provided->{search} ), "CODE", "got a search method" );
 
 ok( $provided->{write}("test", { id => 'foo', 'name' => 'james' }), "wrote an object");
+
+select(undef, undef, undef, 0.25); ## give it a chance for the message to be written...
+
 is_deeply( $provided->{get}("test", "foo"), { id => 'foo', 'name' => 'james' }, "got it back okay");
 ok( my $result = $provided->{search}("test", { name => 'james' }), "queried okay");
 is_deeply( $result, [ { id => 'foo', name => 'james' } ], "search results okay");
