@@ -32,7 +32,9 @@ ok( my $fobj = $provided->{get}->( "test-data", $fname ) );
 ok( $provided->{remove}->( "test-data", $fname ) );
 
 ## clean up after ourselves...
-ok( $ext_class->getmogile_adm->delete_domain(
-	$ext_class->domain_from_tx_and_type( $tx, "test-data" )
-    ), "domain should be gone...");
+if ( $ext_class->can('getmogile_adm') ) {
+    ok( $ext_class->getmogile_adm->delete_domain(
+	    $ext_class->domain_from_tx_and_type( $tx, "test-data" )
+	), "domain should be gone...");
+}
 
