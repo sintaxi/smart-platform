@@ -14,7 +14,6 @@ WriteMakefile(
       'Mojo'                => 0,
       'MIME::Types'         => 0,
       'Hash::Merge::Simple' => 0,
-      'Template'            => 0,
       'Digest::MD5'         => 0,
       'Digest::SHA1'        => 0,
       'Digest::HMAC_SHA1'   => 0,

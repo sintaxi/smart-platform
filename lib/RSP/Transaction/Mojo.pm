@@ -6,7 +6,6 @@ use warnings;
 use Encode;
 use base 'RSP::Transaction';
 use File::Basename;
-use Data::Structure::Util qw( _utf8_on );
 use RSP::Transaction::Mojo::HostMap;
 
 sub hostname {
@@ -218,8 +217,6 @@ sub build_entrypoint_arguments {
 
     $request->{queryString} = $self->request->url->query->to_string;
   };
-
-#  _utf8_on( $request );
 
   $request->{uploads} = $uploads;
 
