@@ -6,4 +6,5 @@ blib
 pm_to_blib
 \#*
 .\#*
+library
 log
