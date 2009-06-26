@@ -51,11 +51,15 @@ sub connect {
   ## if we couldn't get a connection, chances are it's because
   ## we're missing the database, lets create one and see if that resolves it...
   ## NOTE: This commented assertion may not be true any more!
-  if (!$self->conn) {
+  eval {
+      if (!$self->conn->do(sprintf("use %s", $self->namespace))) {
+	  die "unknown db";
+      }
+  };
+  if ($@) {
     $self = $class->create( $ns );
-  } else {
     $self->conn->do(sprintf("use %s", $self->namespace));
-  }
+  } 
 
   $self->cache( RSP::Transaction->cache( $ns ) );
 
