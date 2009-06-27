@@ -6,6 +6,7 @@ use warnings;
 use JavaScript;
 use RSP::Error;
 use Module::Load qw();
+use RSP::FakeCache;
 use Cache::Memcached::Fast;
 use Hash::Merge::Simple 'merge';
 use Scalar::Util qw( weaken );
@@ -102,6 +103,7 @@ sub assert_transaction_ready {
 ##
 sub cache {
   my $self = shift;
+  if (!RSP->config->{rsp}->{memcached}) { return RSP::FakeCache->new; }
   if (ref( $self )) { ## instance method
     ## if we've got a memcache, return it
     if ( $self->{cache} ) {
