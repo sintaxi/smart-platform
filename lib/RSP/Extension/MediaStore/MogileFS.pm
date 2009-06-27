@@ -33,10 +33,10 @@ sub getmogile {
   my $self = shift;
   my $tx   = shift;
   my $type = shift;
-  $tx->{mogile} ||= MogileFS::Client->new(
-					  domain => $self->domain_from_tx_and_type( $tx, $type ),
-					  hosts  => [ split(',', RSP->config->{mogilefs}->{trackers}) ]
-					 );
+  MogileFS::Client->new(
+      domain => $self->domain_from_tx_and_type( $tx, $type ),
+      hosts  => [ split(',', RSP->config->{mogilefs}->{trackers}) ]
+  );
 }
 
 ##
