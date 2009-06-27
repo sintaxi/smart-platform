@@ -35,13 +35,19 @@ sub encode_body {
       if ($@) { die $@ };
       $self->response->body( $content );
     } elsif ( ref($body) && $body->isa('RSP::JSObject') ) {
-      ##
-      ## it's an object that exists in both JS and Perl, convert it
-      ##  to it's stringified form, with a hint for the content-type.
-      ##
-      $self->response->body(
-        $body->as_string( type => $self->response->headers->content_type )
-      );
+      if ( $body->isa('RSP::JSObject::File') ) {
+	my $f = Mojo::File->new;
+	$f->path( $body->fullpath );
+	$self->response->content->file( $f );
+      } else {
+	##
+	## it's an object that exists in both JS and Perl, convert it
+	##  to it's stringified form, with a hint for the content-type.
+	##
+	$self->response->body(
+			      $body->as_string( type => $self->response->headers->content_type )
+			     );
+      }
     } elsif  ( ref($body) && $body->isa('JavaScript::Generator') ) {
       my $resp = $self->response;
       $resp->headers->transfer_encoding('chunked');
