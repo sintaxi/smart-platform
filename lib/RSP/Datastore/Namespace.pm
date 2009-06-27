@@ -117,7 +117,8 @@ sub read {
   }
 
   if (!$self->has_type_table( $type )) {
-    RSP::Error->throw("no such type");
+    $self->create_type_table( $type );
+    return $self->read( $type, $id );
   } else {
     my $obj = $self->read_one_object( $type, $id );
     if (!$obj) {
