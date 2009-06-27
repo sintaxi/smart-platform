@@ -5,7 +5,7 @@ use warnings;
 
 use Digest::MD5;
 use LWP::UserAgent;
-use File::MMagic::XS qw(:compat);
+use File::MMagic;
 
 use base 'RSP::JSObject::MediaFile';
 
@@ -60,12 +60,7 @@ sub cached_getandset {
   if ( $self->{ $what } ) {
     return $self->{ $what };
   } else {
-    my $cached = $self->{tx}->cache->get( $cachekey );
-    if (!$cached) {
-      $cached = $gen->();
-      $self->{tx}->cache->set( $cachekey, $cached );
-    }
-    $self->{ $what } = $cached;
+    $self->{ $what } = $gen->();
   }
   return $self->{ $what };
 }
@@ -84,7 +79,7 @@ sub mimetype {
   my $self = shift;
   $self->cached_getandset(
 			  'mimetype', sub {
-			    my $mm   = File::MMagic::XS->new;
+			    my $mm   = File::MMagic->new;
 			    return $mm->checktype_contents( $self->contents );
 			  }
 			 );
