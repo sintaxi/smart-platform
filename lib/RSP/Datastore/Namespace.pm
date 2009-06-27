@@ -12,7 +12,7 @@ __PACKAGE__->mk_accessors(qw(namespace conn tables sa cache));
 
 sub new {
   my $class = shift;
-  my $self  = { tables => {}, sa => SQL::Abstract->new };
+  my $self  = { tables => {}, sa => SQL::Abstract->new( quote_char => '`' ) };
   bless $self, $class;
 }
 
@@ -113,7 +113,9 @@ sub read {
   my $cache  = $self->cache->get( "${type}:${id}" );
   if ( $cache ) {
     my $cached = eval { JSON::XS::decode_json( $cache ); };
-    return $cached;
+    if ( keys %$cached ) {
+	return $cached;
+    }
   }
 
   if (!$self->has_type_table( $type )) {
@@ -207,7 +209,7 @@ sub write {
       cluck("could not write transient $type object $id to cache, falling back to persistent store");
     }
   }
-  
+
   if (!$self->has_type_table( $type )) {
     $self->create_type_table( $type );
     $self->write_one_object( $type, $obj );
@@ -239,6 +241,9 @@ sub write_one_object {
       }
       my ($stmt, @bind) = $self->sa->insert($table, $svals);
       my $sth = $self->conn->prepare_cached($stmt);      
+#      print "NAMESPACE IS ", $self->namespace, "\n";
+#      print "SQL is $stmt\n";
+#      print "BIND VARS ARE ", join(", ", @bind), "\n";
       $sth->execute(@bind);
       $sth->finish;
     }
@@ -251,6 +256,7 @@ sub write_one_object {
     } 
   };
   if ($@) {
+#    print "THERE WAS AN ERROR WRITING THE DATA: $@\n";
     $self->conn->rollback;
     RSP::Error->throw($@);
   }
