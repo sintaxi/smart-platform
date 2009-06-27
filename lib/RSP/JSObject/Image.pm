@@ -84,15 +84,16 @@ sub methods {
 	    my $self = shift;
 	    my $new  = shift;
 	    if ( $new ) {
-	      my $temp = File::Temp->new;
-	      $self->imager->write( file => $temp->filename, type => $self->mimetype->subType )
-		or die { message => $self->imager->errstr };
+	      my $temp = $self->{temp} = File::Temp->new();
+	      if (!$self->imager->write( file => $temp->filename, type => $self->mimetype->subType )) {
+		  die { message => $self->imager->errstr };
+	      }
 	      $temp->close;
 	      $self->file( RSP::JSObject::File->new( $temp->filename, "tmpimage" ) );
+	    } else {
+	      $self->imager->write( file => $self->file->fullpath, type => $self->mimetype->subType )
+		or die { message => $self->imager->errstr };
 	    }
-	    $self->imager->write( file => $self->file->fullpath, type => $self->mimetype->subType )
-	      or die { message => $self->imager->errstr };
-
 	    return $self->file;
 	  }
 	 }
