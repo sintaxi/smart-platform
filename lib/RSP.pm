@@ -22,9 +22,13 @@ sub handler {
     $rsptx->process_transaction;
   };
   if ($@) {
+    my $error_message = $@;
+    if ($error_message =~ /in file (.+\.pm) at line (.+)$/) {
+      $error_message =~ s/in file (.+\.pm) at line (.+)$//;
+    }
     $tx->res->code( 500 );
     $tx->res->headers->content_type('text/plain');
-    $tx->res->body($@);
+    $tx->res->body($error_message);
   }
 
   $rsptx->request( undef );

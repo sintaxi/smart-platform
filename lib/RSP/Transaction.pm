@@ -192,7 +192,7 @@ sub bootstrap {
   my $bs_file = $self->host->bootstrap_file;
   if (!-e $bs_file) {
     $self->log("$!: $bs_file");
-    RSP::Error->throw("$!: $bs_file");
+    RSP::Error->throw("bootstrap file does not exist for " . $self->host->hostname);
   }
   my $result = $self->context->eval_file( $bs_file );
   if ($@) {
