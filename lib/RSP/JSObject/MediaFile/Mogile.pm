@@ -113,7 +113,12 @@ sub contents {
 
 sub as_string {
   my $self = shift;
-  return $self->contents;
+  my $data = $self->contents;
+  if ( $self->mimetype =~ /text/ ) {
+    return Encode::decode("utf8", $data);
+  } else {
+    return $data;
+  }
 }
 
 1;
