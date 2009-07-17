@@ -66,7 +66,7 @@ sub as_function {
   };
 }
 
-sub as_string {
+sub raw {
   my $self = shift;
   my $fh   = IO::File->new( $self->{ file } );
   if (!$fh) {
@@ -78,6 +78,17 @@ sub as_string {
   };
   $fh->close;
   return $data;
+}
+
+sub as_string {
+  my $self = shift;
+  my $data = $self->raw;
+
+  if ( $self->mimetype =~ /text/ ) {
+    return Encode::decode("utf8", $data);
+  } else {
+    return $data;
+  }
 }
 
 sub mimetype {

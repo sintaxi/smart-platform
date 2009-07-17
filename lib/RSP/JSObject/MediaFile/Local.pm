@@ -29,7 +29,7 @@ sub md5 {
 sub mimetype {
   my $self = shift;
   my $mm = File::MMagic->new;
-  my $mime = $mm->checktype_contents( $self->as_string );
+  my $mime = $mm->checktype_contents( $self->raw );
   return $mime;
 }
 
