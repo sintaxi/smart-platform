@@ -17,7 +17,13 @@ sub firstdir {
 sub hostname {
   my $class = shift;
   my $req  = shift;
-  return $class->strip_hostname( $req->headers->host );
+  my $host;
+  if ( ref( $req->headers->host ) ) {
+    $host = $req->headers->host->[0];
+  } else {
+    $host = $req->headers->host;
+  }
+  return $class->strip_hostname( $host );
 }
 
 ##
