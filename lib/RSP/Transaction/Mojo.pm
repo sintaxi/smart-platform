@@ -217,16 +217,7 @@ sub build_entrypoint_arguments {
 
     $request->{headers} = {
 			   map {
-			     my $val;
-			     if ( ref( $self->request->headers->header( $_ ) ) ) {
-			       if ( scalar( @{ $self->request->headers->header($_) } ) == 1 ) {
-				 $val = $self->request->headers->header($_)->[0];
-			       } else {
-				 $val = $self->request->headers->header($_);
-			       }
-			     } else {
-			       $val = $self->request->headers->header($_);
-			     }
+			     my $val = scalar( $self->request->headers->header( $_ ) );
 			     ( $_ => $val )
 			   } @{ $self->request->headers->names }
 			  };
