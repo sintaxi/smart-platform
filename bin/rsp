@@ -11,11 +11,10 @@ use Mojo::Server::Daemon::Prefork;
 $0 = "rsp";
 
 
-my $server = Mojo::Server::Daemon->new;
 my $server = Mojo::Server::Daemon::Prefork->new();
 $server->pid_file( File::Spec->catfile( RSP->config->{_}->{root}, 'run', 'rsp.pid' ) );
 $server->app_class( 'RSP' );
-$server->daemonize;
+#$server->daemonize;
 
 if ( $ARGV[0] ) {
   RSP->config->{rsp}->{hostroot} = $ARGV[0];
