@@ -17,7 +17,7 @@ use base 'Class::Accessor::Chained';
 
 our $HOST_CLASS = RSP->config->{_}->{host_class} || 'RSP::Host';
 
-__PACKAGE__->mk_accessors(qw( runtime context hostclass ops url ));
+__PACKAGE__->mk_accessors(qw( runtime context hostclass ops url has_exceeded_ops ));
 
 ##
 ## make sure we have the appropriate host class loaded
@@ -130,6 +130,11 @@ sub cache {
   }
 }
 
+sub exceeded_ops {
+  my $self = shift;
+  $self->has_exceeded_ops( 1 );
+}
+
 ##
 ## simply sets up the basic javascript environment,
 ##  creates a runtime and a context, and toggles some options
@@ -144,7 +149,7 @@ sub initialize_js_environment {
 					sub {
 					  $self->{ops}++;
 					  if ( $self->ops > $self->host->op_threshold ) {
-					    $self->log("op threshold exceeded");
+					    $self->exceeded_ops;
 					    RSP::Error->throw("op threshold exceeded");
 					  }
 					  return 1;
@@ -195,11 +200,13 @@ sub bootstrap {
     RSP::Error->throw("bootstrap file does not exist for " . $self->host->hostname);
   }
   my $result = $self->context->eval_file( $bs_file );
+  if ( $self->has_exceeded_ops ) {
+    RSP::Error->throw("exceeded oplimit");
+  }
   if ($@) {
     $self->log($@);
     my $err = RSP::Error->new( $@, $self );
     $err->throw;
-
   }
 }
 
@@ -230,6 +237,9 @@ sub run {
 			 $self->build_entrypoint_arguments
 			);
   };
+  if ( $self->has_exceeded_ops ) {
+    RSP::Error->throw("exceeded oplimit");
+  }
   if ($@) {
     $self->log($@);
     if (ref($@) && ref($@) eq "JavaScript::Error") {
