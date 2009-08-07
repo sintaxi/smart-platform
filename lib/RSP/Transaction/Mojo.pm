@@ -173,7 +173,16 @@ sub build_entrypoint_arguments {
     foreach my $cookie ( @{ $self->request->cookies } ) {
       my $name  = $cookie->name;
       my $value = $cookie->value->to_string;
-      $cookies->{$name} = "$value";
+      ## WAAAAAAH
+      if ( exists $cookies->{ $name } ) {
+	if ( ref( $cookies->{$name} ) ) {
+	  push @{ $cookies->{ $name } }, $value;
+	} else {
+	  $cookies->{ $name } = [ $cookies->{ $name }, $value ];
+	}
+      } else {
+	$cookies->{$name} = "$value";
+      }
     }
   }
 
