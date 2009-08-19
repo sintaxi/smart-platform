@@ -1,0 +1,69 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use lib 'lib';
+
+use RSP;
+use POSIX qw();
+use Mojo::Server::Daemon::Prefork;
+
+$0 = "smartwebd";
+
+my $server = Mojo::Server::Daemon::Prefork->new();
+
+$server->pid_file( File::Spec->catfile( RSP->config->{_}->{root}, 'run', 'rsp.pid' ) );
+
+$server->app_class( 'RSP' );
+
+my ($cuser, $cgroup) = get_current_uinfo();
+my ($user, $group) = (
+		      RSP->config->{mojo}->{user} || $cuser,
+		      RSP->config->{mojo}->{group} || $cgroup
+		     );
+
+my $run_as_daemon = 0;
+foreach my $key (keys %{ RSP->config->{mojo} }) {
+  if ( $key eq 'daemonize' ) {
+    $run_as_daemon = 1;
+    next;
+  }
+  my $sub = $server->can( $key );
+  if ( $sub ) {
+    $sub->( $server, RSP->config->{mojo}->{ $key } );
+  }
+}
+
+if ( $run_as_daemon ) {
+  if ( fork() ) {
+    exit;
+    POSIX::setsid();
+  }
+}
+
+eval {
+  $server->run;
+};
+
+if ($@) {
+  print sprintf("could not start server on port %s\n\t$@", $server->port);
+  exit;
+}
+
+sub get_current_uinfo {
+  return (
+	  do {
+	    my ($name,$passwd,$uid,$gid,
+		$quota,$comment,$gcos,$dir,$shell,$expire) = getpwuid($<);
+	    $name;
+	  },
+	  do {
+	    my ($name,$passwd,$gid,$members) = getgrgid($[);
+	    $name;
+	  }
+	 );
+}
+
+
+
