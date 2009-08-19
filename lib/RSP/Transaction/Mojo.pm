@@ -130,12 +130,17 @@ sub encode_response {
     $self->encode_body( $response );
   }
 
+  $self->response->headers->remove('X-Powered-By');
+  if ($self->response->headers->server =~ /Perl/) {
+    $self->response->headers->server("Joyent Smart Platform (Mojo)/$RSP::VERSION");
+  }
+
   if ( $self->response->headers->transfer_encoding &&
        $self->response->headers->transfer_encoding eq 'chunked' ) {
     $self->response->headers->remove('Content-Length');
   } else {
     if ( !$self->response->headers->content_length) {
-      $self->response->headers->content_length( $self->response->content->body_length );
+      $self->response->headers->content_length( $self->response->content->body_size );
     }
   }
 
