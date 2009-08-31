@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Encode;
+use Scalar::Util qw( blessed );
 use base 'RSP::Transaction';
 use File::Basename;
 use RSP::Transaction::Mojo::HostMap;
@@ -176,6 +177,11 @@ sub build_entrypoint_arguments {
     foreach my $cookie ( @{ $self->request->cookies } ) {
       my $name  = $cookie->name;
       my $value = $cookie->value->to_string;
+
+      ## why?  Why? WHY!!!
+      if ( blessed( $value ) ) {
+	$value = $value->to_string;
+      }
       ## WAAAAAAH
       if ( exists $cookies->{ $name } ) {
 	if ( ref( $cookies->{$name} ) ) {
