@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Encode;
+use Scalar::Util qw( blessed );
 use base 'RSP::Transaction';
 use File::Basename;
 use RSP::Transaction::Mojo::HostMap;
@@ -36,9 +37,10 @@ sub encode_body {
       $self->response->body( $content );
     } elsif ( ref($body) && $body->isa('RSP::JSObject') ) {
       if ( $body->isa('RSP::JSObject::File') ) {
-	my $f = Mojo::File->new;
+	my $f = Mojo::Asset::File->new;
 	$f->path( $body->fullpath );
-	$self->response->content->file( $f );
+	$self->response->content->asset( $f );
+
       } else {
 	##
 	## it's an object that exists in both JS and Perl, convert it
@@ -106,7 +108,7 @@ sub encode_array_response {
       my $cookies = Mojo::Cookie::Response->new->parse( $value );
       $self->response->cookies( $cookies->[0] );
     } else {
-      $self->response->headers->add_line( $key, $value );
+      $self->response->headers->add( $key, $value );
     }
   }
 
@@ -140,7 +142,9 @@ sub encode_response {
     $self->response->headers->remove('Content-Length');
   } else {
     if ( !$self->response->headers->content_length) {
-      $self->response->headers->content_length( $self->response->content->body_size );
+      $self->response->headers->content_length(
+	  $self->response->content->body_size
+      );
     }
   }
 
@@ -178,6 +182,11 @@ sub build_entrypoint_arguments {
     foreach my $cookie ( @{ $self->request->cookies } ) {
       my $name  = $cookie->name;
       my $value = $cookie->value->to_string;
+
+      ## why?  Why? WHY!!!
+      if ( blessed( $value ) ) {
+	$value = $value->to_string;
+      }
       ## WAAAAAAH
       if ( exists $cookies->{ $name } ) {
 	if ( ref( $cookies->{$name} ) ) {
@@ -193,7 +202,15 @@ sub build_entrypoint_arguments {
 
   my %body  = %{$self->request->body_params->to_hash};
   foreach my $key (keys %body) {
-    $body{$key} = Encode::decode("utf8", $body{$key});
+    if ( !ref($body{$key})) {
+      $body{$key} = Encode::decode("utf8", $body{$key});
+    } else {
+      my $body_param_array = $body{$key};
+      $body{$key} = [];
+      foreach my $p (@$body_param_array) {
+	push @{ $body{ $key } }, Encode::decode("utf8", $p);
+      }
+    }
   }
 
   my %query = %{$self->request->query_params->to_hash};
