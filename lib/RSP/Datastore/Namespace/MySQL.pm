@@ -89,7 +89,8 @@ sub create_type_table {
   }
   $self->conn->begin_work;
   eval {
-    $self->conn->do("CREATE TABLE ${type}_ids ( id CHAR(50) )");
+    $self->conn->do("CREATE TABLE ${type}_ids ( id CHAR(50) PRIMARY KEY )");
+    $self->conn->do("CREATE INDEX ${type}_ids_idx ON ${type}_ids ( id )");
     $self->conn->do("CREATE TABLE ${type}_prop_i ( id CHAR(50), propname CHAR(25), propval BIGINT ) TYPE=InnoDB");
     $self->conn->do("CREATE INDEX ${type}_prop_i_id_propname ON ${type}_prop_i (id, propname)");
     $self->conn->do("CREATE INDEX ${type}_prop_i_propname_propval ON ${type}_prop_i (propname, propval)");
