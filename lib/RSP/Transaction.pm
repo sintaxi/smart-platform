@@ -259,6 +259,27 @@ sub run {
   } else {
     $self->encode_response( $response );
   }
+  $self->access_log();
+}
+
+sub access_log {
+    my ($self, $log_message) = @_;
+    
+    my $logfile = $self->host->access_log;
+    open(my $fh, '>>', $logfile) or die "Could not open logfile '$logfile' for appending; $!";
+    
+    use Data::Dumper;
+    print {$fh} sprintf(
+        "[%s] %s - '%s %s HTTP/%s.%s'\n", 
+        scalar(localtime),
+        $self->response->code,
+        $self->request->method,
+        $self->url,
+        $self->request->major_version,
+        $self->request->minor_version,
+    );
+
+    close $fh;
 }
 
 ##

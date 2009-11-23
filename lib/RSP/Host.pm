@@ -152,6 +152,14 @@ sub root {
 }
 
 ##
+## return the access log for this host
+##
+sub access_log {
+    my $self = shift;
+    File::Spec->catfile( $self->root, qw(log access_log) );
+}
+
+##
 ## returns the size of memory to allocate before
 ##  we garbage collect in the JS VM.
 ##
