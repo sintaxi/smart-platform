@@ -11,7 +11,7 @@ WriteMakefile(
       'Set::Object'         => 0,
       'Imager'              => 0,
       'Application::Config' => 0,
-      'Mojo'                => 0,
+      'Mojo'                => '0.999910',
       'MIME::Types'         => 0,
       'Hash::Merge::Simple' => 0,
       'Digest::MD5'         => 0,
@@ -29,6 +29,8 @@ WriteMakefile(
       'Scalar::Util::Numeric' => 0,
       'Image::Math::Constrain' => 0,
       'File::MMagic'           => 0,
+      'DBD::SQLite' => 0,
+      'DBD::mysql' => 0,
   }
 );
 
