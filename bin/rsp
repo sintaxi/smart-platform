@@ -8,35 +8,64 @@ use lib 'lib';
 use RSP;
 use Mojo::Server::Daemon::Prefork;
 
+use Getopt::Long;
+my $result = GetOptions (
+    "daemonize" => \my $daemonize,
+    "prefork|f" => \my $prefork,
+    "port=i" => \my $port,
+    "help" => \my $help,
+    "verbose"  => \my $verbose);
+    
 $0 = "rsp";
 
+if($help || !$result){
+print <<EOM;
+$0 - Joyent Smart Platform runner
 
-my $server = Mojo::Server::Daemon::Prefork->new();
-$server->pid_file( File::Spec->catfile( RSP->config->{_}->{root}, 'run', 'rsp.pid' ) );
-$server->app_class( 'RSP' );
-#$server->daemonize;
+Options:
+    --daemonize -d      Forks process into background as a daemon
+    --prefork   -f      Uses the Mojo Prefork server
+    --port      -p      Specify which port to list on
+    --help      -h      Prints this usage message
+    --verbose   -v      Verbose logging and debugging information (TODO)
 
-if ( $ARGV[0] ) {
-  RSP->config->{rsp}->{hostroot} = $ARGV[0];
+EOM
+exit 1;
 }
 
-if ( RSP->config->{mojo}->{port} ) {
+$port = $port ? $port : RSP->config->{mojo}->{port};
+my $opts = {
+    pid_file => File::Spec->catfile( RSP->config->{_}->{root}, 'run', 'rsp.pid' ),
+    app_class => 'RSP',
+    (defined($port) ? (port => $port) : ()),
+}; 
 
-  my $port = RSP->config->{mojo}->{port};
+my $server = $prefork ? Mojo::Server::Daemon::Prefork->new($opts) : Mojo::Server::Daemon->new($opts);
+
+if($daemonize){
+    $server->daemonize;
+}
+
+if ( $ARGV[0] ) {
+    RSP->config->{rsp}->{hostroot} = $ARGV[0];
+}
+
+if ( defined($port) ) {
   if ( $port =~ /\-/ ) {
     my ($start, $end) = split(/\-/, $port);
     my @range = ($start..$end);
     print "configuring " . (scalar(@range)-1) . " ports from $start to $end\n";
-    foreach my $port ( @range ) {
+    foreach my $tmp_port ( @range ) {
       $SIG{CHLD} = $SIG{HUP} = "IGNORE";
       if (!fork()) {
-	$server->port( $port );
+	$server->port( $tmp_port );
+        warn "starting $$ on port $tmp_port";
 	$server->run;
 	exit;
       }
     }
   } else {
-    $server->port( RSP->config->{mojo}->{port} );
+    warn "starting $$ on port $port";
     $server->run;
   }
 } else {
@@ -48,5 +77,4 @@ package Mojo::Server::Daemon::Prefork;
 use POSIX qw( setsid );
 
 1;
-
 
