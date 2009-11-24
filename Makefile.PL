@@ -4,6 +4,7 @@ WriteMakefile(
   NAME => 'RSP',
   VERSION_FROM => 'lib/RSP.pm',
   EXE_FILES => ['bin/rsp','bin/rspkeymanagerd', 'bin/clonewatcher'],
+  MIN_PERL_VERSION => '5.10.0', # code uses 5.10 features, so require it as a minimum
   PREREQ_PM => {
       'Net::Stomp'          => 0,
       'DBI'                 => 0,
