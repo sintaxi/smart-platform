@@ -9,6 +9,17 @@ use Scalar::Util qw( weaken );
 our $VERSION = '1.2';
 use Application::Config 'rsp.conf';
 
+use RSP::Config;
+
+our $CONFIG;
+sub conf {
+    my $class = shift;
+    if(!$CONFIG){
+        $CONFIG = RSP::Config->new(config => $class->config->{_});
+    }
+    return $CONFIG;
+}
+
 use RSP::Transaction::Mojo;
 
 sub handler {
@@ -40,11 +51,7 @@ sub handler {
 
 sub root {
   my $self = shift;
-  my $root = $self->config->{_}->{root};
-  if (!$root) {
-    $root = getcwd();
-  }
-  return $root;
+  return $self->conf->root;
 }
 
 1;

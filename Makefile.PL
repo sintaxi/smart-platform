@@ -32,6 +32,9 @@ WriteMakefile(
       'File::MMagic'           => 0,
       'DBD::SQLite' => 0,
       'DBD::mysql' => 0,
+      'Moose' => 0,
+      'File::Spec' => 0,
+      'Cwd' => 0,
   }
 );
 
