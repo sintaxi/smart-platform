@@ -134,7 +134,7 @@ sub encode_response {
   }
 
   $self->response->headers->remove('X-Powered-By');
-  if ($self->response->headers->server =~ /Perl/) {
+  if ($self->response->headers->server && $self->response->headers->server =~ /Perl/) {
     $self->response->headers->server("Joyent Smart Platform (Mojo)/$RSP::VERSION");
   }
 
