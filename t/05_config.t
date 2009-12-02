@@ -35,23 +35,44 @@ our $test_config = {
 basic: {
     my $conf = RSP::Config->new(config => $test_config);
     isa_ok($conf, 'RSP::Config');
+
+    lives_ok {
+        no warnings qw(redefine once);
+        local *RSP::config = sub { {} };
+        $conf = RSP::Config->new();
+        $conf->_config;
+    } q{No supplied config, pulls from RSP};
 }
 
 check_rsp_root_is_correct: {
     my $conf = RSP::Config->new(config => $test_config);
     is($conf->root, $tmp_dir, 'root directory is correct');
 
-    local $test_config = clone($test_config);
-    delete $test_config->{_}{root};
-    $conf = RSP::Config->new(config => $test_config);
-    is($conf->root, getcwd(), 'root defaults to current working directory');
+    {
+        local $test_config = clone($test_config);
+        delete $test_config->{_}{root};
+        $conf = RSP::Config->new(config => $test_config);
+        is($conf->root, getcwd(), 'root defaults to current working directory');
+
+        local $test_config = clone($test_config);
+        $test_config->{_}{root} = 'reallyreallyreallyshouldnotexsit';
+        $conf = RSP::Config->new(config => $test_config);
+        throws_ok {
+            $conf->root
+        } qr/Directory '.+?' does not exist/, 'non existant root directory throws exception';
+    }
 
     local $test_config = clone($test_config);
-    $test_config->{_}{root} = 'reallyreallyreallyshouldnotexsit';
     $conf = RSP::Config->new(config => $test_config);
+    delete $test_config->{_}{root};
     throws_ok {
+        no warnings qw(redefine once);
+        local *RSP::Config::getcwd = sub { undef; };
         $conf->root
-    } qr/Directory '.+?' does not exist/, 'non existant root directory throws exception';
+    } qr/Root not supplied and unable to work out current working directory/, 
+        'non existant root directory and unable to cwd() throws exception';
+
+
 }
 
 check_rsp_exceptions_are_correct: {
@@ -65,6 +86,11 @@ check_rsp_exceptions_are_correct: {
         $conf->extensions
     } qr/Could not load extension 'RSP::Extension::ThisClassReallyShouldNotExist'/, 
         'Non-existing extension class throws error';
+
+    local $test_config = clone($test_config);
+    delete $test_config->{_}{extensions};
+    $conf = RSP::Config->new(config => $test_config);
+    is_deeply($conf->extensions, [], q{No extensions supplied is empty});
 }
 
 check_hostroot_is_correct: {

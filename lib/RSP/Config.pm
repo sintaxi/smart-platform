@@ -22,13 +22,14 @@ has root => (is => 'ro', lazy_build => 1, isa => 'ExistantDirectory');
 sub _build_root {
     my ($self) = @_;
     my $root = $self->_config->{_}{root} // getcwd();
+    $root or die "Root not supplied and unable to work out current working directory";
     return $root;
 }
 
 has extensions => (is => 'ro', lazy_build => 1, isa => 'ArrayRef[ClassName]');
 sub _build_extensions {
     my ($self) = @_;
-    my $extensions_string = $self->_config->{_}{extensions};
+    my $extensions_string = $self->_config->{_}{extensions} // '';
     my @extensions = map {
             'RSP::Extension::' .  $_;
         } split(/,/, $extensions_string);

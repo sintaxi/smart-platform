@@ -49,7 +49,9 @@ check_host_oplimit_is_correct: {
     
     $host_conf = $conf->host('bar');
     is($host_conf->oplimit, 123_456, 'host oplimit correct (using parent config)');
-}
+    
+    $host_conf = $conf->host('bar');
+    is($host_conf->op_threshold, 123_456, 'host oplimit correct (using alias)');}
 
 check_host_should_report_consumption: {
     my $conf = RSP::Config->new(config => $test_config)->host('foo');
@@ -68,6 +70,19 @@ check_host_extensions: {
     my $conf = RSP::Config->new(config => $test_config)->host('foo');
     is_deeply($conf->extensions, [qw(RSP::Extension::DataStore RSP::Extension::Image RSP::Extension::UUID)],
         'host extensions are correct');
+    
+    local $test_config = clone($test_config);
+    delete $test_config->{'host:foo'}{extensions};
+    $conf = RSP::Config->new(config => $test_config)->host('foo');
+    is_deeply($conf->extensions, [qw(RSP::Extension::DataStore)], q{no extensions gives blank list});
+
+    local $test_config = clone($test_config);
+    $test_config->{'host:foo'}{extensions} = 'flibble';
+    $conf = RSP::Config->new(config => $test_config)->host('foo');
+    throws_ok {
+        $conf->extensions
+    } qr{Could not load extension 'RSP::Extension::flibble':},
+        q{Non-existant extension class throws exception};
 }
 
 check_hostname: {
