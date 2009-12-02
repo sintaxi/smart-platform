@@ -14,9 +14,12 @@ use Carp qw( confess );
 use_ok('RSP::Config');
 
 my $tmp_dir = tempdir();
+my $tmp_dir2 = tempdir();
 our $test_config = {
     root => $tmp_dir,
     extensions => 'DataStore',
+    oplimit => 123_456,
+    hostroot => $tmp_dir2, 
     server => {
         Root => $tmp_dir,
         ConnectionTimeout => 123,
@@ -25,6 +28,10 @@ our $test_config = {
         User => 'zim',
         Group => 'aliens',
         MaxClients => 47,
+    },
+    'host:foo' => {
+    },
+    'host:bar' => {
     },
 };
 
@@ -59,5 +66,53 @@ check_rsp_exceptions_are_correct: {
         $conf->extensions
     } qr/Could not load extension 'RSP::Extension::ThisClassReallyShouldNotExist'/, 
         'Non-existing extension class throws error';
+}
+
+check_hostroot_is_correct: {
+    my $conf = RSP::Config->new(config => $test_config);
+    is($conf->hostroot, $tmp_dir2, 'hostroot directory for server is correct');
+   
+    local $test_config = { %$test_config };
+    $test_config->{hostroot} = 'bob';
+    mkpath("$tmp_dir/bob");
+
+    $conf = RSP::Config->new(config => $test_config);
+    is($conf->hostroot, "$tmp_dir/bob", 'hostroot directory is correct (relative)');
+
+    TODO: {
+        local $TODO = 'Needs implemented';
+        local $test_config = { %$test_config };
+        $test_config->{hostroot} = '../../../../bob';
+        $conf = RSP::Config->new(config => $test_config);
+        throws_ok {
+            $conf->hostroot
+        } qr/Hostroot relative paths must be under the RSP root/,
+            q{Ensure we protect ourselves from odd or malicious paths};
+    }
+}
+
+check_global_oplimit_is_correct: {
+    my $conf = RSP::Config->new(config => $test_config);
+    is($conf->oplimit, 123_456, 'oplimit is correct');
+
+    local $test_config = { %$test_config };
+    delete $test_config->{oplimit};
+    $conf = RSP::Config->new(config => $test_config);
+    is($conf->oplimit, 100_000, 'oplimit defaults to 100,000');
+}
+
+check_hosts_are_correct: {
+    my $conf = RSP::Config->new(config => $test_config);
+  
+    my $hosts = $conf->_hosts;
+    ok(exists $hosts->{foo} && exists $hosts->{bar}, "Hosts are gleaned correctly");
+
+    my $host_conf = $conf->host('foo');
+    isa_ok($host_conf, 'RSP::Config::Host');
+
+    throws_ok {
+        $conf->host('baz');
+    } qr/No configuration supplied for 'baz'/,
+        'Non-existing host throws error';
 }
 
