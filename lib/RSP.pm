@@ -15,7 +15,7 @@ our $CONFIG;
 sub conf {
     my $class = shift;
     if(!$CONFIG){
-        $CONFIG = RSP::Config->new(config => $class->config->{_});
+        $CONFIG = RSP::Config->new(config => { %{ $class->config } });
     }
     return $CONFIG;
 }

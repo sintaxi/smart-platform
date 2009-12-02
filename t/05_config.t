@@ -11,23 +11,20 @@ use File::Spec;
 use Cwd qw(getcwd);
 use Carp qw( confess );
 
+use Clone qw(clone);
+
 use_ok('RSP::Config');
 
 my $tmp_dir = tempdir();
 my $tmp_dir2 = tempdir();
 our $test_config = {
-    root => $tmp_dir,
-    extensions => 'DataStore',
-    oplimit => 123_456,
-    hostroot => $tmp_dir2, 
-    server => {
-        Root => $tmp_dir,
-        ConnectionTimeout => 123,
-        MaxRequestsPerClient => 13,
-        MaxRequestsPerChild => 23,
-        User => 'zim',
-        Group => 'aliens',
-        MaxClients => 47,
+    '_' => {
+        root => $tmp_dir,
+        extensions => 'DataStore',
+    },
+    rsp => {
+        oplimit => 123_456,
+        hostroot => $tmp_dir2, 
     },
     'host:foo' => {
     },
@@ -44,12 +41,13 @@ check_rsp_root_is_correct: {
     my $conf = RSP::Config->new(config => $test_config);
     is($conf->root, $tmp_dir, 'root directory is correct');
 
-    local $test_config = { %$test_config };
-    delete $test_config->{root};
+    local $test_config = clone($test_config);
+    delete $test_config->{_}{root};
     $conf = RSP::Config->new(config => $test_config);
     is($conf->root, getcwd(), 'root defaults to current working directory');
 
-    local $test_config = { %$test_config, root => 'reallyreallyreallyshouldnotexsit' };
+    local $test_config = clone($test_config);
+    $test_config->{_}{root} = 'reallyreallyreallyshouldnotexsit';
     $conf = RSP::Config->new(config => $test_config);
     throws_ok {
         $conf->root
@@ -60,7 +58,8 @@ check_rsp_exceptions_are_correct: {
     my $conf = RSP::Config->new(config => $test_config);
     is_deeply( $conf->extensions, [qw(RSP::Extension::DataStore)], 'Extensions returned correctly');
 
-    local $test_config = { %$test_config, extensions => 'ThisClassReallyShouldNotExist' };
+    local $test_config = clone($test_config);
+    $test_config->{_}{extensions} = 'ThisClassReallyShouldNotExist';
     $conf = RSP::Config->new(config => $test_config);
     throws_ok {
         $conf->extensions
@@ -72,8 +71,8 @@ check_hostroot_is_correct: {
     my $conf = RSP::Config->new(config => $test_config);
     is($conf->hostroot, $tmp_dir2, 'hostroot directory for server is correct');
    
-    local $test_config = { %$test_config };
-    $test_config->{hostroot} = 'bob';
+    local $test_config = clone($test_config);
+    $test_config->{rsp}{hostroot} = 'bob';
     mkpath("$tmp_dir/bob");
 
     $conf = RSP::Config->new(config => $test_config);
@@ -81,8 +80,8 @@ check_hostroot_is_correct: {
 
     TODO: {
         local $TODO = 'Needs implemented';
-        local $test_config = { %$test_config };
-        $test_config->{hostroot} = '../../../../bob';
+        local $test_config = clone($test_config);
+        $test_config->{rsp}{hostroot} = '../../../../bob';
         $conf = RSP::Config->new(config => $test_config);
         throws_ok {
             $conf->hostroot
@@ -95,8 +94,8 @@ check_global_oplimit_is_correct: {
     my $conf = RSP::Config->new(config => $test_config);
     is($conf->oplimit, 123_456, 'oplimit is correct');
 
-    local $test_config = { %$test_config };
-    delete $test_config->{oplimit};
+    local $test_config = clone($test_config);
+    delete $test_config->{rsp}{oplimit};
     $conf = RSP::Config->new(config => $test_config);
     is($conf->oplimit, 100_000, 'oplimit defaults to 100,000');
 }

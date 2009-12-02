@@ -15,20 +15,20 @@ use RSP::Config::Host;
 
 has _config => (is => 'ro', lazy_build => 1, isa => 'HashRef', init_arg => 'config');
 sub _build__config {
-    return RSP->config->{_};
+    return RSP->config;
 }
 
 has root => (is => 'ro', lazy_build => 1, isa => 'ExistantDirectory');
 sub _build_root {
     my ($self) = @_;
-    my $root = $self->_config->{root} // getcwd();
+    my $root = $self->_config->{_}{root} // getcwd();
     return $root;
 }
 
 has extensions => (is => 'ro', lazy_build => 1, isa => 'ArrayRef[ClassName]');
 sub _build_extensions {
     my ($self) = @_;
-    my $extensions_string = $self->_config->{extensions};
+    my $extensions_string = $self->_config->{_}{extensions};
     my @extensions = map {
             'RSP::Extension::' .  $_;
         } split(/,/, $extensions_string);
@@ -68,13 +68,13 @@ sub host {
 has oplimit => (is => 'ro', isa => 'Int', lazy_build => 1);
 sub _build_oplimit {
     my ($self) = @_;
-    return $self->_config->{oplimit} ? $self->_config->{oplimit} : 100_000; 
+    return $self->_config->{rsp}{oplimit} ? $self->_config->{rsp}{oplimit} : 100_000; 
 }
 
 has hostroot => (is => 'ro', lazy_build => 1, isa => 'ExistantDirectory');
 sub _build_hostroot {
     my ($self) = @_;
-    my $root = $self->_config->{hostroot};
+    my $root = $self->_config->{rsp}{hostroot};
 
     # handle the scenario where the user uses a path relative to the RSP root
     if ( substr( $root, 0, 1 ) eq '/' ) {

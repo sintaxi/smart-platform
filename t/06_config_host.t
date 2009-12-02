@@ -10,16 +10,22 @@ use File::Path qw(make_path);
 use File::Spec;
 use Carp qw( confess );
 
+use Clone qw(clone);
+
 use RSP::Config;
 #use_ok('RSP::Config::Host');
 
 my $tmp_dir = tempdir();
 my $tmp_dir2 = tempdir();
 our $test_config = {
-    root => $tmp_dir,
-    extensions => 'DataStore',
-    oplimit => 123_456,
-    hostroot => $tmp_dir2,
+    '_' => {
+        root => $tmp_dir,
+        extensions => 'DataStore',
+    },
+    rsp => {
+        oplimit => 123_456,
+        hostroot => $tmp_dir2,
+    },
     'host:foo' => {
         oplimit => 654_321,
         noconsumption => 1,
@@ -156,3 +162,14 @@ check_web: {
     is($conf->web, "$tmp_dir2/bar/web", q{code uses pre-existing directory});
 }
 
+check_file: {
+    my $conf = RSP::Config->new(config => $test_config)->host('bar');
+
+    is($conf->file(code => 'some_code.js'), "$tmp_dir2/bar/js/some_code.js", q{file for type 'code' is correct});
+    is($conf->file(web => 'some_image.png'), "$tmp_dir2/bar/web/some_image.png", q{file for type 'web' is correct});
+
+    throws_ok {
+        $conf->file(cookies_on_dowels => 'bleh');
+    } qr{Unknown file type 'cookies_on_dowels'},
+        q{Unknown file type throws exception};
+}

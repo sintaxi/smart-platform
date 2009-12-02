@@ -1,5 +1,7 @@
 package RSP::Config::Host;
 
+use feature qw(switch);
+
 use Moose;
 use File::Spec;
 use File::Path qw(make_path);
@@ -8,6 +10,7 @@ use Try::Tiny;
 has _config => (is => 'ro', required => 1, init_arg => 'config');
 has _master => (is => 'ro', required => 1, init_arg => 'global_config', isa => 'RSP::Config');
 
+sub op_threshold { goto &oplimit }
 has oplimit => (is => 'ro', isa => 'Int', lazy_build => 1);
 sub _build_oplimit {
     my ($self) = @_;
@@ -25,7 +28,7 @@ has entrypoint => (is => 'ro', isa => 'Str', default => 'main');
 has extensions => (is => 'ro', lazy_build => 1, isa => 'ArrayRef[ClassName]');
 sub _build_extensions {
     my ($self) = @_;
-    my $extensions_string = $self->_config->{extensions};
+    my $extensions_string = $self->_config->{extensions} // '';
     my @extensions = map {
             'RSP::Extension::' .  $_;
         } split(/,/, $extensions_string);
@@ -112,6 +115,19 @@ sub _build_web {
     my $dir = File::Spec->catfile($self->root, qw(web));
     die "Web directory '$dir' does not exist" if !-d $dir;
     return $dir;
+}
+
+
+sub file {
+    my ($self, $type, $path) = @_;
+
+    given($type){
+        when('code') { $path = File::Spec->catfile( $self->code, $path); }
+        when('web')  { $path = File::Spec->catfile( $self->web, $path); }
+        default { die "Unknown file type '$type'"; }
+    }
+
+    return $path;
 }
 
 
