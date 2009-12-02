@@ -15,7 +15,7 @@ use RSP::Consumption::Bandwidth;
 
 use base 'Class::Accessor::Chained';
 
-our $HOST_CLASS = RSP->config->{_}->{host_class} || 'RSP::Host';
+#our $HOST_CLASS = RSP->config->{_}->{host_class} || 'RSP::Host';
 
 __PACKAGE__->mk_accessors(qw( runtime context hostclass ops url has_exceeded_ops ));
 
@@ -25,10 +25,14 @@ __PACKAGE__->mk_accessors(qw( runtime context hostclass ops url has_exceeded_ops
 ##
 sub import {
   my $class = shift;
-  Module::Load::load( $HOST_CLASS );
+  #Module::Load::load( $HOST_CLASS );
   eval {
     $class->SUPER::import(@_);
   };
+}
+
+sub config {
+    return RSP->conf;
 }
 
 ##
@@ -192,7 +196,7 @@ sub bootstrap {
   my $self = shift;
 
   $self->initialize_js_environment;
-  $self->import_extensions( $self->context, $self->host->extensions );
+  $self->import_extensions( $self->context, @{ $self->host->extensions });
 
   my $bs_file = $self->host->bootstrap_file;
   if (!-e $bs_file) {
@@ -360,9 +364,11 @@ sub import_extensions {
   my $cx   = shift;
   my $sys  = {};
   foreach my $ext (@_) {
-    eval { Module::Load::load( $ext ); };
+   
+    # XXX - RSP::Config::Host will load extensions on our behalf
+    # eval { Module::Load::load( $ext ); };
     my $ext_class = $ext->providing_class;
-    if (!$@) {
+    #if (!$@) {
       if ( $ext_class->should_provide( $self ) ) {
         my $provided = $ext_class->provides( $self );
         if ( !$provided ) {
@@ -373,9 +379,9 @@ sub import_extensions {
           $sys = merge $provided, $sys;
         }
       }
-    } else {
-      warn "couldn't load extension $ext: $@\n";
-    }
+    #} else {
+    #  warn "couldn't load extension $ext: $@\n";
+    #}
   }
   $cx->bind_value( 'system' => $sys );
 }
@@ -386,6 +392,9 @@ sub import_extensions {
 sub host {
   my $self = shift;
 
+  return $self->config->host($self->hostname);
+
+=for comment
   ## allow for more "pluggable" host classes...
   my $host_class = $self->hostclass || $HOST_CLASS;
   if ( !$self->{host} ) {
@@ -393,6 +402,8 @@ sub host {
   }
 
   return $self->{host};
+=cut
+
 }
 
 ##
