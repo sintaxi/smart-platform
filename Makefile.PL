@@ -33,8 +33,14 @@ WriteMakefile(
       'DBD::SQLite' => 0,
       'DBD::mysql' => 0,
       'Moose' => 0,
+      'Clone' => 0,
+      'Try::Tiny' => 0,
+      'File::Path' => 0,
+      'File::Temp' => 0,
       'File::Spec' => 0,
       'Cwd' => 0,
+      'Test::More' => 0,
+      'Test::Exception' => 0,
   }
 );
 
