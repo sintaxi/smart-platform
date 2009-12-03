@@ -135,3 +135,166 @@ no Moose;
 __PACKAGE__->meta->make_immutable;
 
 1;
+
+__END__
+
+=head1 NAME 
+
+RSP::Config::Host - Configuration for RSP hosted applications
+
+=head1 SYNOPSIS
+
+  use RSP::Config::Host;
+  my $conf = RSP::Config->new(config => { ... });
+
+=head1 DESCRIPTION
+
+This module provides an object encapsulation around the 'rsp.conf' to provide
+a sanitized wrapper for use by RSP when dealing wit configuration for specific
+hosted applications.
+
+=head1 CONFIGURATION
+
+  # contents of rsp.conf
+
+  [host:exampleapp.smart.joyent.com]
+  alternate=www.exampleapp.smart.joyent.com
+  oplimit=50000
+
+=head1 OPTIONS
+
+For each [host:<hostname>] section, these are the available options:
+
+=head2 extensions
+
+This is a comma seperated list of extensions to load into the RSP hosted 
+application.
+
+=head2 oplimit
+
+Each host can be individually configured with their own oplimits. See 
+L<RSP::Config> for more detail.
+
+=head2 alternate
+
+TODO
+
+=head2 root
+
+You may configure a seperate path to use for this hosted application.
+
+=head2 entrypoint
+
+This is the name of the javascript function that should be called upon entry
+into the Javascript interpreter.
+
+=head2 noconsumption
+
+This indicates wether resources consumed by this hosted application should be 
+tracked.
+
+=head1 METHODS
+
+=head2 root
+
+  my $path = $conf->root;
+
+Returns an absolute path. Throws and exception if the path does not exist.
+
+=head2 extensions
+
+  my $extensions = $conf->extensions;
+  print join ', ', @$extensions;
+
+Returns an arrayref of full class names for listed extensions. It will also load
+those classes if not already loaded. This list will also include extensions
+loaded by RSP application as well the ones specific to this hosted application.
+
+=head2 oplimit
+
+  my $limit = $conf->oplimit;
+
+Returns the configured oplimit as an integer for this hosted application. It
+will default to the global RSP oplimit.
+
+=head2 should_report_consumption
+
+  my $reporting_on = $conf->should_report_consumption;
+
+This returns a boolean as to wether resources consumed by this hosted application
+should be tracked.
+
+=head2 hostname
+
+  my $name = $conf->hostname;
+  
+This returns the hostname configured for this hosted application.
+
+=head2 actual_host
+
+TODO
+
+=head2 code
+
+  my $code_path = $conf->code;
+
+This returns an absolute path to the directory that contains the source code
+for this hosted application.
+
+=head2 bootstrap_file
+
+  my $file = $conf->bootstrap_file;
+
+This returns the absolute path to the file that should be executed once running
+the Javascript interpreter.
+
+=head2 alloc_size
+
+  my $size = $conf->alloc_size;
+
+TODO
+
+=head2 log_directory
+
+  my $path = $conf->log_directory;
+
+This is the absolute path of the directory to use for this hosted applications
+log files.
+
+=head2 web
+
+  my $path = $conf->web;
+
+This returns the absolute path that contains static files to be served for this
+hosted application.
+
+=head2 access_log
+
+  my $filepath = $conf->access_log
+
+This returns the absolute path to the file to use for access logging.
+
+=head2 file
+
+  my $filepath = $conf->file(code => 'foo.js');
+
+  -- or --
+
+  my $filepath = $conf->file(web => 'foo.png');
+
+This returns the absolute path to a file within either the source code or
+static file directories.
+
+=head1 AUTHOR
+
+Scott McWhirter, C<<scott DOT mcwhirter -at- joyent DOT com>>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2009, Joyent Inc.
+
+=head1 LICENCE
+
+Please refer to the LICENCE file in this distribution for details.
+
+=cut

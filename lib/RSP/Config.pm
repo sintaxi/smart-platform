@@ -92,3 +92,100 @@ no Moose;
 __PACKAGE__->meta->make_immutable;
 
 1;
+
+__END__
+
+=head1 NAME 
+
+RSP::Config - Base configuration for RSP
+
+=head1 SYNOPSIS
+
+  use RSP::Config;
+  my $conf = RSP::Config->new();
+
+  -- or --
+
+  my $conf = RSP::Config->new(config => { ... });
+
+=head1 DESCRIPTION
+
+This module provides an object encapsulation around the 'rsp.conf' to provide
+a sanitized wrapper for use by RSP. For example, the 'root' path if incorrect
+will throw an exception if the path doesn't exist.
+
+=head1 CONFIGURATION
+
+  # contents of rsp.conf
+  root=/Users/scott/devel/joyent/rsp
+  extensions=Console,DataStore,FileSystem,HTTP,Image,Import,JSONEncoder
+
+  [rsp]
+  hostroot=application_repos
+  oplimit=100000
+
+=head1 OPTIONS
+
+=head2 root
+
+This is the path in which the RSP application runs. If not supplied, it will
+default to the current working directory.
+
+=head2 extensions
+
+This is a comma seperated list of extensions to load into the RSP application.
+
+=head2 [rsp] -> hostroot
+
+This is the path used to look for directories containing a javascript
+application. The path can either be an absolute path, or relative under
+the application root.
+
+=head2 [rsp] -> oplimit
+
+This is the default number of Javascript engine operations to be allowed
+by only one execution. If not supplied RSP uses a defalt of 100,000
+
+=head1 METHODS
+
+=head2 root
+
+  my $path = $conf->root;
+
+Returns an absolute path. Throws and exception if the path does not exist.
+
+=head2 extensions
+
+  my $extensions = $conf->extensions;
+  print join ', ', @$extensions;
+
+Returns an arrayref of full class names for listed extensions. It will also load
+those classes if not already loaded.
+
+=head2 hostroot
+
+  my $hosts_path = $conf->hostroot;
+
+Returns and absolute path to listed hostroot. Throws and exception if the
+path does not exist.
+
+=head2 oplimit
+
+  my $limit = $conf->oplimit;
+
+Returns the configured oplimit as an integer.
+
+=head1 AUTHOR
+
+Scott McWhirter, C<<scott DOT mcwhirter -at- joyent DOT com>>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2009, Joyent Inc.
+
+=head1 LICENCE
+
+Please refer to the LICENCE file in this distribution for details.
+
+=cut
+
