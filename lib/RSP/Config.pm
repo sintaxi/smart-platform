@@ -4,6 +4,7 @@ use Moose;
 use RSP;
 use Cwd qw(getcwd);
 
+use Try::Tiny;
 use Moose::Util::TypeConstraints;
 BEGIN {
 subtype 'ExistantDirectory',
@@ -62,6 +63,25 @@ sub host {
 
     # XXX - MUST work out how to weaken this circular ref correctly
     my $host_conf = RSP::Config::Host->new({ config => $conf, global_config => $self, hostname => $host });
+    
+    # XXX - This is a cheeky hack aimed at making this test easier... we should probably deal with this
+    # in a seperate way
+    if((my $engine = $host_conf->js_engine) ne 'none'){
+        
+        my $class = "RSP::JS::Engine::$engine";
+        try {
+            Class::MOP::load_class($class);
+        } catch {
+            die "Could not load class '$class' for JS Engine '$engine': $_";
+        };
+       
+        my @roles = $class->applicable_host_config_roles;
+        use Moose::Util;
+        Moose::Util::apply_all_roles($host_conf, @roles) if scalar(@roles);
+    }
+
+    $host_conf->meta->make_immutable;
+
     return $host_conf;
 }
 
@@ -89,7 +109,7 @@ sub _build_hostroot {
 
 
 no Moose;
-__PACKAGE__->meta->make_immutable;
+#__PACKAGE__->meta->make_immutable;
 
 1;
 

@@ -10,6 +10,13 @@ use Try::Tiny;
 has _config => (is => 'ro', required => 1, init_arg => 'config');
 has _master => (is => 'ro', required => 1, init_arg => 'global_config', isa => 'RSP::Config');
 
+# XXX - should this come from a role???
+has js_engine => (is => 'ro', required => 1, isa => 'Str', lazy_build => 1);
+sub _build_js_engine {
+    my ($self) = @_;
+    return $self->_config->{js_engine} // 'SpiderMonkey';
+}
+
 sub op_threshold { goto &oplimit }
 has oplimit => (is => 'ro', isa => 'Int', lazy_build => 1);
 sub _build_oplimit {
@@ -132,7 +139,7 @@ sub file {
 
 
 no Moose;
-__PACKAGE__->meta->make_immutable;
+#__PACKAGE__->meta->make_immutable;
 
 1;
 
