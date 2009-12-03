@@ -49,9 +49,28 @@ sub _build__hosts {
     
     my $hosts = {};
     my $config = $self->_config;
+
     for my $host (map { $_=~ /^host:(\w+)$/ ? $1 : () } keys %{$config}){
-       $hosts->{$host} = $config->{"host:$host"};
+        my $host_conf =  RSP::Config::Host->new({ config => $config->{"host:$host"}, global_config => $self, hostname => $host });
+        #$hosts->{$host} = $config->{"host:$host"};
+        if((my $engine = $host_conf->js_engine) ne 'none'){
+            
+            my $class = "RSP::JS::Engine::$engine";
+            try {
+                Class::MOP::load_class($class);
+            } catch {
+                die "Could not load class '$class' for JS Engine '$engine': $_";
+            };
+           
+            my @roles = $class->applicable_host_config_roles;
+            use Moose::Util;
+            Moose::Util::apply_all_roles($host_conf, @roles) if scalar(@roles);
+        }
+
+        $host_conf->meta->make_immutable;
+        $hosts->{$host} = $host_conf;
     }
+
     return $hosts;
 }
 
@@ -61,9 +80,12 @@ sub host {
     my $conf = $self->_hosts->{$host};
     die "No configuration supplied for '$host'" if !$conf;
 
+    return $conf;
+
     # XXX - MUST work out how to weaken this circular ref correctly
     my $host_conf = RSP::Config::Host->new({ config => $conf, global_config => $self, hostname => $host });
-    
+   
+=for comment
     # XXX - This is a cheeky hack aimed at making this test easier... we should probably deal with this
     # in a seperate way
     if((my $engine = $host_conf->js_engine) ne 'none'){
@@ -81,6 +103,7 @@ sub host {
     }
 
     $host_conf->meta->make_immutable;
+=cut
 
     return $host_conf;
 }
