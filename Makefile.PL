@@ -41,6 +41,10 @@ WriteMakefile(
       'Cwd' => 0,
       'Test::More' => 0,
       'Test::Exception' => 0,
-  }
+      'mocked' => 0,
+  },
+  test => {
+      TESTS => 't/*.t t/*/*.t',
+  },
 );
 
