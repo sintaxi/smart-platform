@@ -33,12 +33,12 @@ sub connect {
 
   $self->namespace( $db );
 
-  my $dir = RSP->config->{localstorage}->{data};
+  my $dir = RSP->config->{localstorage}->{data} // '';
   my $dbd = File::Spec->catfile( $dir, substr($db, 0, 2) );
   my $dbf = File::Spec->catfile( $dbd, $ns );
   mkpath( $dbd );
   $self->dbfile( $dbf );
-  $self->conn( DBI->connect_cached( "dbi:SQLite:dbname=$dbf", "", "", { unicode => 1 } ) );
+  $self->conn( DBI->connect_cached( "dbi:SQLite:dbname=$dbf", "", "", { sqlite_unicode => 1 } ) );
   $self->cache( RSP::Transaction->cache( $ns ) );
   return $self;
 }

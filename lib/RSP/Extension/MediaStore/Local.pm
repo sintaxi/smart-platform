@@ -21,7 +21,7 @@ sub storage_dir {
   my $self = shift;
   my $tx   = shift;
   my $type = shift;
-  my $dataroot = RSP->config->{localstorage}->{data};
+  my $dataroot = RSP->config->{localstorage}->{data} // '';
   my $nspath   = substr(md5_hex( $tx->hostname ), 0, 2);
   my $storedir = File::Spec->catfile( $dataroot, $nspath, $tx->hostname . ".store", $type );
 }
