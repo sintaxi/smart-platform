@@ -5,6 +5,14 @@ package JavaScript::Runtime;
 use unmocked 'Moose';
 use unmocked 'Scalar::Util', 'reftype';
 
+our $ALLOC_SIZE = @_;
+around 'new' => sub {
+    my $orig = shift;
+    my ($self, $size) = @_;
+    $ALLOC_SIZE = $size;
+    return $orig->($self);
+};
+
 our $INTERRUPT_HANDLER;
 sub set_interrupt_handler {
     my ($self, $coderef) = @_;
@@ -71,6 +79,14 @@ sub call {
     if($CALL_FAIL){
         die "[mocked] call fail";
     }
+}
+
+our $EVAL;
+our $EVAL_FAIL = 0;
+sub eval {
+    my ($self, $code, @args) = @_;
+    $EVAL = $code;
+    die "[mocked] eval fail" if $EVAL_FAIL;
 }
 
 our $UNBINDED;

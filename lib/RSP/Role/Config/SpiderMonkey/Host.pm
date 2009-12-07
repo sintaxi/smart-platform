@@ -18,4 +18,6 @@ sub _build_use_strict {
     return exists $self->_config->{use_strict} ? $self->_config->{use_strict} : $self->_master->use_strict;
 }
 
+has interrupt_handler => (is => 'rw', isa => 'Maybe[CodeRef]', default => sub { sub {} });
+
 1;

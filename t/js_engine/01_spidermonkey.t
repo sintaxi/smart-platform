@@ -19,17 +19,18 @@ my $host = HostConfig->new({
     extensions => [qw(RSP::Extension::Example)],
     bootstrap_file => $filename,
     hostname => 'flibble',
-    arguments => [qw(foo bar baz)],
 });
 
 create_instance: {
-    my $je = RSP::JS::Engine::SpiderMonkey->new({ conf => $host });
+    my $je = RSP::JS::Engine::SpiderMonkey->new();
     my $ji = $je->create_instance({ config => $host });
 
     isa_ok($ji, 'RSP::JS::Engine::SpiderMonkey::Instance');
 
     ok($ji->runtime, q{Instance has a runtime});
     isa_ok($ji->runtime, 'JavaScript::Runtime');
+
+    is($JavaScript::Runtime::ALLOC_SIZE, $host->alloc_size, q{Runtime is created with correct size});
 }
 
 interrupt_handler: {
@@ -50,7 +51,7 @@ context: {
     is($ji->e4x_enabled, 1, q{Instance has e4x});
     is($ji->version, '1.8', q{Version is correct});
 
-    $ji->options;
+    #$ji->options;
     is_deeply($JavaScript::Context::OPTIONS, [qw(e4x strict)], q{Options set in context});
 }
 
@@ -97,14 +98,13 @@ initialize: {
 }
 
 run: {
-    my ($fh, $filename) = tempfile();
     my $je = RSP::JS::Engine::SpiderMonkey->new;
     my $ji = $je->create_instance({ config => $host });
     $ji->initialize;
     
     $ji->run;
     is($JavaScript::Context::CALLED, 'main', q{Entrypoint called});
-    is_deeply($JavaScript::Context::CALLED_ARGS, [qw(foo bar baz)], q{Entrypoint arguments correct});
+    is_deeply($JavaScript::Context::CALLED_ARGS, [], q{Entrypoint arguments correct});
 
     local $JavaScript::Context::CALL_FAIL = 1;
     $ji = $je->create_instance({ config => $host });
@@ -114,6 +114,20 @@ run: {
         $ji->run
     } qr{Could not call function 'main': \[mocked\] call fail},
         q{Entrypoint function failure throws exception};
+}
+
+run_with_args: {
+    my $je = RSP::JS::Engine::SpiderMonkey->new;
+    my $ji = $je->create_instance({ config => $host });
+    $ji->initialize;
+    
+    $ji->run([qw(hehe hoho haha)]);
+    is($JavaScript::Context::CALLED, 'main', q{Entrypoint called});
+    is_deeply($JavaScript::Context::CALLED_ARGS, [qw(hehe hoho haha)], q{Entrypoint arguments correct (from run)});
+
+    $ji->run(bob => [qw(a b c)]);
+    is($JavaScript::Context::CALLED, 'bob', q{Entrypoint called (from run)});
+    is_deeply($JavaScript::Context::CALLED_ARGS, [qw(a b c)], q{Entrypoint arguments correct (from run)});
 }
 
 cleanup: {

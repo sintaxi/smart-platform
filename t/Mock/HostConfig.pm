@@ -10,5 +10,6 @@ has entrypoint          => (is => 'rw', isa => 'Str', default => 'main');
 has arguments           => (is => 'rw', isa => 'ArrayRef', default => sub { [] });
 has use_e4x             => (is => 'rw', isa => 'Bool', default => 1);
 has use_strict          => (is => 'rw', isa => 'Bool', default => 1);
+has alloc_size          => (is => 'rw', isa => 'Int', default => ((1024 ** 2) * 2));
 
 1;
