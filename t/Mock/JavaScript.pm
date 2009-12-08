@@ -64,7 +64,7 @@ sub eval_file {
     my ($self, $file) = @_;
     $FILE = $file;
     if(!$EVAL_RESULT){
-        die "[mocked] fail";
+        $@ = "[mocked] fail";
     }
     return $EVAL_RESULT;
 }
@@ -77,7 +77,7 @@ sub call {
     $CALLED = $entry;
     $CALLED_ARGS = [@args];
     if($CALL_FAIL){
-        die "[mocked] call fail";
+        $@ = "[mocked] call fail";
     }
 }
 
@@ -86,7 +86,7 @@ our $EVAL_FAIL = 0;
 sub eval {
     my ($self, $code, @args) = @_;
     $EVAL = $code;
-    die "[mocked] eval fail" if $EVAL_FAIL;
+    $@ = "[mocked] eval fail" if $EVAL_FAIL;
 }
 
 our $UNBINDED;

@@ -51,7 +51,11 @@ has config => (
     },
 );
 
-has interrupt_handler => (is => 'rw', isa => 'Maybe[CodeRef]', trigger => \&_trigger_interrupt_handler);
+has interrupt_handler => (is => 'rw', isa => 'Maybe[CodeRef]', trigger => \&_trigger_interrupt_handler, lazy_build => 1);
+sub _build_interrupt_handler {
+    my ($self) = @_;
+    return $self->_initial_interrupt_handler;
+}
 sub _trigger_interrupt_handler {
     my ($self, $value, $old_value) = @_;
     $self->set_interrupt_handler($value);
@@ -78,9 +82,7 @@ sub BUILD {
     my ($self) = @_;
     $self->version($self->version);
     $self->options($self->options);
-    if(defined($self->_initial_interrupt_handler)){
-        $self->interrupt_handler( $self->_initial_interrupt_handler );
-    }
+    $self->interrupt_handler($self->interrupt_handler);
     $self->_import_extensions;
 }
 
@@ -113,10 +115,7 @@ sub _bootstrap {
     }
 
     try {
-        use Data::Dumper;
-        print STDERR Dumper($self->context->eval("this"));
         my $return = $self->evaluate_file( $bs_file );
-        print STDERR Dumper($self->context->eval("this"));
         die $@ if $@;
     } catch {
         die "Could not evaluate bootstrap file '$bs_file': $_";

@@ -8,7 +8,7 @@ use File::Path qw(make_path);
 use Try::Tiny;
 
 has _config => (is => 'ro', required => 1, init_arg => 'config');
-has _master => (is => 'ro', required => 1, init_arg => 'global_config', isa => 'RSP::Config');
+has _master => (is => 'ro', required => 1, init_arg => 'global_config', isa => 'RSP::Config'); # XXX TODO - weaken?
 
 # XXX - should this come from a role???
 has js_engine => (is => 'ro', required => 1, isa => 'Str', lazy_build => 1);

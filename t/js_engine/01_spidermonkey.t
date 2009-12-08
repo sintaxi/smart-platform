@@ -23,6 +23,7 @@ my $host = HostConfig->new({
 
 create_instance: {
     my $je = RSP::JS::Engine::SpiderMonkey->new();
+    $je->initialize;
     my $ji = $je->create_instance({ config => $host });
 
     isa_ok($ji, 'RSP::JS::Engine::SpiderMonkey::Instance');
@@ -84,7 +85,7 @@ initialize: {
     $ji = $je->create_instance({ config => $host });
     throws_ok {
         $ji->initialize
-    } qr{bootstrap file does not exist for host 'flibble': },
+    } qr{bootstrap file 'reallyreallyreallyshouldnotbehere' does not exist for host 'flibble': },
         q{Non-existing bootstrap file throws exception};
 
     $host->bootstrap_file($filename);
