@@ -51,6 +51,12 @@ has config => (
     },
 );
 
+# XXX - This probably chould be different, but extensions need to have access to "host"
+sub host {
+    my $self = shift;
+    return $self->config(@_);
+}
+
 has interrupt_handler => (is => 'rw', isa => 'Maybe[CodeRef]', trigger => \&_trigger_interrupt_handler, lazy_build => 1);
 sub _build_interrupt_handler {
     my ($self) = @_;
@@ -102,8 +108,16 @@ sub _import_extensions {
             $sys = merge $provided, $sys;
           }
         }
+        print STDERR "Importing extension '$ext_class' for host: " . $self->hostname . " (context ".$self->context.")\n";
     }
-    $self->bind_value( 'system' => $sys );
+    try {
+        print STDERR "\n\n....... $@ .....\n\n";
+        $self->bind_value( 'system' => $sys );
+        die $@ if $@;
+    } catch {
+        use Data::Dumper;
+        die "unable to bind 'system': $sys: ".Dumper($sys)."$_";
+    };
 }
 
 sub _bootstrap {

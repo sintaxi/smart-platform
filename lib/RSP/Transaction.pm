@@ -13,6 +13,10 @@ use Scalar::Util qw( weaken );
 use RSP::Consumption::Ops;
 use RSP::Consumption::Bandwidth;
 
+use feature qw(switch);
+use Class::MOP; # for load_class
+use Try::Tiny;
+
 use base 'Class::Accessor::Chained';
 
 #our $HOST_CLASS = RSP->config->{_}->{host_class} || 'RSP::Host';
@@ -41,7 +45,45 @@ sub config {
 sub new {
   my $class = shift;
   my $self  = {};
+
   bless $self, $class;
+
+  $self->_load_js_engines;
+
+  return $self;
+}
+
+# XXX - Currently we only support Spidermonkey
+# These should really be loaded as Extensions, but for now, we'll do it explicitly
+my $js_engine_objs = {};
+my @js_engines = qw(SpiderMonkey);
+sub _load_js_engines {
+    my ($self) = @_;
+    for my $engine (@js_engines) {
+        my $engine_class = "RSP::JS::Engine::$engine";
+        try {
+            Class::MOP::load_class($engine_class);
+        } catch {
+            die "Could not load class '$engine_class' for JS engine '$engine': $_";
+        };
+
+        # Initialize the engine so that we can get configuration settings for this
+        # engine available
+        my $engine_obj = $engine_class->new;
+        $engine_obj->initialize;
+
+        $js_engine_objs->{ $engine } = $engine_obj;
+    }
+
+    return 1;
+}
+
+sub fetch_js_engine {
+    my ($self, $engine) = @_;
+    my $obj = $js_engine_objs->{$engine};
+
+    die "No such JS Engine '$engine' loaded" if !$obj;
+    return $obj;
 }
 
 ##
@@ -140,53 +182,14 @@ sub exceeded_ops {
 }
 
 ##
-## simply sets up the basic javascript environment,
-##  creates a runtime and a context, and toggles some options
-##  on the two.
-##
-sub initialize_js_environment {
-  my $self = shift;
-  $self->runtime( JavaScript::Runtime->new( $self->host->alloc_size ) );
-
-  ## there is a faster way of doing this...
-  $self->runtime->set_interrupt_handler(
-					sub {
-					  $self->{ops}++;
-					  if ( $self->ops > $self->host->op_threshold ) {
-					    $self->exceeded_ops;
-					    RSP::Error->throw("op threshold exceeded");
-					  }
-					  return 1;
-					}
-				       );
-
-  $self->context( $self->runtime->create_context );
-  $self->context->set_version( "1.8" );
-  $self->context->toggle_options(qw( xml strict jit ));
-
-  ## bind the error class, so that things start to work again...
-  RSP::Error->bind( $self );
-}
-
-##
 ## removes the context and the runtime objects, so that we don't have
 ##   them hanging around.
 ##
 sub cleanup_js_environment {
   my $self = shift;
 
-  ## unset the interrupt handler
-  if ( $self->runtime && $self->context ) {
-    $self->runtime->set_interrupt_handler( undef );
-    $self->context->unbind_value( 'system' );
-  }
-
-#  RSP::JSObject->unbind( $self->context );
-
-  delete $self->{context};
-  delete $self->{runtime};
-#  $self->context->DESTROY;
-#  $self->runtime->DESTROY;
+  # The JS instance knows how to clean up after itself now using DEMOLISH
+  #$self->context->cleanup;
 }
 
 ##
@@ -195,23 +198,24 @@ sub cleanup_js_environment {
 sub bootstrap {
   my $self = shift;
 
-  $self->initialize_js_environment;
-  $self->import_extensions( $self->context, @{ $self->host->extensions });
+  my $engine = $self->host->js_engine;
+  my $je = $self->fetch_js_engine($engine);
+    
+  my $ji = $je->create_instance({ config => $self->host });
 
-  my $bs_file = $self->host->bootstrap_file;
-  if (!-e $bs_file) {
-    $self->log("$!: $bs_file");
-    RSP::Error->throw("bootstrap file does not exist for " . $self->host->hostname);
-  }
-  my $result = $self->context->eval_file( $bs_file );
-  if ( $self->has_exceeded_ops ) {
-    RSP::Error->throw("exceeded oplimit");
-  }
-  if ($@) {
-    $self->log($@);
-    my $err = RSP::Error->new( $@, $self );
-    $err->throw;
-  }
+  $ji->interrupt_handler(sub {
+      $self->{ops}++;
+      if($self->ops > $self->host->oplimit){
+          $self->exceeded_ops;
+          RSP::Error->throw("op threshold exceeded");
+      }
+      return 1;
+  });
+
+  $ji->initialize;
+  $self->context($ji);
+  RSP::Error->bind($self);
+
 }
 
 ##
@@ -235,34 +239,36 @@ sub build_entrypoint_arguments {
 ##
 sub run {
   my $self = shift;
-  my $response = eval {
-    $self->context->call(
-			 $self->host->entrypoint,
-			 $self->build_entrypoint_arguments
-			);
-  };
-  if ( $self->has_exceeded_ops ) {
+
+  my $response;
+  my $error;
+  try {
+      local $@;
+      $response = $self->context->run([ $self->build_entrypoint_arguments ]);
+      use Data::Dumper;
+      print STDERR Dumper($response);
+      $error = $@;
+      die $error if $error;
+  } catch {
+ 
+        $self->log("JS called failed with: $_");
+        if(ref($_) && ref($_) eq 'JavaScript::Error') { 
+            die $_;
+         } else {
+            my $str = $_;
+            #$str =~ s/at (.+)\sline\s(\d+)\.$//;
+            my $err = RSP::Error->new($str);
+            $err->{fileName} = undef;
+            $err->{lineNumber} = undef;
+            die $str;
+        } 
+    };
+
+  if($self->has_exceeded_ops){
     RSP::Error->throw("exceeded oplimit");
   }
-  if ($@) {
-    $self->log($@);
-    if (ref($@) && ref($@) eq "JavaScript::Error") {
-      RSP::Error->throw( $@ );
-    } elsif ( $@ =~ /Undefined subroutine/ ) {
-      my $err = RSP::Error->new("Could not call function " . $self->host->entrypoint);
-      $err->{fileName} = undef;
-      $err->{lineNumber} = undef;
-      $err->throw;
-    } else {
-      $@ =~ s/ at (.+)\sline\s(\d+)\.$//;
-      my $err = RSP::Error->new( $@ );
-      $err->{lineNumber} = undef;
-      $err->{fileName} = undef;
-      throw $err;
-    }
-  } else {
-    $self->encode_response( $response );
-  }
+
+  $self->encode_response( $response );
   $self->access_log();
 }
 
@@ -355,6 +361,7 @@ sub consumption_log {
   }
 }
 
+=for comment
 ##
 ## imports extensions that a host requires.  These
 ##   are by passing in classnames as arguments.
@@ -364,7 +371,6 @@ sub import_extensions {
   my $cx   = shift;
   my $sys  = {};
   foreach my $ext (@_) {
-   
     # XXX - RSP::Config::Host will load extensions on our behalf
     # eval { Module::Load::load( $ext ); };
     my $ext_class = $ext->providing_class;
@@ -385,6 +391,7 @@ sub import_extensions {
   }
   $cx->bind_value( 'system' => $sys );
 }
+=cut
 
 ##
 ## instantiates or simply returns the RSP::Host object

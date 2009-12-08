@@ -29,22 +29,21 @@ sub handler {
                                     ->request( $tx->req )
 				    ->response( $tx->res );
 
-  eval {
-    $rsptx->process_transaction;
-  };
-  if ($@) {
-    my $error_message = $@;
-    if ($error_message =~ /in file (.+\.pm) at line (.+)$/) {
-      $error_message =~ s/in file (.+\.pm) at line (.+)$//;
-    }
-    $tx->res->code( 500 );
-    $tx->res->headers->content_type('text/plain');
-    $tx->res->body($error_message);
-  }
+      use Carp::Always;
+    use Try::Tiny;
+    try {
+        $rsptx->process_transaction;
+        die $@ if $@;
+    } catch {
+        $tx->res->code(500);
+        $tx->res->headers->content_type('text/plain');
+        $tx->res->body($_);
+        $rsptx->log($_);
+    };
 
-  $rsptx->request( undef );
-  $rsptx->response( undef );
-  $rsptx = undef;
+    #$rsptx->request( undef );
+    #$rsptx->response( undef );
+    #$rsptx = undef;
 
   return $tx;
 }
