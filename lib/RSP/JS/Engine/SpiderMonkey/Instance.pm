@@ -96,27 +96,52 @@ sub _import_extensions {
     my $self = shift;
     my $sys  = {};
     foreach my $ext (@{ $self->extensions }) {
-        # XXX - RSP::Config::Host will load extensions on our behalf
+
         my $ext_class = $ext->providing_class;
-        if ( $ext_class->should_provide( $self ) ) {
-          my $provided = $ext_class->provides( $self );
-          if ( !$provided ) {
-            ## perhaps we should do something?
-          } elsif (!ref($provided) || ref($provided) ne 'HASH') {
-            #warn "invalid extension provided by $ext";
-          } else {
+        if($ext_class->can('style') && $ext_class->style('style')){
+            my $ext_obj = $ext_class->new({ js_instance => $self });
+            my $provides = $ext_obj->provides;
+
+            my $tmp_provided = {};
+            for my $func (@$provides){
+                my $method = $ext_obj->method_for($func);
+                $tmp_provided->{$func} = sub { $ext_obj->$method(@_) };
+            }
+
+            my $provided = {};
+            for my $func (keys %$tmp_provided){
+                my @levels = split(/\./, $func);
+                my $current_level = $provided;
+                while(my $level = shift @levels){
+                    if(!@levels){
+                        $current_level->{$level} = $tmp_provided->{$func};
+                    } else {
+                        $current_level = $current_level->{$level} //= {};
+                    }
+                }
+            }
+
             $sys = merge $provided, $sys;
-          }
+        } else {
+            # XXX - RSP::Config::Host will load extensions on our behalf
+            if ( $ext_class->should_provide( $self ) ) {
+              my $provided = $ext_class->provides( $self );
+              if ( !$provided ) {
+                ## perhaps we should do something?
+              } elsif (!ref($provided) || ref($provided) ne 'HASH') {
+                #warn "invalid extension provided by $ext";
+              } else {
+                $sys = merge $provided, $sys;
+              }
+            }
         }
-        print STDERR "Importing extension '$ext_class' for host: " . $self->hostname . " (context ".$self->context.")\n";
     }
     try {
-        print STDERR "\n\n....... $@ .....\n\n";
         $self->bind_value( 'system' => $sys );
+        undef($@) if $@ =~ /system is not defined/; # XXX - JS.pm is buggy, so catch this not-exception first
         die $@ if $@;
     } catch {
-        use Data::Dumper;
-        die "unable to bind 'system': $sys: ".Dumper($sys)."$_";
+        die "unable to bind 'system': $_";
     };
 }
 

@@ -1,43 +1,45 @@
 package RSP::Extension::Import;
 
-use strict;
-use warnings;
-
-use RSP::Error;
-use base 'RSP::Extension';
-
-sub exception_name {
-  return "system.use";
-}
+use Moose;
+use Try::Tiny;
 
 sub provides {
-  my $class = shift;
-  my $tx    = shift;
-  return {
-    'use' => sub {
-       my $lib = shift;
-       my $orig = $lib;
-
-       $lib =~ s/\./\//g;
-       $lib .= ".js";
-       my $path = $class->path_to_lib( $tx, $lib );
-       if (!$path) {
-	 RSP::Error->throw("library $orig does not exist");
-       }
-       $tx->context->eval_file( $path );
-       if ($@) {
-	 $tx->log($@);
-	 RSP::Error->throw($@);
-       }
-    }
-  }
+    [qw(use)];
 }
 
-sub path_to_lib {
-  my $class = shift;
-  my $tx    = shift;
-  my $lib   = shift;
-  return $class->local_lib( $tx, $lib ) || $class->global_lib( $tx, $lib );
+sub method_for {
+    my ($self, $func) = @_;
+    if($func eq 'use'){
+        return 'use';
+    }
+    die "No method for function '$func'";
+}
+
+sub style { 'NG' }
+
+# XXX TODO - should this be weakened?
+has js_instance => (is => 'ro', isa => 'Object', required => 1);
+
+sub use {
+    my ($self, $lib) = @_;
+
+    my $name = $lib;
+    $lib =~ s{\.}{/}g;
+    $lib .= '.js';
+
+    my $path_to_lib = $self->js_instance->config->file(code => $lib);
+
+    if(!-e $path_to_lib){
+        die "Library '$name' does not exist";
+    }
+
+    try {
+        $self->js_instance->evaluate_file($path_to_lib);
+        die $@ if $@;
+    } catch {
+        #$self->js_instance->config->log($_);
+        die "Unable to load library '$name': $_";
+    };
 }
 
 sub global_lib {
@@ -51,17 +53,6 @@ sub global_lib {
   return undef;
 }
 
-sub local_lib {
-  my $class = shift;
-  my $tx    = shift;
-  my $lib   = shift;
-  my $path  = $tx->host->file( 'code', $lib );
-  if ( -e $path ) {
-    return $path;
-  }
-  return undef;
-}
-
-
+sub providing_class { __PACKAGE__ }
 
 1;
