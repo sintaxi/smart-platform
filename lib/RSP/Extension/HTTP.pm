@@ -1,19 +1,14 @@
 package RSP::Extension::HTTP;
 
-use strict;
-use warnings;
+use Moose;
 
 use Encode;
 use HTTP::Request;
 use LWPx::ParanoidAgent;
 
-use base 'RSP::Extension';
+use Try::Tiny;
 
 our $VERSION = '1.00';
-
-sub exception_name {
-  return "system.http";
-}
 
 ## why does LWPx::ParanoidAgent need this?
 {
@@ -22,41 +17,48 @@ sub exception_name {
     sub LWP::Debug::trace { }
 }
 
+sub style { 'NG' }
+
+my $mapping = {
+    'http.request' => 'http_request',
+};
+
 sub provides {
-  my $class = shift;
-  my $tx    = shift;
-  my $ua = LWPx::ParanoidAgent->new;
-  $ua->agent("Joyent Smart Platform / HTTP / $VERSION");
-  $ua->timeout( 10 );
-  return {
-    'http' => {
-      'request' => sub {
-        my $response = eval {
-	  my @args;
-	  foreach my $part (@_) {
-	    if (!ref($part)) {
-	      push( @args, Encode::encode("utf8", $part ) );
-	    } else {
-	      push( @args, $part );
-	    }
-	  }
-          my $req = shift @args;
-          my $r;
-          if ( ref( $req ) ) {
-            $r = HTTP::Request->new( @$req );
-          } else {
-            $r = HTTP::Request->new( $req, @args );
-          }
-          $ua->request( $r );
-        };
-        if ($@) {
-          RSP::Error->throw("error: $@");
-        }
-        my $ro = $class->response_to_object( $response );
-	return $ro;
-      }
+    return [sort keys %$mapping];
+}
+
+sub method_for {
+    my ($self, $func) = @_;
+    if(my $method = $mapping->{$func}){
+        return $method;
     }
-  };
+    die "No method for function 'blargh'";
+}
+
+sub http_request {
+    my ($self, @js_args) = @_;
+
+    my $ua = LWPx::ParanoidAgent->new;
+    $ua->agent("Joyent Smart Platform / HTTP / $VERSION");
+    $ua->timeout( 10 );
+
+    my $response = try {
+        my @args;
+        for my $part (@js_args){
+            push(@args, (
+                ref($part) ? $part : Encode::encode("utf8", $part)
+            ));
+        }
+
+        my $req = shift @args;
+        my $r = ref($req) ? HTTP::Request->new(@$req) : HTTP::Request->new($req, @args);
+        $ua->request( $r );
+    } catch { 
+        die "Could not complete HTTP Request: $_";
+    };
+
+    my $ro = $self->response_to_object($response);
+    return $ro;
 }
 
 sub response_to_object {
@@ -70,5 +72,7 @@ sub response_to_object {
 	   };
   return $ro;
 }
+
+sub providing_class { __PACKAGE__ }
 
 1;
