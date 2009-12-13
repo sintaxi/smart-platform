@@ -11,6 +11,7 @@ use_ok('RSP::Extension::Import');
 
 use File::Temp qw(tempfile tempdir);
 use File::Path qw(make_path);
+use Scalar::Util qw(reftype);
 
 use RSP::Config;
 
@@ -60,15 +61,22 @@ print {$js_fh} <<EOJS;
 EOJS
 close($js_fh);
 
+
 basic: {
     my $import = RSP::Extension::Import->new({ js_instance => $ji });
-    isa_ok($import, q{RSP::Extension::Import});
 
-    my $provides = $import->provides;
-    is_deeply($provides, [qw(use)], q{Import extension provides correct items});
+    ok($import->does('RSP::Role::Extension'), q{Import does RSP::Role::Extension});
+    ok($import->does('RSP::Role::Extension::JSInstanceManipulation'), q{Import does RSP::Role::Extension::JSInstanceManipulation});
 
-    # XXX - temporary
-    is($import->style, 'NG', q{Next-gen style extension});
+    {
+        $import->bind;
+        ok($JavaScript::Context::BINDED->{'extensions.rsp__extension__import'}, q{Import has binded extension}); 
+        is(
+            reftype($JavaScript::Context::BINDED->{'extensions.rsp__extension__import'}{use}), q{CODE}, 
+            q{Import has binded 'use' closure}
+        ); 
+    }
+
 }
 
 use: {
@@ -81,12 +89,12 @@ use: {
 
     throws_ok {
         $import->use("meh");
-    } qr{Library 'meh' does not exist}, q{Non-existant library throws exception};
+    } qr{Library 'meh' does not exist$}, q{Non-existant library throws exception};
 
     $JavaScript::Context::EVAL_RESULT = 0;
     throws_ok {
         $import->use("foo");
-    } qr{Unable to load library 'foo': \[mocked\] fail},
+    } qr{Unable to load library 'foo': \[mocked\] fail$},
         q{Failing library throws exception};
 }
 
@@ -110,6 +118,4 @@ global_lib: {
     } qr{Library name 'flibble' at version '3\.0' does not exist}, q{Non-existant version throws exception};
 
 }
-
-
 

@@ -95,7 +95,40 @@ sub BUILD {
 sub _import_extensions {
     my $self = shift;
     my $sys  = {};
+
+    $self->bind_value('recur', sub {});
+    my $bootstrap = <<EOJS;
+(function(){
+    var merge_recursively = function (obj1, obj2) {
+      for (var p in obj2) {
+        try {
+          // Property in destination object set; update its value.
+          if ( obj2[p].constructor==Object ) {
+            obj1[p] = merge_recursively(obj1[p], obj2[p]);
+          } else {
+            obj1[p] = obj2[p];
+          }
+        } catch(e) {
+          // Property in destination object not set; create it and set its value.
+          obj1[p] = obj2[p];
+        }
+      }
+      return obj1;
+    }
+    recur = merge_recursively;
+})();
+EOJS
+
+    $self->bind_value('extensions', {});
+    $self->eval($bootstrap);
+
     foreach my $ext (@{ $self->extensions }) {
+
+        if($ext->can('does') && $ext->does('RSP::Role::Extension')){
+            my $ext_obj = $ext->new({ js_instance => $self });
+            $ext_obj->bind;
+            next;
+        }
 
         my $ext_class = $ext->providing_class;
         if($ext_class->can('style') && $ext_class->style('style')){
@@ -136,8 +169,23 @@ sub _import_extensions {
             }
         }
     }
+    
     try {
-        $self->bind_value( 'system' => $sys );
+        $self->bind_value('system', {});
+        for my $ext (@{ $self->extensions }){
+
+            if($ext->can('does') && $ext->does('RSP::Role::Extension')){
+                my $class = $ext;
+                $class =~ s/::/__/g;
+                $class = lc($class);
+                $self->eval("system = recur(extensions.$class, system);");
+            }
+        }
+
+        $self->unbind_value('extensions');
+        $self->unbind_value('recur');
+
+        #$self->bind_value( 'system' => $sys );
         undef($@) if $@ =~ /system is not defined/; # XXX - JS.pm is buggy, so catch this not-exception first
         die $@ if $@;
     } catch {

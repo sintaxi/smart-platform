@@ -57,6 +57,7 @@ context: {
 }
 
 extensions: {
+    # XXX - see t/08_extensions.t
     {
         package RSP::Extension::Example;
            sub providing_class { shift }
@@ -70,7 +71,6 @@ extensions: {
     my $ji = $je->create_instance({ config => $host });
 
     is_deeply($ji->extensions, [qw(RSP::Extension::Example)], q{List of extensions is correct});
-    ok(reftype($JavaScript::Context::BINDED->{'system'}{example}{hello}) eq 'CODE', q{Extension binded});
 }
 
 initialize: {
