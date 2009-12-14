@@ -1,24 +1,21 @@
 package RSP::Extension::UUID;
 
-use strict;
-use warnings;
+use Moose;
+with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 use Data::UUID::Base64URLSafe;
-use base 'RSP::Extension';
 
-sub exception_name {
-  return "system.uuid";
+sub bind {
+    my ($self) = @_;
+
+    $self->bind_extension({
+        uuid => $self->generate_js_closure('uuid'),
+    });
 }
 
-sub provides {
-  my $class = shift;
-  my $tx    = shift;
-  return {
-    'uuid' => sub {
-      my $ug = Data::UUID::Base64URLSafe->new;
-      return $ug->create_b64_urlsafe;
-    }
-  }
+my $ug = Data::UUID::Base64URLSafe->new;
+sub uuid {
+    return $ug->create_b64_urlsafe;
 }
 
 1;
