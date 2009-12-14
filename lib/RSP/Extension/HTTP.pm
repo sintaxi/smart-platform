@@ -2,6 +2,8 @@ package RSP::Extension::HTTP;
 
 use Moose;
 
+with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
+
 use Encode;
 use HTTP::Request;
 use LWPx::ParanoidAgent;
@@ -10,29 +12,21 @@ use Try::Tiny;
 
 our $VERSION = '1.00';
 
+sub bind {
+    my ($self) = @_;
+
+    $self->bind_extension({
+        http => {
+            request => $self->generate_js_closure('http_request'),
+        },
+    });
+}
+
 ## why does LWPx::ParanoidAgent need this?
 {
     no warnings 'redefine';
     sub LWP::Debug::debug { }
     sub LWP::Debug::trace { }
-}
-
-sub style { 'NG' }
-
-my $mapping = {
-    'http.request' => 'http_request',
-};
-
-sub provides {
-    return [sort keys %$mapping];
-}
-
-sub method_for {
-    my ($self, $func) = @_;
-    if(my $method = $mapping->{$func}){
-        return $method;
-    }
-    die "No method for function 'blargh'";
 }
 
 sub http_request {
@@ -72,7 +66,5 @@ sub response_to_object {
 	   };
   return $ro;
 }
-
-sub providing_class { __PACKAGE__ }
 
 1;

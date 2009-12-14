@@ -6,13 +6,13 @@ use warnings;
 use Test::More qw(no_plan);
 use Test::Exception;
 
+use mocked [qw(JavaScript t/Mock)];
 use mocked [qw(LWPx::ParanoidAgent t/Mock)];
 use_ok('RSP::Extension::HTTP');
 
 use RSP::Config;
-use Digest::SHA1;
-use Digest::MD5;
 
+use Scalar::Util qw(reftype);
 use File::Path qw(make_path);
 use File::Temp qw(tempdir tempfile);
 my $tmp_dir = tempdir();
@@ -51,13 +51,19 @@ $ji->initialize;
 
 basic: {
     my $http = RSP::Extension::HTTP->new({ js_instance => $ji });
-    isa_ok($http, q{RSP::Extension::HTTP});
 
-    my $provides = $http->provides;
-    is_deeply($provides, [sort qw(http.request)], q{HTTP extension provides correct items});
+    ok($http->does('RSP::Role::Extension'), q{HTTP does RSP::Role::Extension});
+    ok($http->does('RSP::Role::Extension::JSInstanceManipulation'), q{HTTP does RSP::Role::Extension::JSInstanceManipulation});
 
-    # XXX - temporary
-    is($http->style, 'NG', q{Next-gen style extension});
+    {
+        $http->bind;
+
+        ok($JavaScript::Context::BINDED->{'extensions.rsp__extension__http'}, q{HTTP has binded extension});
+        
+        my $BIND = $JavaScript::Context::BINDED->{'extensions.rsp__extension__http'};
+        is(reftype($BIND->{http}), q{HASH}, q{HTTP has binded 'http' hash});
+        is(reftype($BIND->{http}{request}), q{CODE}, q{HTTP has binded 'http.request' closure});
+    }
 }
 
 http_request: {
@@ -72,16 +78,5 @@ http_request: {
     is($LWPx::ParanoidAgent::REQUEST->uri, 'http://foo.bar/', q{Request URI is correct});
     is($LWPx::ParanoidAgent::REQUEST->method, 'GET', q{Request Method is correct});
     is_deeply($response, { code => 200, content => 'howdy', headers => {} }, q{Response is as expected});
-}
-
-method_for: {
-    my $http = RSP::Extension::HTTP->new({ js_instance => $ji }); 
-    
-    my $method = $http->method_for('http.request');
-    is($method, 'http_request', q{Correct method returned for function});
-
-    throws_ok {
-        $http->method_for('blargh');
-    } qr{No method for function 'blargh'}, q{Non-existant function throws exception};
 }
 
