@@ -99,80 +99,39 @@ sub _import_extensions {
     $self->bind_value('recur', sub {});
     my $bootstrap = <<EOJS;
 (function(){
-
-    //
-    // This function is borrowed mainly from JQuery.extend()
-    // 
-    var merge_recursively = function() {
-      // copy reference to target object
-      var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options, name, src, copy;
-
-      // Handle a deep copy situation
-      if ( typeof target === "boolean" ) {
-        deep = target;
-        target = arguments[1] || {};
-        // skip the boolean and the target
-        i = 2;
-      }
-
-      // Handle case when target is a string or something (possible in deep copy)
-      if ( typeof target !== "object" && target instanceof Function ) {
-        target = {};
-      }
-
-      // extend jQuery itself if only one argument is passed
-      if ( length === i ) {
-        target = this;
-        --i;
-      }
-
-      for ( ; i < length; i++ ) {
-        // Only deal with non-null/undefined values
-        if ( (options = arguments[ i ]) != null ) {
-          // Extend the base object
-          for ( name in options ) {
-            src = target[ name ];
-            copy = options[ name ];
-
-            // Prevent never-ending loop
-            if ( target === copy ) {
-              continue;
+    var merge_recursively = function (obj1, obj2) {
+      for (var p in obj2) {
+        try {
+          // Property in destination object set; update its value.
+          if ( typeof obj2[p] == 'object' ) {
+            if( obj2[p] instanceof PerlSub ){
+                obj1[p] = obj2[p]; 
+            } else {
+                obj1[p] = merge_recursively(obj1[p], obj2[p]);
             }
-
-            // Recurse if we're merging object values
-            if ( deep && copy && typeof copy === "object" && !copy.nodeType ) {
-              var clone;
-
-              if ( src ) {
-                clone = src;
-              } else if ( copy instanceof Array ) {
-                clone = [];
-              } else if ( copy instanceof Object ) {
-                clone = {};
-              } else {
-                clone = copy;
-              }
-
-              // Never move original objects, clone them
-              target[ name ] = merge_recursively( deep, clone, copy );
-
-            // Don't bring in undefined values
-            } else if ( copy !== undefined ) {
-              target[ name ] = copy;
-            }
+          } else {
+            obj1[p] = obj2[p];
           }
+        } catch(e) {
+          // Property in destination object not set; create it and set its value.
+          obj1[p] = obj2[p];
         }
       }
+      return obj1;
+    }
 
-      // Return the modified object
-      return target;
-    };
     recur = merge_recursively;
 })();
 EOJS
 
     $self->bind_value('extensions', {});
-    $self->bind_value('system', {});
+
+    my $foo = sub {
+        my $class = shift;
+        $class =~ s/::/__/g;
+        $class = lc($class);
+        return $class;
+    };
 
     foreach my $ext (@{ $self->extensions }) {
 
@@ -205,18 +164,15 @@ EOJS
                     }
                 }
             }
-
-            $sys = merge $provided, $sys;
+            my $thing = $foo->($ext_class);
+            $self->bind_value("extensions.$thing", $provided);
         } else {
             # XXX - RSP::Config::Host will load extensions on our behalf
             if ( $ext_class->should_provide( $self ) ) {
               my $provided = $ext_class->provides( $self );
-              if ( !$provided ) {
-                ## perhaps we should do something?
-              } elsif (!ref($provided) || ref($provided) ne 'HASH') {
-                #warn "invalid extension provided by $ext";
-              } else {
-                $sys = merge $provided, $sys;
+              if ( $provided ) {
+                  my $thing = $foo->($ext_class);
+                  $self->bind_value("extensions.$thing", $provided);
               }
             }
         }
@@ -224,18 +180,18 @@ EOJS
     
     try {
         $self->eval($bootstrap);
-        for my $ext (@{ $self->extensions }){
+        $self->bind_value('system', {});
 
-            if($ext->can('does') && $ext->does('RSP::Role::Extension')){
-                my $class = $ext;
-                $class =~ s/::/__/g;
-                $class = lc($class);
-                $self->eval("system = recur(system, extensions.$class);");
-            }
-        }
+        $self->eval("
+            (function(){
+                for(var x in extensions){
+                    system = recur(system, extensions[x]);
+                }
+            })();
+        ");
 
-        $self->unbind_value('extensions');
         $self->unbind_value('recur');
+        $self->unbind_value('extensions');
 
         undef($@) if $@ =~ /system is not defined/; # XXX - JS.pm is buggy, so catch this not-exception first
         die $@ if $@;
