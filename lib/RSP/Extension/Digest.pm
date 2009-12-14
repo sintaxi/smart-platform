@@ -2,31 +2,26 @@ package RSP::Extension::Digest;
 
 use Moose;
 
+with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
+
 use Scalar::Util qw( blessed );
 use Digest::MD5 qw( md5_hex md5_base64 );
 use Digest::SHA1 qw( sha1_hex sha1_base64 );
 
-my $mapping = {
-    'digest.sha1.hex' => 'digest_sha1_hex',
-    'digest.sha1.base64' => 'digest_sha1_base64',
-    'digest.md5.hex' => 'digest_md5_hex',
-    'digest.md5.base64' => 'digest_md5_base64',
-};
-
-sub style { 'NG' }
-
-sub provides {
+sub bind {
     my ($self) = @_;
-    return [sort keys %$mapping];
-}
-
-sub method_for {
-    my ($self, $func) = @_;
-    my $method = $mapping->{$func};
-    if($method){
-        return $method;
-    }
-    die "No method for function '$func'";
+    $self->bind_extension({
+        digest => {
+            sha1 => {
+                'hex' => $self->generate_js_closure('digest_sha1_hex'),
+                base64 => $self->generate_js_closure('digest_sha1_base64'),
+            },
+            md5 => {
+                'hex' => $self->generate_js_closure('digest_md5_hex'),
+                base64 => $self->generate_js_closure('digest_md5_base64'),
+            },
+        }, 
+    });
 }
 
 sub _js_data {
@@ -53,7 +48,5 @@ sub digest_md5_base64 {
     my ($self, $data) = @_;
     return md5_base64( _js_data($data) );
 }
-
-sub providing_class { __PACKAGE__ }
 
 1;

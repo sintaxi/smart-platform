@@ -1,4 +1,3 @@
-
 #!/usr/bin/env perl
 
 use strict;
@@ -7,8 +6,10 @@ use warnings;
 use Test::More qw(no_plan);
 use Test::Exception;
 
+use mocked [qw(JavaScript t/Mock)];
 use_ok('RSP::Extension::Digest');
 
+use Scalar::Util qw(reftype);
 use RSP::Config;
 use Digest::SHA1;
 use Digest::MD5;
@@ -51,13 +52,23 @@ $ji->initialize;
 
 basic: {
     my $digest = RSP::Extension::Digest->new({ js_instance => $ji });
-    isa_ok($digest, q{RSP::Extension::Digest});
 
-    my $provides = $digest->provides;
-    is_deeply($provides, [sort qw(digest.sha1.hex digest.sha1.base64 digest.md5.hex digest.md5.base64)], q{iDigest extension provides correct items});
+    ok($digest->does('RSP::Role::Extension'), q{Digest does RSP::Role::Extension});
+    ok($digest->does('RSP::Role::Extension::JSInstanceManipulation'), q{Digest does RSP::Role::Extension::JSInstanceManipulation});
 
-    # XXX - temporary
-    is($digest->style, 'NG', q{Next-gen style extension});
+    {
+        $digest->bind;
+        ok($JavaScript::Context::BINDED->{'extensions.rsp__extension__digest'}, q{Digest has binded extension});
+    
+        my $BIND = $JavaScript::Context::BINDED->{'extensions.rsp__extension__digest'};
+        is(reftype($BIND->{digest}), q{HASH}, q{Digest has binded 'digest' hash}); 
+        is(reftype($BIND->{digest}{sha1}), q{HASH}, q{Digest has binded 'digest.sha1' hash}); 
+        is(reftype($BIND->{digest}{sha1}{'hex'}), q{CODE}, q{Digest has binded 'digest.sha1.hex' hash}); 
+        is(reftype($BIND->{digest}{sha1}{base64}), q{CODE}, q{Digest has binded 'digest.sha1.base64' hash}); 
+        is(reftype($BIND->{digest}{md5}), q{HASH}, q{Digest has binded 'digest.md5' hash}); 
+        is(reftype($BIND->{digest}{md5}{'hex'}), q{CODE}, q{Digest has binded 'digest.md5.hex' hash}); 
+        is(reftype($BIND->{digest}{md5}{base64}), q{CODE}, q{Digest has binded 'digest.md5.base64' hash}); 
+    }
 }
 
 digests: {
@@ -89,16 +100,5 @@ digests_with_objects: {
     is($digest->digest_sha1_base64($data), Digest::SHA1::sha1_base64($str), q{SHA1 base64 is correct (object)});
     is($digest->digest_md5_hex($data), Digest::MD5::md5_hex($str), q{MD5 hex is correct (object)});
     is($digest->digest_md5_base64($data), Digest::MD5::md5_base64($str), q{MD5 base64 is correct (object)});
-}
-
-method_for: {
-    my $digest = RSP::Extension::Digest->new({ js_instance => $ji }); 
-    
-    my $method = $digest->method_for('digest.sha1.hex');
-    is($method, 'digest_sha1_hex', q{Correct method returned for function});
-
-    throws_ok {
-        $digest->method_for('blargh');
-    } qr{No method for function 'blargh'}, q{Non-existant function throws exception};
 }
 
