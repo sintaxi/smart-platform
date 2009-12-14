@@ -135,46 +135,22 @@ EOJS
 
     foreach my $ext (@{ $self->extensions }) {
 
+        # Load newer style extensions
         if($ext->can('does') && $ext->does('RSP::Role::Extension')){
             my $ext_obj = $ext->new({ js_instance => $self });
             $ext_obj->bind;
             next;
         }
 
+        # XXX - Load older style JS extensions
         my $ext_class = $ext->providing_class;
-        if($ext_class->can('style') && $ext_class->style('style')){
-            my $ext_obj = $ext_class->new({ js_instance => $self });
-            my $provides = $ext_obj->provides;
-
-            my $tmp_provided = {};
-            for my $func (@$provides){
-                my $method = $ext_obj->method_for($func);
-                $tmp_provided->{$func} = sub { $ext_obj->$method(@_) };
-            }
-
-            my $provided = {};
-            for my $func (keys %$tmp_provided){
-                my @levels = split(/\./, $func);
-                my $current_level = $provided;
-                while(my $level = shift @levels){
-                    if(!@levels){
-                        $current_level->{$level} = $tmp_provided->{$func};
-                    } else {
-                        $current_level = $current_level->{$level} //= {};
-                    }
-                }
-            }
-            my $thing = $foo->($ext_class);
-            $self->bind_value("extensions.$thing", $provided);
-        } else {
-            # XXX - RSP::Config::Host will load extensions on our behalf
-            if ( $ext_class->should_provide( $self ) ) {
-              my $provided = $ext_class->provides( $self );
-              if ( $provided ) {
-                  my $thing = $foo->($ext_class);
-                  $self->bind_value("extensions.$thing", $provided);
-              }
-            }
+        # XXX - RSP::Config::Host will load extensions on our behalf
+        if ( $ext_class->should_provide( $self ) ) {
+          my $provided = $ext_class->provides( $self );
+          if ( $provided ) {
+              my $thing = $foo->($ext_class);
+              $self->bind_value("extensions.$thing", $provided);
+          }
         }
     }
     
