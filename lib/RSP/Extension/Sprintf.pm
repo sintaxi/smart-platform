@@ -1,23 +1,29 @@
 package RSP::Extension::Sprintf;
 
-use strict;
-use warnings;
+use Moose;
+use Try::Tiny;
 
-use base 'RSP::Extension';
+with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
-sub exception_name {
-  return "system.sprintf";
+sub bind {
+    my ($self) = @_;
+
+    $self->bind_extension({
+        'sprintf' => $self->generate_js_closure('sprintf'),
+    });
 }
 
-sub provides {
-  my $class = shift;
-  my $tx    = shift;
-  return {
-    'sprintf' => sub {
-      my $mesg = shift;
-      return sprintf( $mesg, @_ );
-    }
-  }
+sub sprintf {
+    my ($self, $format, @args) = @_;
+    my $return;
+
+    try {
+        $return = sprintf($format, @args);
+    } catch {
+        die "$_\n";
+    };
+
+    return $return;
 }
 
 1;
