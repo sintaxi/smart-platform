@@ -45,7 +45,7 @@ slurp: {
         my $file = RSP::JSObject::File->new($filename, 'foo.txt');
         is($file->as_string, '1234', q{as_string works correctly});
 
-        my $file = RSP::JSObject::File->new($filename, 'foo.png');
+        $file = RSP::JSObject::File->new($filename, 'foo.png');
         is($file->as_string, '1234', q{as_string works correctly});
     }
 

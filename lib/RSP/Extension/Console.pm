@@ -1,25 +1,18 @@
 package RSP::Extension::Console;
 
-use strict;
-use warnings;
+use Moose;
+with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
-use base 'RSP::Extension';
-
-sub exception_name {
-  return "system.console";
+sub bind {
+    my ($self) = @_;
+    $self->bind_extension({
+        console => { 'log' => $self->generate_js_closure('console_log'), },
+    });
 }
 
-sub provides {
-  my $class = shift;
-  my $tx    = shift;
-  return {
-    'console' => {
-      'log' => sub {
-        my $mesg = shift;
-        $tx->log( $mesg );
-      }
-    }
-  }
+sub console_log {
+    my ($self, $msg) = @_;
+    print STDERR $msg;
 }
 
 1;
