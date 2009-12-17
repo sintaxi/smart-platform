@@ -42,6 +42,7 @@ use_ok("RSP::JS::Engine::SpiderMonkey");
     1;
 }
 
+
 use File::Path qw(make_path);
 use File::Temp qw(tempdir tempfile);
 my $tmp_dir = tempdir();
@@ -85,5 +86,98 @@ basic: {
     $ji->eval("system.hello_but_dead();");
     like($@, qr{RSP::Extension::Example threw a binding error: devil$}, 
         q{Extension function throws correct exception});
+}
+
+{
+    package RSP::SimpleObj;
+
+    use Moose;
+    has simple_string => (is => 'rw');
+
+    sub constructor {
+        my ($class, $simple_string) = @_;
+        return $class->new({ simple_string => $simple_string });
+    }
+
+    sub hello_string {
+        my ($self, $who) = @_;
+        return $self->simple_string . " $who";
+    }
+
+    sub hello_string_with_death {
+        my ($self, $who) = @_;
+        die "ERPLE\n";
+    }
+
+    no Moose;
+    1;
+}
+{
+    package RSP::Extension::ClassExample;
+    
+    use Moose;
+    with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
+
+    sub bind {
+        my ($self) = @_;
+        
+        my $opts = {
+            name => 'Example',
+            'package' => 'RSP::SimpleObj',
+            properties => {
+                property_simple => { 
+                    getter => $self->generate_js_method_closure('simple_string'),
+                    setter => $self->generate_js_method_closure('simple_string'),
+                },
+            },
+            methods => {
+                simple_string => $self->generate_js_method_closure('hello_string'),
+                simple_string_with_death => $self->generate_js_method_closure('hello_string_with_death'),
+            },
+            constructor => $self->generate_js_method_closure('constructor'),
+        };
+        
+        $self->js_instance->bind_class(%$opts);
+    }
+    no Moose;
+    1;
+}
+
+$test_config = {
+    '_' => {
+        root => $tmp_dir,
+    },
+    rsp => {
+        hostroot => $tmp_dir2,
+    },
+    'host:foo' => {
+        alternate => 'actuallyhere.com',
+        extensions => 'ClassExample',
+        #bootstrap_file => $filename,
+    },
+};
+
+$conf = RSP::Config->new(config => $test_config);
+$host = $conf->host('foo');
+
+$je = RSP::JS::Engine::SpiderMonkey->new;
+$je->initialize;
+$ji = $je->create_instance({ config => $host });
+$ji->initialize;
+
+basic_class: {
+    $ji->eval("
+        var example_obj = new Example('Why howdy');    
+    ");
+    is($ji->eval("example_obj.property_simple"), q{Why howdy}, q{Property is correctly fetched});
+    
+    $ji->eval("example_obj.property_simple = 'Guten tag'");
+    is($ji->eval("example_obj.property_simple"), q{Guten tag}, q{Property is correctly set});
+
+    is($ji->eval("example_obj.simple_string('bob')"), q{Guten tag bob}, q{Method with arguments works correctly});
+
+    $ji->eval("example_obj.simple_string_with_death();");
+    like($@, qr{RSP::Extension::ClassExample threw a binding error: ERPLE$}, 
+        q{Extension object method throws correct exception});
 }
 

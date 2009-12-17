@@ -103,4 +103,11 @@ sub DEMOLISH {
     }
 }
 
+our $BINDED_CLASSES = {};
+sub bind_class {
+    my ($self, %opts) = @_;
+    $BINDED_CLASSES->{ $opts{name} } = \%opts;
+    return;
+}
+
 1;
