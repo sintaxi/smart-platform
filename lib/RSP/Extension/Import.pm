@@ -48,6 +48,4 @@ sub global_lib {
   return undef;
 }
 
-sub providing_class { __PACKAGE__ }
-
 1;

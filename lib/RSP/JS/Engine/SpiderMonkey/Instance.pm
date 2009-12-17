@@ -125,14 +125,6 @@ sub _import_extensions {
 EOJS
 
     $self->bind_value('extensions', {});
-
-    my $foo = sub {
-        my $class = shift;
-        $class =~ s/::/__/g;
-        $class = lc($class);
-        return $class;
-    };
-
     foreach my $ext (@{ $self->extensions }) {
 
         # Load newer style extensions
@@ -144,13 +136,16 @@ EOJS
 
         # XXX - Load older style JS extensions
         my $ext_class = $ext->providing_class;
-        # XXX - RSP::Config::Host will load extensions on our behalf
-        if ( $ext_class->should_provide( $self ) ) {
-          my $provided = $ext_class->provides( $self );
-          if ( $provided ) {
-              my $thing = $foo->($ext_class);
-              $self->bind_value("extensions.$thing", $provided);
-          }
+        my $provided = $ext_class->provides( $self );
+        if ( $provided ) {
+            my $foo = sub {
+                my $class = shift;
+                $class =~ s/::/__/g;
+                $class = lc($class);
+                return $class;
+            };              
+            my $thing = $foo->($ext_class);
+            $self->bind_value("extensions.$thing", $provided);
         }
     }
     
