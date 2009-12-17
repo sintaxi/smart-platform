@@ -36,7 +36,7 @@ sub encode_body {
       my $content = $self->context->call( $body );
       if ($@) { die $@ };
       $self->response->body( $content );
-    } elsif ( ref($body) && $body->isa('RSP::JSObject') ) {
+    } elsif ( ref($body) && ($body->isa('RSP::JSObject') || $body->does('RSP::Role::JSObject')) ) {
       if ( $body->isa('RSP::JSObject::File') ) {
 	my $f = Mojo::Asset::File->new;
 	$f->path( $body->fullpath );

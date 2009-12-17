@@ -1,6 +1,7 @@
 package RSP::JSObject::Image;
 
 use Moose;
+with qw(RSP::Role::JSObject);
 
 use Imager;
 use Image::Math::Constrain;

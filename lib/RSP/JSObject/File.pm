@@ -1,62 +1,20 @@
 package RSP::JSObject::File;
 
-use strict;
-use warnings;
+use Moose;
+with qw(RSP::Role::JSObject);
 
-use Carp qw( croak );
+use IO::File;
+use Encode;
 use MIME::Types;
 my $mimetypes = MIME::Types->new;
 
-use base 'RSP::JSObject';
+has file => (is => 'rw', isa => 'Str');
+has original => (is => 'rw', isa => 'Str');
 
-sub new {
-  my $class = shift;
-  my $fn    = shift;
-  my $jsface = shift; ## javascript facing name
-  if (!-e $fn) {
-    croak "$!: $jsface";
-  }
-  my $self  = { file => $fn, original => $jsface };
-  bless $self, $class;
-}
-
-sub jsclass {
-  return "File";
-}
-
-sub properties {
-  return {
-    'contents' => {
-      'getter' => 'RSP::JSObject::File::as_string',
-    },
-    'filename' => {
-      'getter' => 'RSP::JSObject::File::filename',
-    },
-    'mimetype' => {
-      'getter' => 'RSP::JSObject::File::mimetype',
-    },
-    'size' => {
-      'getter' => 'RSP::JSObject::File::size',
-    },
-    'length' => {
-      'getter' => 'RSP::JSObject::File::size',
-    },
-    'mtime' =>{
-      'getter' => 'RSP::JSObject::File::mtime',
-    },
-    'exists' => {
-      'getter' => 'RSP::JSObject::File::exists',
-    }
-  };
-}
-
-sub methods {
-  return {
-    'toString' => sub {
-      my $self = shift;
-      return $self->filename;
-    }
-  };
+sub BUILDARGS {
+    my ($self, $file, $jsname) = @_;
+    die "$!: $jsname\n" if !-e $file;
+    return { file => $file, original => $jsname };
 }
 
 sub as_function {
@@ -70,7 +28,7 @@ sub raw {
   my $self = shift;
   my $fh   = IO::File->new( $self->{ file } );
   if (!$fh) {
-      RSP::Error->throw("could not open $self->{file}: $!");
+      die "could not open $self->{file}: $!\n";
   }
   my $data = do {
     local $/;

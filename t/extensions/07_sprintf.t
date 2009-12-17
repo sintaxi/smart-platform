@@ -78,5 +78,7 @@ basic: {
     }
 
     is($spf->sprintf("%s: %d", "howdy", 12), q{howdy: 12}, q{sprintf works correctly});
+
+    # XXX - we should probably check the format string here so that we don't get DOS'd
 }
 

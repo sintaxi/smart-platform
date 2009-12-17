@@ -246,7 +246,8 @@ sub run {
       local $@;
       $response = $self->context->run([ $self->build_entrypoint_arguments ]);
       use Data::Dumper;
-      print STDERR Dumper($response);
+      local $Data::Dumper::Indent = 0;
+      print STDERR Dumper($response)."\n";
       $error = $@;
       die $error if $error;
   } catch {
