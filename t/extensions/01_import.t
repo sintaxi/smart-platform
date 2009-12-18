@@ -7,55 +7,16 @@ use Test::More qw(no_plan);
 use Test::Exception;
 use mocked [qw(JavaScript t/Mock)];
 
-use_ok('RSP::Extension::Import');
+use lib qw(t/lib);
+use TestHelper qw(initialize_test_js_instance);
 
-use File::Temp qw(tempfile tempdir);
-use File::Path qw(make_path);
+
 use Scalar::Util qw(reftype);
 
-use RSP::Config;
+my $ji = initialize_test_js_instance({});
+my $root = $ji->config->root;
 
-my $tmp_dir = tempdir();
-my $tmp_dir2 = tempdir();
-my ($fh, $filename) = tempfile();
-
-our $test_config = {
-    '_' => {
-        root => $tmp_dir,
-    },
-    rsp => {
-        oplimit => 123_456,
-        hostroot => $tmp_dir2,
-    },
-    'host:foo' => {
-        noconsumption => 1,
-        alternate => 'actuallyhere.com',
-        bootstrap_file => $filename,
-    },
-    'host:bar' => {
-    },
-};
-
-make_path("$tmp_dir2/actuallyhere.com/js");
-open(my $boot_fh, ">", "$tmp_dir2/actuallyhere.com/js/bootstrap.js") or die "Could not open file: $!";
-print {$boot_fh} <<EOJS;
-var who = 'world';
-function main () {
-    return "Hello "+who;
-}
-EOJS
-close($boot_fh);
-
-my $conf = RSP::Config->new(config => $test_config);
-my $host = $conf->host('foo');
-
-use RSP::JS::Engine::SpiderMonkey;
-my $je = RSP::JS::Engine::SpiderMonkey->new;
-$je->initialize;
-my $ji = $je->create_instance({ config => $host });
-$ji->initialize;
-
-open(my $js_fh, ">", "$tmp_dir2/actuallyhere.com/js/foo.js") or die "Could not open file: $!";
+open(my $js_fh, ">", "$root/js/foo.js") or die "Could not open file: $!";
 print {$js_fh} <<EOJS;
 "howdy";
 EOJS
@@ -63,6 +24,7 @@ close($js_fh);
 
 
 basic: {
+    use_ok('RSP::Extension::Import');
     my $import = RSP::Extension::Import->new({ js_instance => $ji });
 
     ok($import->does('RSP::Role::Extension'), q{Import does RSP::Role::Extension});
@@ -85,7 +47,7 @@ use: {
     lives_ok {
         $import->use('foo');
     } q{Import works};
-    is($JavaScript::Context::FILE, "$tmp_dir2/actuallyhere.com/js/foo.js", q{Library import is correct});
+    is($JavaScript::Context::FILE, "$root/js/foo.js", q{Library import is correct});
 
     throws_ok {
         $import->use("meh");
@@ -101,6 +63,8 @@ use: {
 global_lib: {
     local $TODO = q{Wait until we have a clearer idea of how we want to achieve this};
 
+    my $tmp_dir = "/tmp";
+    use File::Path qw(make_path);
     make_path("$tmp_dir/global_libraries/flibble/2_0");
     open(my $global_fh, ">", "$tmp_dir/global_libraries/flibble/2_0/flibble.js");
     print {$global_fh} "function blah(){ return 'howdy'; }\n";

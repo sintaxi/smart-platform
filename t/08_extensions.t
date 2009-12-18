@@ -6,7 +6,8 @@ use warnings;
 use Test::More qw(no_plan);
 use Test::Exception;
 
-use RSP::Config;
+use lib qw(t/lib);
+use TestHelper qw(initialize_test_js_instance);
 
 use_ok("RSP::JS::Engine::SpiderMonkey");
 
@@ -42,42 +43,13 @@ use_ok("RSP::JS::Engine::SpiderMonkey");
     1;
 }
 
-
-use File::Path qw(make_path);
-use File::Temp qw(tempdir tempfile);
-my $tmp_dir = tempdir();
-my $tmp_dir2 = tempdir();
-
-make_path("$tmp_dir2/actuallyhere.com/js");
-open(my $fh, ">", "$tmp_dir2/actuallyhere.com/js/bootstrap.js");
-print {$fh} "function main() { return 'hello world'; }";
-close $fh;
-
 our $test_config = {
-    '_' => {
-        root => $tmp_dir,
-    },
-    rsp => {
-        oplimit => 123_456,
-        hostroot => $tmp_dir2,
-    },
     'host:foo' => {
-        noconsumption => 1,
-        alternate => 'actuallyhere.com',
         extensions => 'Example',
-        #bootstrap_file => $filename,
-    },
-    'host:bar' => {
     },
 };
 
-my $conf = RSP::Config->new(config => $test_config);
-my $host = $conf->host('foo');
-
-my $je = RSP::JS::Engine::SpiderMonkey->new;
-$je->initialize;
-my $ji = $je->create_instance({ config => $host });
-$ji->initialize;
+my $ji = initialize_test_js_instance($test_config);
 
 basic: {
     is($ji->eval("system.hello()"), q{world}, q{Extension has been loaded});
@@ -144,26 +116,11 @@ basic: {
 }
 
 $test_config = {
-    '_' => {
-        root => $tmp_dir,
-    },
-    rsp => {
-        hostroot => $tmp_dir2,
-    },
     'host:foo' => {
-        alternate => 'actuallyhere.com',
         extensions => 'ClassExample',
-        #bootstrap_file => $filename,
     },
 };
-
-$conf = RSP::Config->new(config => $test_config);
-$host = $conf->host('foo');
-
-$je = RSP::JS::Engine::SpiderMonkey->new;
-$je->initialize;
-$ji = $je->create_instance({ config => $host });
-$ji->initialize;
+$ji = initialize_test_js_instance($test_config);
 
 basic_class: {
     $ji->eval("

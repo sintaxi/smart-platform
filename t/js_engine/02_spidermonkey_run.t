@@ -12,30 +12,21 @@ use File::Path qw(make_path);
 use RSP::Config;
 use_ok('RSP::JS::Engine::SpiderMonkey');
 
-my $tmp_dir = tempdir();
-my $tmp_dir2 = tempdir();
+my ($tmp_dir, $tmp_dir2) = (tempdir(), tempdir());
 my ($fh, $filename) = tempfile();
 
 our $test_config = {
-    '_' => {
-        root => $tmp_dir,
-    },
-    rsp => {
-        oplimit => 123_456,
-        hostroot => $tmp_dir2,
-    },
-    'host:foo' => {
-        noconsumption => 1,
-        alternate => 'actuallyhere.com',
-        bootstrap_file => $filename,
-    },
-    'host:bar' => {
-    },
+    '_' => { root => $tmp_dir, },
+    rsp => { hostroot => $tmp_dir2, },
+    'host:foo' => { alternate => 'actuallyhere.com', bootstrap_file => $filename, },
 };
 
-make_path("$tmp_dir2/actuallyhere.com/js");
+my $host = RSP::Config->new(config => $test_config)->host('foo');
+my $root = $host->root;
 
-open(my $boot_fh, ">", "$tmp_dir2/actuallyhere.com/js/bootstrap.js") or die "Could not open file: $!";
+make_path("$root/js");
+
+open(my $boot_fh, ">", "$root/js/bootstrap.js") or die "Could not open file: $!";
 print {$boot_fh} <<EOJS;
 var who = 'world';
 function main () {
@@ -43,10 +34,6 @@ function main () {
 }
 EOJS
 close($boot_fh);
-
-
-my $conf = RSP::Config->new(config => $test_config);
-my $host = $conf->host('foo');
 
 basic: {
    my $je = RSP::JS::Engine::SpiderMonkey->new;

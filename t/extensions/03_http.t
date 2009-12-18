@@ -8,48 +8,17 @@ use Test::Exception;
 
 use mocked [qw(JavaScript t/Mock)];
 use mocked [qw(LWPx::ParanoidAgent t/Mock)];
-use_ok('RSP::Extension::HTTP');
 
-use RSP::Config;
+use lib qw(t/lib);
+use TestHelper qw(initialize_test_js_instance);
 
 use Scalar::Util qw(reftype);
-use File::Path qw(make_path);
-use File::Temp qw(tempdir tempfile);
-my $tmp_dir = tempdir();
-my $tmp_dir2 = tempdir();
 
-make_path("$tmp_dir2/actuallyhere.com/js");
-open(my $fh, ">", "$tmp_dir2/actuallyhere.com/js/bootstrap.js");
-print {$fh} "function main() { return 'hello world'; }";
-close $fh;
-
-our $test_config = {
-    '_' => {
-        root => $tmp_dir,
-    },
-    rsp => {
-        oplimit => 123_456,
-        hostroot => $tmp_dir2,
-    },
-    'host:foo' => {
-        noconsumption => 1,
-        alternate => 'actuallyhere.com',
-        #bootstrap_file => $filename,
-    },
-    'host:bar' => {
-    },
-};
-
-my $conf = RSP::Config->new(config => $test_config);
-my $host = $conf->host('foo');
-
-use RSP::JS::Engine::SpiderMonkey;
-my $je = RSP::JS::Engine::SpiderMonkey->new;
-$je->initialize;
-my $ji = $je->create_instance({ config => $host });
-$ji->initialize;
+my $ji = initialize_test_js_instance({});
 
 basic: {
+    use_ok('RSP::Extension::HTTP');
+    
     my $http = RSP::Extension::HTTP->new({ js_instance => $ji });
 
     ok($http->does('RSP::Role::Extension'), q{HTTP does RSP::Role::Extension});

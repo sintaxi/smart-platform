@@ -5,64 +5,18 @@ use warnings;
 
 use Test::More qw(no_plan);
 use Test::Exception;
+
 use mocked [qw(JavaScript t/Mock)];
 
-use_ok('RSP::Extension::FileSystem');
+use lib qw(t/lib);
+use TestHelper qw(initialize_test_js_instance);
 
-use File::Temp qw(tempfile tempdir);
-use File::Path qw(make_path);
 use Scalar::Util qw(reftype);
 
-use RSP::Config;
-
-my $tmp_dir = tempdir();
-my $tmp_dir2 = tempdir();
-my ($fh, $filename) = tempfile();
-
-our $test_config = {
-    '_' => {
-        root => $tmp_dir,
-    },
-    rsp => {
-        oplimit => 123_456,
-        hostroot => $tmp_dir2,
-    },
-    'host:foo' => {
-        noconsumption => 1,
-        alternate => 'actuallyhere.com',
-        bootstrap_file => $filename,
-    },
-    'host:bar' => {
-    },
-};
-
-make_path("$tmp_dir2/actuallyhere.com/js");
-open(my $boot_fh, ">", "$tmp_dir2/actuallyhere.com/js/bootstrap.js") or die "Could not open file: $!";
-print {$boot_fh} <<EOJS;
-var who = 'world';
-function main () {
-    return "Hello "+who;
-}
-EOJS
-close($boot_fh);
-
-my $conf = RSP::Config->new(config => $test_config);
-my $host = $conf->host('foo');
-
-use RSP::JS::Engine::SpiderMonkey;
-my $je = RSP::JS::Engine::SpiderMonkey->new;
-$je->initialize;
-my $ji = $je->create_instance({ config => $host });
-$ji->initialize;
-
-open(my $js_fh, ">", "$tmp_dir2/actuallyhere.com/js/foo.js") or die "Could not open file: $!";
-print {$js_fh} <<EOJS;
-"howdy";
-EOJS
-close($js_fh);
-
+my $ji = initialize_test_js_instance({});
 
 basic: {
+    use_ok('RSP::Extension::FileSystem');
     my $file = RSP::Extension::FileSystem->new({ js_instance => $ji });
 
     ok($file->does('RSP::Role::Extension'), q{File does RSP::Role::Extension});
@@ -93,8 +47,11 @@ basic: {
     }
 }
 
-make_path("$tmp_dir2/actuallyhere.com/web");
-open(my $web_fh, ">", "$tmp_dir2/actuallyhere.com/web/foo.txt") or die "Could not open file: $!";
+
+my $root = $ji->config->root;
+use File::Path qw(make_path);
+make_path("$root/web");
+open(my $web_fh, ">", "$root/web/foo.txt") or die "Could not open file: $!";
 print {$web_fh} <<EOJS;
 howdy
 EOJS
