@@ -1,47 +1,46 @@
 package RSP::Extension::JSONEncoder;
 
-use strict;
-use warnings;
+use Moose;
 
+with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
+
+use Try::Tiny;
 use JSON::XS;
-
-use base 'RSP::Extension';
 
 my $encoders = [
   JSON::XS->new->utf8,
   JSON::XS->new->utf8->pretty
 ];
 
-sub exception_name {
-  return "system.json";
+sub bind {
+    my ($self) = @_;
+
+    $self->bind_extension({
+        json => {
+            encode => $self->generate_js_closure('json_encode'),
+            decode => $self->generate_js_closure('json_decode'),
+        },
+    });
 }
 
-sub provides {
-  my $class = shift;
-  my $tx    = shift;
-  return { 
-    'json' => {
-      'encode' => sub {
-        my $ds  = shift;
-        my $enc = shift;
-	my $ret = eval { $encoders->[$enc]->encode( $ds ) };
-	if ($@) {
-	  $tx->log("error: $@");
-	  RSP::Error->throw( $@ );
-	}
-	return $ret;
-      },
-      'decode' => sub {
-        my $json = shift;
-        my $ret  = $encoders->[0]->decode( $json );
-	if ($@) {
-	  $tx->log("error: $@");
-	  RSP::Error->throw( $@ );
-	}
-	return $ret;
-      }
-    }
-  }
+sub json_encode {
+    my ($self, $data, $encoder) = @_;
+
+    try {
+        return $encoders->[$encoder]->encode($data);
+    } catch {
+        die "$_\n";
+    };
+}
+
+sub json_decode {
+    my ($self, $data, $encoder) = @_;
+
+    try {
+        return $encoders->[$encoder]->decode($data);
+    } catch {
+        die "$_\n";
+    };
 }
 
 1;
