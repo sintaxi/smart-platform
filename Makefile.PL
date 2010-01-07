@@ -20,7 +20,7 @@ WriteMakefile(
       'Digest::HMAC_SHA1'   => 0,
       'JSON::XS'            => 0,
       'Scalar::Util'        => 0,
-      'JavaScript'          => 0,
+      'JavaScript'          => '1.15',
       'Module::Load'        => 0,
       'LWPx::ParanoidAgent' => 0,
       'Cache::Memcached::Fast' => 0,

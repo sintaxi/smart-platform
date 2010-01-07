@@ -20,15 +20,16 @@ sub _build_runtime {
 has context => (
     is => 'ro', isa => 'JavaScript::Context', lazy_build => 1,
     handles => {
-        set_version     => 'set_version',
-        options         => 'toggle_options',
-        bind_value      => 'bind_value',
-        evaluate_file   => 'eval_file',
-        call            => 'call',
-        unbind_value    => 'unbind_value',
-        bind_class      => 'bind_class',
-        bind_function   => 'bind_function',
-        'eval'          => 'eval',
+        set_version             => 'set_version',
+        options                 => 'toggle_options',
+        bind_value              => 'bind_value',
+        evaluate_file           => 'eval_file',
+        call                    => 'call',
+        unbind_value            => 'unbind_value',
+        bind_class              => 'bind_class',
+        bind_function           => 'bind_function',
+        'eval'                  => 'eval',
+        set_pending_exception   => 'set_pending_exception',
     },
     clearer => 'clear_context',
 );
@@ -164,7 +165,6 @@ EOJS
         $self->unbind_value('recur');
         $self->unbind_value('extensions');
 
-        undef($@) if $@ =~ /system is not defined/; # XXX - JS.pm is buggy, so catch this not-exception first
         die $@ if $@;
     } catch {
         die "unable to bind 'system': $_";

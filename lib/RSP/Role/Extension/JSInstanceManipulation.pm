@@ -31,13 +31,7 @@ sub generate_js_closure {
             @return = ( $self->$method(@args) );
         } catch {
             $error = $_;
-            $error =~ s/\n/\\n/g;
-            $error =~ s/'/\\'/g;
-            $self->js_instance->eval(
-                qq{throw '$pkg threw a binding error: $error';}
-            );
-            $error = $@;
-            die $error;
+            $self->js_instance->set_pending_exception("$pkg threw a binding error: $error");
         };
 
         return $return[0];
@@ -59,14 +53,7 @@ sub generate_js_method_closure {
             @return = ( $obj->$closure(@args) );
         } catch {
             $error = $_;
-            $error =~ s/\n/\\n/g;
-            $error =~ s/'/\\'/g;
-            $self->js_instance->eval(
-                qq{throw '$pkg threw a binding error: $error';}
-            );
-            $error = $@;
-            $error =~ s/\n//g;
-            die "$error\n";
+            $self->js_instance->set_pending_exception("$pkg threw a binding error: $error");
         };
 
         return $return[0];
