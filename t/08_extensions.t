@@ -56,7 +56,7 @@ basic: {
     is($ji->eval("system.hello_who('bob')"), q{hello bob}, q{Extension has been loaded (and passes args)});
    
     $ji->eval("system.hello_but_dead();");
-    like($@, qr{(?s-ixm:RSP::Extension::Example threw a binding error: devil$)}, 
+    like($@, qr{RSP::Extension::Example threw a binding error: devil\z}, 
         q{Extension function throws correct exception});
 }
 
