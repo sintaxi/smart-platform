@@ -31,6 +31,7 @@ sub generate_js_closure {
             @return = ( $self->$method(@args) );
         } catch {
             $error = $_;
+            chomp($error);
             $self->js_instance->set_pending_exception("$pkg threw a binding error: $error");
         };
 
@@ -53,6 +54,7 @@ sub generate_js_method_closure {
             @return = ( $obj->$closure(@args) );
         } catch {
             $error = $_;
+            chomp($error);
             $self->js_instance->set_pending_exception("$pkg threw a binding error: $error");
         };
 

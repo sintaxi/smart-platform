@@ -56,7 +56,7 @@ basic: {
     is($ji->eval("system.hello_who('bob')"), q{hello bob}, q{Extension has been loaded (and passes args)});
    
     $ji->eval("system.hello_but_dead();");
-    like($@, qr{RSP::Extension::Example threw a binding error: devil$}, 
+    like($@, qr{(?s-ixm:RSP::Extension::Example threw a binding error: devil$)}, 
         q{Extension function throws correct exception});
 }
 
@@ -134,7 +134,7 @@ basic_class: {
     is($ji->eval("example_obj.simple_string('bob')"), q{Guten tag bob}, q{Method with arguments works correctly});
 
     $ji->eval("example_obj.simple_string_with_death();");
-    like($@, qr{RSP::Extension::ClassExample threw a binding error: ERPLE$}, 
+    like($@, qr{RSP::Extension::ClassExample threw a binding error: ERPLE\z}, 
         q{Extension object method throws correct exception});
 }
 
