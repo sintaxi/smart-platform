@@ -1,50 +1,54 @@
-use ExtUtils::MakeMaker;
+use inc::Module::Install;
 
-WriteMakefile(
-  NAME => 'RSP',
-  VERSION_FROM => 'lib/RSP.pm',
-  EXE_FILES => ['bin/rsp','bin/rspkeymanagerd', 'bin/clonewatcher'],
-  MIN_PERL_VERSION => '5.10.0', # code uses 5.10 features, so require it as a minimum
-  PREREQ_PM => {
-      'Net::Stomp'          => 0,
-      'DBI'                 => 0,
-      'SQL::Abstract'       => 0,
-      'Set::Object'         => 0,
-      'Imager'              => 0,
-      'Application::Config' => 0,
-      'Mojo'                => '0.999910',
-      'MIME::Types'         => 0,
-      'Hash::Merge::Simple' => 0,
-      'Digest::MD5'         => 0,
-      'Digest::SHA1'        => 0,
-      'Digest::HMAC_SHA1'   => 0,
-      'JSON::XS'            => 0,
-      'Scalar::Util'        => 0,
-      'JavaScript'          => '1.15',
-      'Module::Load'        => 0,
-      'LWPx::ParanoidAgent' => 0,
-      'Cache::Memcached::Fast' => 0,
-      'Net::OpenID::Consumer' => 0,
-      'Class::Accessor::Chained' => 0,
-      'Data::UUID::Base64URLSafe' => 0,
-      'Scalar::Util::Numeric' => 0,
-      'Image::Math::Constrain' => 0,
-      'File::MMagic'           => 0,
-      'DBD::SQLite' => 0,
-      'DBD::mysql' => 0,
-      'Moose' => 0,
-      'Clone' => 0,
-      'Try::Tiny' => 0,
-      'File::Path' => 0,
-      'File::Temp' => 0,
-      'File::Spec' => 0,
-      'Cwd' => 0,
-      'Test::More' => 0,
-      'Test::Exception' => 0,
-      'mocked' => 0,
-  },
-  test => {
-      TESTS => 't/*.t t/*/*.t',
-  },
-);
+name 'RSP';
+all_from 'lib/RSP.pm';
+license 'MIT';
+perl_version '5.010001';
 
+install_script 'bin/rsp';
+install_script 'bin/rspkeymanagerd';
+install_script 'bin/clonewatcher';
+
+configure_requires 'Module::Build'; # temporary... Algo::C3 build breaks a huge dependency chain in a non-obvious way
+
+test_requires 'Test::More' => 0,
+test_requires 'Test::Exception' => 0,
+test_requires 'mocked' => 0,
+
+requires 'Net::Stomp' => 0;
+requires 'DBI' => 0;
+requires 'SQL::Abstract' => 0,
+requires 'Set::Object' => 0,
+requires 'Imager' => 0,
+requires 'Application::Config' => 0,
+requires 'Mojo' => '0.999910',
+requires 'MIME::Types' => 0,
+requires 'Hash::Merge::Simple' => 0,
+requires 'Digest::MD5' => 0,
+requires 'Digest::SHA1' => 0,
+requires 'Digest::HMAC_SHA1' => 0,
+requires 'JSON::XS' => 0,
+requires 'Scalar::Util' => 0,
+requires 'JavaScript' => '1.15',
+requires 'Module::Load' => 0,
+requires 'LWPx::ParanoidAgent' => 0,
+requires 'Cache::Memcached::Fast' => 0,
+requires 'Net::OpenID::Consumer' => 0,
+requires 'Class::Accessor::Chained' => 0,
+requires 'Data::UUID::Base64URLSafe' => 0,
+requires 'Scalar::Util::Numeric' => 0,
+requires 'Image::Math::Constrain' => 0,
+requires 'File::MMagic' => 0,
+requires 'DBD::SQLite' => 0,
+requires 'DBD::mysql' => 0,
+requires 'Moose' => 0,
+requires 'Clone' => 0,
+requires 'Try::Tiny' => 0,
+requires 'File::Path' => 0,
+requires 'File::Temp' => 0,
+requires 'File::Spec' => 0,
+requires 'Cwd' => 0,
+
+tests_recursive();
+
+WriteAll();
