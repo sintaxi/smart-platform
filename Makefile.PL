@@ -50,5 +50,6 @@ requires 'File::Spec' => 0;
 requires 'Cwd' => 0;
 
 tests_recursive();
+auto_install;
 
 WriteAll();
