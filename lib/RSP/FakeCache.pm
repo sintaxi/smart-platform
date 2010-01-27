@@ -17,4 +17,8 @@ sub get {
   return undef;
 }
 
+sub remove {
+    return 1;
+}
+
 1;

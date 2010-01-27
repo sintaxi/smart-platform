@@ -51,7 +51,7 @@ sub _build__hosts {
     my $hosts = {};
     my $config = $self->_config;
 
-    for my $host (map { $_=~ /^host:(\w+)$/ ? $1 : () } keys %{$config}){
+    for my $host (map { $_=~ /^host:(.+?)$/ ? $1 : () } keys %{$config}){
         my $host_conf =  RSP::Config::Host->new({ config => $config->{"host:$host"}, global_config => $self, hostname => $host });
         
         if((my $engine = $host_conf->js_engine) ne 'none'){

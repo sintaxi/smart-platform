@@ -234,7 +234,7 @@ sub build_entrypoint_arguments {
       $uploads = {
 		  map {
 		    my $name = $_->name;
-		    my $file = $_->file;
+		    my $file = $_->asset;
 		    (
 		     $name => RSP::JSObject::File->new(
 						       $file->path, 
