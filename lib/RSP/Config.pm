@@ -52,34 +52,43 @@ sub _build__hosts {
     my $config = $self->_config;
 
     for my $host (map { $_=~ /^host:(.+?)$/ ? $1 : () } keys %{$config}){
-        my $host_conf =  RSP::Config::Host->new({ config => $config->{"host:$host"}, global_config => $self, hostname => $host });
-        
-        if((my $engine = $host_conf->js_engine) ne 'none'){
-            
-            my $class = "RSP::JS::Engine::$engine";
-            try {
-                Class::MOP::load_class($class);
-            } catch {
-                die "Could not load class '$class' for JS Engine '$engine': $_";
-            };
-           
-            my @roles = $class->applicable_host_config_roles;
-            use Moose::Util;
-            Moose::Util::apply_all_roles($host_conf, @roles) if scalar(@roles);
-        }
-
-        $host_conf->meta->make_immutable;
-        $hosts->{$host} = $host_conf;
+        $hosts->{$host} = $self->_build_host_obj($host => $config->{"host:$host"});
     }
 
     return $hosts;
+}
+
+sub _build_host_obj {
+    my ($self, $host, $conf) = @_;
+    
+    my $host_conf =  RSP::Config::Host->new({ config => $conf, global_config => $self, hostname => $host });
+    
+    if((my $engine = $host_conf->js_engine) ne 'none'){
+        
+        my $class = "RSP::JS::Engine::$engine";
+        try {
+            Class::MOP::load_class($class);
+        } catch {
+            die "Could not load class '$class' for JS Engine '$engine': $_";
+        };
+       
+        my @roles = $class->applicable_host_config_roles;
+        use Moose::Util;
+        Moose::Util::apply_all_roles($host_conf, @roles) if scalar(@roles);
+    }
+
+    $host_conf->meta->make_immutable;
+    return $host_conf;
 }
 
 sub host {
     my ($self, $host) = @_;
 
     my $conf = $self->_hosts->{$host};
-    die "No configuration supplied for '$host'" if !$conf;
+    if(!$conf){
+        # If we don't have a config supplied from the config file, we'll use defaults
+        $conf = $self->_build_host_obj($host => {});
+    }
 
     return $conf;
 }

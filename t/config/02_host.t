@@ -157,6 +157,14 @@ check_bootstrap: {
     is($conf->bootstrap_file, "$tmp_dir2/actuallyhere.com/js/bootstrap.js", 'bootstrap file path returned');
 }
 
+check_is_active: {
+    my $conf = RSP::Config->new(config => $test_config)->host('foo');
+    is($conf->is_active, 1, q{Host foo is active});
+
+    my $non_host_conf = RSP::Config->new(config => $test_config)->host('flibble');
+    is($non_host_conf->is_active, 0, q{Host flibble isn't active});
+}
+
 check_alloc_size: {
     my $conf = RSP::Config->new(config => $test_config)->host('foo');
     is($conf->alloc_size, 2097152, q{Allocation size is correct});

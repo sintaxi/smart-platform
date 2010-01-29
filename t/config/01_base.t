@@ -135,9 +135,8 @@ check_hosts_are_correct: {
     my $host_conf = $conf->host('foo');
     isa_ok($host_conf, 'RSP::Config::Host');
 
-    throws_ok {
-        $conf->host('baz');
-    } qr/No configuration supplied for 'baz'/,
-        'Non-existing host throws error';
+    my $baz_host = $conf->host('baz');
+    isa_ok($baz_host, 'RSP::Config::Host');
+    is($baz_host->hostname, 'baz', q{default host is created});
 }
 

@@ -80,6 +80,20 @@ sub _build_code {
     return $dir;
 }
 
+sub is_active {
+    my ($self) = @_;
+
+    # Sometimes we'll have a host that doesn't exist on disk yet,
+    # so if it's unavailable, lets call it "inactive"
+    return try {
+        $self->bootstrap_file;
+        return 1;
+    } catch {
+        return 0;
+    };
+}
+
+
 # XXX - make this an 'ExistantFile' type constraint?
 has bootstrap_file => (is => 'ro', lazy_build => 1);
 sub _build_bootstrap_file {

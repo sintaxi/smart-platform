@@ -198,6 +198,12 @@ sub cleanup_js_environment {
 sub bootstrap {
   my $self = shift;
 
+  # check to see if this host is active
+  if(!$self->host->is_active){
+    $self->log("Host '".$self->host->hostname."' is not currently active");
+    die "Host '".$self->host->hostname."' is not currently active\n";
+  }
+
   my $engine = $self->host->js_engine;
   my $je = $self->fetch_js_engine($engine);
     
