@@ -92,7 +92,7 @@ sub clone {
         pass => $conf->{pass},
         ($conf->{host} ? (host => $conf->{host}) : ()),
         ($conf->{port} ? (port => $conf->{port}) : ()),
-        ($conf->{vhost} ? (port => $conf->{vhost}) : ()),
+        ($conf->{vhost} ? (vhost => $conf->{vhost}) : ()),
     );
 
     $amqp->send(
