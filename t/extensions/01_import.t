@@ -53,7 +53,7 @@ use: {
         $import->use("meh");
     } qr{Library 'meh' does not exist$}, q{Non-existant library throws exception};
 
-    $JavaScript::Context::EVAL_RESULT = 0;
+    local $JavaScript::Context::EVAL_RESULT = 0;
     throws_ok {
         $import->use("foo");
     } qr{Unable to load library 'foo': \[mocked\] fail$},
@@ -61,12 +61,10 @@ use: {
 }
 
 global_lib: {
-    local $TODO = q{Wait until we have a clearer idea of how we want to achieve this};
-
-    my $tmp_dir = "/tmp";
+    my $tmp_dir = $ji->config->_master->root;
     use File::Path qw(make_path);
-    make_path("$tmp_dir/global_libraries/flibble/2_0");
-    open(my $global_fh, ">", "$tmp_dir/global_libraries/flibble/2_0/flibble.js");
+    make_path("$tmp_dir/library/flibble_2.0");
+    open(my $global_fh, ">", "$tmp_dir/library/flibble_2.0/flibble.js");
     print {$global_fh} "function blah(){ return 'howdy'; }\n";
     close $global_fh;
     my $import = RSP::Extension::Import->new({ js_instance => $ji }); 
@@ -75,7 +73,7 @@ global_lib: {
     lives_ok {
         $import->use("flibble", "2.0");
     } q{Able to use global library};
-    is($JavaScript::Context::FILE, "$tmp_dir/global_libraries/flibble/2_0/flibble.js", q{Correct global library is used});
+    is($JavaScript::Context::FILE, "$tmp_dir/library/flibble_2.0/flibble.js", q{Correct global library is used});
 
     throws_ok {
         $import->use("flibble", "3.0");

@@ -116,6 +116,13 @@ check_hostroot_is_correct: {
     }
 }
 
+check_global_library_is_correct: {
+    local $test_config = clone($test_config);
+    mkpath("$tmp_dir/library");
+    my $conf = RSP::Config->new(config => $test_config);
+    is($conf->global_library, "$tmp_dir/library", 'global library directory is correct');
+}
+
 check_global_oplimit_is_correct: {
     my $conf = RSP::Config->new(config => $test_config);
     is($conf->oplimit, 123_456, 'oplimit is correct');

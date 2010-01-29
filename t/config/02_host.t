@@ -39,6 +39,8 @@ our $test_config = {
     },
 };
 
+
+
 basic: {
     my $conf = RSP::Config->new(config => $test_config);
     isa_ok($conf, 'RSP::Config');
@@ -168,6 +170,12 @@ check_is_active: {
 check_alloc_size: {
     my $conf = RSP::Config->new(config => $test_config)->host('foo');
     is($conf->alloc_size, 2097152, q{Allocation size is correct});
+}
+
+check_global_library: {
+    make_path("$tmp_dir/library");
+    my $conf = RSP::Config->new(config => $test_config)->host('foo');
+    is($conf->global_library, "$tmp_dir/library", q{Global library is correct});
 }
 
 check_log_directory: {

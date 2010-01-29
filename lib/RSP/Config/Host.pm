@@ -72,6 +72,12 @@ sub _build_root {
     return $dir;
 }
 
+has global_library => (is => 'ro', isa => 'ExistantDirectory', lazy_build => 1);
+sub _build_global_library {
+    my ($self) = @_;
+    return $self->_master->global_library;
+}
+
 has code => (is => 'ro', isa => 'ExistantDirectory', lazy_build => 1);
 sub _build_code {
     my ($self) = @_;

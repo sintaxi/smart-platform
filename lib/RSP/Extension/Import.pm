@@ -2,6 +2,7 @@ package RSP::Extension::Import;
 
 use Moose;
 use Try::Tiny;
+use File::Spec;
 
 with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
@@ -15,13 +16,20 @@ sub bind {
 }
 
 sub use {
-    my ($self, $lib) = @_;
+    my ($self, $lib, $version) = @_;
 
     my $name = $lib;
     $lib =~ s{\.}{/}g;
     $lib .= '.js';
 
-    my $path_to_lib = $self->js_instance->config->file(code => $lib);
+    my $path_to_lib;
+
+    if(!$version){
+        $path_to_lib = $self->js_instance->config->file(code => $lib);
+    } else {
+        $path_to_lib = $self->global_lib($name, $version);
+    }
+
 
     local $SIG{__DIE__};
     if(!-e $path_to_lib){
@@ -38,14 +46,23 @@ sub use {
 }
 
 sub global_lib {
-  my $class = shift;
-  my $tx    = shift;
-  my $lib   = shift;
-  my $path = File::Spec->catfile( RSP->config->{_}->{root}, 'library', $lib );
-  if ( -e $path ) {
-    return $path;
-  }
-  return undef;
+    my ($self, $lib, $version) = @_;
+
+    my $name = $lib;
+
+    my $versioned_lib_dir = File::Spec->catdir(
+        $self->js_instance->config->global_library,
+        $name . "_" . $version
+    );
+
+    if ( -e $versioned_lib_dir ) {
+        $lib =~ s{\.}{/}g;
+        $lib .= '.js';
+        return File::Spec->catdir($versioned_lib_dir, $lib);
+    }
+
+    local $SIG{__DIE__};
+    die qq{Library name '$name' at version '$version' does not exist};
 }
 
 1;
