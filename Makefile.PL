@@ -7,7 +7,6 @@ perl_version '5.010001';
 
 install_script 'bin/rsp';
 install_script 'bin/rspkeymanagerd';
-install_script 'bin/clonewatcher';
 
 configure_requires 'Module::Build'; # temporary... Algo::C3 build breaks a huge dependency chain in a non-obvious way
 

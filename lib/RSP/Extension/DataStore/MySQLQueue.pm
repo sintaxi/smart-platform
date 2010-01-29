@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use JSON::XS;
-use RSP::Stomp;
+use RSP::AMQP;
 use RSP::Datastore::Namespace::MySQL;
 
 use RSP::Datastore;
@@ -26,7 +26,8 @@ sub write {
   return sub {
     my $type = lc( shift );
     my $mesg = [ $self->{transaction}->{namespace}, 'write', [ $type, @_ ] ];
-    RSP::Stomp->send( 'smart.ds.writer', JSON::XS::encode_json( $mesg ) );
+    my $amqp = Net::AMQP->new(user => RSP->config->{amqp}{user}, pass => RSP->config->{amqp}{pass});
+    $amqp->send('smart.ds.writer' => JSON::XS::encode_json( $mesg ));
   }
 }
 
@@ -35,7 +36,8 @@ sub remove {
   return sub {
     my $type = lc( shift );
     my $mesg = [ $self->{transaction}->{namespace}, 'remove', [ $type, @_ ] ];
-    RSP::Stomp->send( 'smart.ds.writer', JSON::XS::encode_json( $mesg ) );
+    my $amqp = Net::AMQP->new(user => RSP->config->{amqp}{user}, pass => RSP->config->{amqp}{pass});
+    $amqp->send('smart.ds.writer' => JSON::XS::encode_json( $mesg ));
   }
 }
 
