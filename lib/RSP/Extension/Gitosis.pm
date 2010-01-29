@@ -5,7 +5,7 @@ use warnings;
 
 use File::Temp;
 use JSON::XS;
-use RSP::Stomp;
+use RSP::AMQP;
 use base 'RSP::Extension';
 
 sub exception_name {
@@ -82,13 +82,23 @@ sub clone {
     my $from = shift;
     my $to   = shift;
     my $mesg = {
-		from_project => $from,
-		to_project   => $to
-	       };
-    RSP::Stomp->send(
-		     RSP->config->{amqp}->{repository_management_exchange},
-		     encode_json( $mesg )
-		    );
+                from_project => $from,
+                to_project   => $to
+               };
+
+    my $conf = RSP->config->{amqp};
+    my $amqp = RSP::AMQP->new(
+        user => $conf->{user}, 
+        pass => $conf->{pass},
+        ($conf->{host} ? (host => $conf->{host}) : ()),
+        ($conf->{port} ? (port => $conf->{port}) : ()),
+        ($conf->{vhost} ? (port => $conf->{vhost}) : ()),
+    );
+
+    $amqp->send(
+        $conf->{repository_management_exchange},
+        encode_json( $mesg )
+    );
     return 1;
   }
 }

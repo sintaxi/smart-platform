@@ -15,7 +15,7 @@ test_requires 'Test::More' => 0;
 test_requires 'Test::Exception' => 0;
 test_requires 'mocked' => 0;
 
-requires 'Net::Stomp' => 0;
+requires 'Net::RabbitMQ' => '0.1.0';
 requires 'DBI' => 0;
 requires 'SQL::Abstract' => 0;
 requires 'Set::Object' => 0;
