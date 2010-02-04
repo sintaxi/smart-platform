@@ -36,7 +36,7 @@ exit 1;
 $port = $port ? $port : RSP->config->{mojo}->{port};
 my $opts = {
     pid_file => File::Spec->catfile( RSP->config->{_}->{root}, 'run', 'rsp.pid' ),
-    app_class => 'RSP',
+    app => RSP->new,
     (defined($port) ? (port => $port) : ()),
 }; 
 
