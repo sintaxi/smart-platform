@@ -20,6 +20,7 @@ my $tmp_dir2 = tempdir();
 our $test_config = {
     '_' => {
         root => $tmp_dir,
+        available_extensions => 'DataStore,UUID',
         extensions => 'DataStore',
     },
     rsp => {
@@ -75,9 +76,9 @@ check_rsp_root_is_correct: {
 
 }
 
-check_rsp_exceptions_are_correct: {
+check_rsp_available_extensions: {
     my $conf = RSP::Config->new(config => $test_config);
-    is_deeply( $conf->extensions, [qw(RSP::Extension::DataStore)], 'Extensions returned correctly');
+    is_deeply($conf->available_extensions, [qw(RSP::Extension::DataStore RSP::Extension::UUID)], 'Available extensions returned correctly');
 
     local $test_config = clone($test_config);
     $test_config->{_}{extensions} = 'ThisClassReallyShouldNotExist';
@@ -86,11 +87,24 @@ check_rsp_exceptions_are_correct: {
         $conf->extensions
     } qr/Could not load extension 'RSP::Extension::ThisClassReallyShouldNotExist'/, 
         'Non-existing extension class throws error';
+}
+
+check_rsp_extensions_are_correct: {
+    my $conf = RSP::Config->new(config => $test_config);
+    is_deeply( $conf->extensions, [qw(RSP::Extension::DataStore)], 'Extensions returned correctly');
 
     local $test_config = clone($test_config);
     delete $test_config->{_}{extensions};
     $conf = RSP::Config->new(config => $test_config);
     is_deeply($conf->extensions, [], q{No extensions supplied is empty});
+
+    local $test_config = clone($test_config);
+    $test_config->{_}{extensions} = 'Digest';
+    $conf = RSP::Config->new(config => $test_config);
+    throws_ok {
+        $conf->extensions
+    } qr/Could not load extension 'RSP::Extension::Digest', was not supplied in available extensions list/, 
+        'Non-existing extension class throws error';
 }
 
 check_hostroot_is_correct: {

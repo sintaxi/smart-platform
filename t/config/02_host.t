@@ -22,6 +22,7 @@ my $tmp_dir2 = tempdir();
 our $test_config = {
     '_' => {
         root => $tmp_dir,
+        available_extensions => 'DataStore,Image,UUID',
         extensions => 'DataStore',
     },
     rsp => {
@@ -104,7 +105,7 @@ check_host_extensions: {
     $conf = RSP::Config->new(config => $test_config)->host('foo');
     throws_ok {
         $conf->extensions
-    } qr{Could not load extension 'RSP::Extension::flibble':},
+    } qr{Could not load extension 'RSP::Extension::flibble', was not supplied in available extensions list},
         q{Non-existant extension class throws exception};
 }
 

@@ -6,6 +6,7 @@ use Moose;
 use File::Spec;
 use File::Path qw(make_path);
 use Try::Tiny;
+use Set::Object;
 
 has _config => (is => 'ro', required => 1, init_arg => 'config');
 has _master => (is => 'ro', required => 1, init_arg => 'global_config', isa => 'RSP::Config'); # XXX TODO - weaken?
@@ -40,9 +41,11 @@ sub _build_extensions {
             'RSP::Extension::' .  $_;
         } split(/,/, $extensions_string);
 
+    my $available_set = Set::Object->new(@{ $self->_master->available_extensions });
     for my $class (@extensions){
-        eval { Class::MOP::load_class($class) };
-        die "Could not load extension '$class': $@" if $@;
+        if(!$available_set->contains($class)){
+            die "Could not load extension '$class', was not supplied in available extensions list";
+        }
     }
 
     my @parent_extensions = @{ $self->_master->extensions };

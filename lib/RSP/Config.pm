@@ -7,11 +7,13 @@ use Cwd qw(getcwd);
 use Scalar::Util qw(weaken);
 use Try::Tiny;
 use Moose::Util::TypeConstraints;
+use Set::Object;
+
 BEGIN {
-subtype 'ExistantDirectory',
-    as 'Str',
-    where { -d $_ },
-    message { "Directory '$_' does not exist." };
+    subtype 'ExistantDirectory',
+        as 'Str',
+        where { -d $_ },
+        message { "Directory '$_' does not exist." };
 }
 use RSP::Config::Host;
 
@@ -40,6 +42,24 @@ has extensions => (is => 'ro', lazy_build => 1, isa => 'ArrayRef[ClassName]');
 sub _build_extensions {
     my ($self) = @_;
     my $extensions_string = $self->_config->{_}{extensions} // '';
+    my @extensions = map {
+            'RSP::Extension::' .  $_;
+        } split(/,/, $extensions_string);
+
+    my $available_set = Set::Object->new(@{ $self->available_extensions });
+    for my $class (@extensions){
+        if(!$available_set->contains($class)){
+            die "Could not load extension '$class', was not supplied in available extensions list";
+        }
+    }
+
+    return [@extensions];
+}
+
+has available_extensions => (is => 'ro', lazy_build => 1, isa => 'ArrayRef[ClassName]');
+sub _build_available_extensions {
+    my ($self) = @_;
+    my $extensions_string = $self->_config->{_}{available_extensions} // '';
     my @extensions = map {
             'RSP::Extension::' .  $_;
         } split(/,/, $extensions_string);
