@@ -72,6 +72,14 @@ sub _build_available_extensions {
     return [@extensions];
 }
 
+has host_class => (is => 'ro', isa => 'ClassName', lazy_build => 1);
+sub _build_host_class {
+    my ($self) = @_;
+    my $host_class = $self->_config->{_}{host_class} ? $self->_config->{_}{host_class} : 'RSP::Config::Host';
+    Class::MOP::load_class($host_class);
+    return $host_class;
+}
+
 has _hosts => (is => 'ro', lazy_build => 1, isa => 'HashRef');
 sub _build__hosts {
     my ($self) = @_;

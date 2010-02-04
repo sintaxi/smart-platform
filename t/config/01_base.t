@@ -147,6 +147,22 @@ check_global_oplimit_is_correct: {
     is($conf->oplimit, 100_000, 'oplimit defaults to 100,000');
 }
 
+check_host_class_is_correct: {
+    my $conf = RSP::Config->new(config => $test_config);
+    is($conf->host_class, 'RSP::Config::Host', 'host_class default is correct');
+
+    {
+        package Bob;
+        sub foo { 1 }
+        1;
+    }
+
+    local $test_config = clone($test_config);
+    $test_config->{_}{host_class} = "Bob";
+    $conf = RSP::Config->new(config => $test_config);
+    is($conf->host_class, 'Bob', 'host_class is correct');
+}
+
 check_hosts_are_correct: {
     my $conf = RSP::Config->new(config => $test_config);
   

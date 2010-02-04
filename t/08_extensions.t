@@ -44,6 +44,9 @@ use_ok("RSP::JS::Engine::SpiderMonkey");
 }
 
 our $test_config = {
+    '_' => {
+        available_extensions => 'Example',
+    },
     'host:foo' => {
         extensions => 'Example',
     },
@@ -116,6 +119,9 @@ basic: {
 }
 
 $test_config = {
+    '_' => {
+        available_extensions => 'ClassExample',
+    },
     'host:foo' => {
         extensions => 'ClassExample',
     },
