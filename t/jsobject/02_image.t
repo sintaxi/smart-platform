@@ -26,6 +26,7 @@ isa_ok($image, 'RSP::JSObject::Image');
 
 basic: {
 
+
     # XXX - throws_ok only supports REGEX or OBJECTS, not hashrefs, etc.
     # so we have to use dies_ok =0(
     dies_ok {
@@ -84,3 +85,7 @@ as_string: {
 }
 
 
+bugs: {
+    # Fix for Github issue 9 --- http://github.com/joyent/smart-platform/issues/#issue/9
+    is($Imager::READ_FILE, '/tmp/foo.png', q{Imager receives full path});
+}

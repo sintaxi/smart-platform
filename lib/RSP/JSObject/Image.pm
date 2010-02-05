@@ -14,7 +14,7 @@ has imager => (is => 'rw', isa => 'Imager', lazy_build => 1);
 sub _build_imager {
     my ($self) = @_;
     my $img = Imager->new;
-    $img->read( file => $self->file ) or die $img->errstr;
+    $img->read( file => $self->file->fullpath ) or die $img->errstr;
     return $img;
 }
 
