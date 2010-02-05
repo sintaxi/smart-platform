@@ -177,3 +177,17 @@ check_hosts_are_correct: {
     is($baz_host->hostname, 'baz', q{default host is created});
 }
 
+check_logging_info: {
+    open(my $fh, ">$tmp_dir/logging.conf");
+    print {$fh} "dispatchers = screen\nscreen.min_level = debug\nscreen.class = Log::Dispatch::Screen\n";
+    close($fh);
+
+    local $test_config = clone($test_config);
+    $test_config->{rsp}{logging_config} = 'logging.conf',
+    my $conf = RSP::Config->new(config => $test_config);
+
+    my $dispatcher = $conf->log_dispatcher;
+    isa_ok($dispatcher, 'Log::Dispatch');
+    can_ok($conf, qw(log debug info notice warning error critical alert emergency));
+}
+

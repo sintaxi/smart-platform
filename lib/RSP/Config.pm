@@ -150,7 +150,19 @@ sub _build_hostroot {
     return $root;
 }
 
+has log_dispatcher => (is => 'rw', lazy_build => 1, isa => 'Log::Dispatch', 
+    handles => [qw(log debug info notice warning error critical alert emergency)]);
+sub _build_log_dispatcher {
+    my ($self) = @_;
+    my $path = File::Spec->catfile($self->root, $self->_config->{rsp}{logging_config});
+    if(!-e $path){
+        die "Cannot locate logging config file: $!";
+    }
 
+    use Log::Dispatch::Config;
+    Log::Dispatch::Config->configure($path);
+    return Log::Dispatch::Config->instance;
+}
 
 no Moose;
 #__PACKAGE__->meta->make_immutable;

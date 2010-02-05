@@ -47,6 +47,7 @@ requires 'File::Path' => 0;
 requires 'File::Temp' => 0;
 requires 'File::Spec' => 0;
 requires 'Cwd' => 0;
+requires 'Log::Dispatch::Config' => 0;
 
 tests_recursive();
 auto_install;
