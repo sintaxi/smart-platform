@@ -8,5 +8,6 @@ has host => (is => 'ro', required => 1, isa => 'Str');
 has port => (is => 'ro', isa => 'Int', default => 5672);
 has vhost => (is => 'ro', isa => 'Str', default => '/');
 has repository_management_exchange => (is => 'ro', required => 1, isa => 'Str');
+has repository_deletion_exchange => (is => 'ro', required => 1, isa => 'Str');
 
 1;

@@ -32,6 +32,7 @@ sub bind {
         gitosis => {
             repo => {
                 clone => $self->generate_js_closure('clone'),
+                'delete' => $self->generate_js_closure('delete_repo'),
             },
             key => {
                 'write' => $self->generate_js_closure('write_key'),
@@ -75,8 +76,33 @@ sub clone {
     my $mesg = {
         from_project => $from,
         to_project   => $to
-   };
+    };
 
+    my $conf = $self->js_instance->config->amqp;
+    my $amqp = $self->_new_amqp_instance;
+    $amqp->send(
+        $conf->repository_management_exchange,
+        encode_json( $mesg )
+    );
+    return 1;
+}
+
+sub delete_repo {
+    my ($self, $repo) = @_;
+    
+    my $mesg = { repo => $repo };
+    
+    my $conf = $self->js_instance->config->amqp;
+    my $amqp = $self->_new_amqp_instance;
+    $amqp->send(
+        $conf->repository_deletion_exchange,
+        encode_json( $mesg )
+    );
+    return 1;
+}
+
+sub _new_amqp_instance {
+    my ($self) = @_;
     my $conf = $self->js_instance->config->amqp;
     my $amqp = RSP::AMQP->new(
         user => $conf->user, 
@@ -85,12 +111,7 @@ sub clone {
         ($conf->port ? (port => $conf->port) : ()),
         ($conf->vhost ? (vhost => $conf->vhost) : ()),
     );
-
-    $amqp->send(
-        $conf->repository_management_exchange,
-        encode_json( $mesg )
-    );
-    return 1;
+    return $amqp;
 }
 
 1;
