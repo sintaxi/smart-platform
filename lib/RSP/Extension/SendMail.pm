@@ -1,52 +1,47 @@
 package RSP::Extension::SendMail;
 
-use strict;
-use warnings;
+use Moose;
+
+with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
+
 use Email::Send;
 use Email::Simple;
 use Email::Simple::Creator;
 
-use base 'RSP::Extension';
-
-sub exception_name {
-  return "system.email";
+sub bind {
+    my ($self) = @_;
+    $self->bind_extension({
+        email => {
+            'send' => $self->generate_js_closure('email_send'),
+        },
+    });
 }
 
-sub provides {
-  my $class = shift;
-  my $tx = shift;
-  return {
-    'email' => {
-      'send' => sub {
-        my $headers = shift;
-        my $body    = shift;
-        if (!$headers->{To}) {
-          RSF::Error->throw("no 'To' header");
-        } elsif ( !$headers->{From} ) {
-          RSF::Error->throw("no 'From' header");
-        } elsif( !$headers->{Subject} ) {
-          RSF::Error->throw("no 'Subject' header");
-        }
-
-        if (!$body) {
-          RSF::Error->throw("no body");
-        }
-
-        my $message = Email::Simple->create;
-        foreach my $key (keys %$headers) {
-          $message->header_set($key, $headers->{$key});
-        }
-        $message->body_set( $body );
-        $tx->log($message->as_string);
-        my $sender = Email::Send->new;
-        $sender->mailer_args([Host=>'localhost']);
-        my $result = $sender->send( $message );
-        $tx->log("sent with status code $result");
-        select(undef, undef, undef, 0.25);
-        return 1;
-       }
+sub email_send {
+    my ($self, $headers, $body) = @_;
+    if (!$headers->{To}) {
+      die "no 'To' header\n";
+    } elsif ( !$headers->{From} ) {
+      die "no 'From' header\n";
+    } elsif( !$headers->{Subject} ) {
+      die "no 'Subject' header\n";
     }
-  };
+
+    if (!$body) {
+      die "no body\n";
+    }
+
+    my $message = Email::Simple->create;
+    foreach my $key (keys %$headers) {
+      $message->header_set($key, $headers->{$key});
+    }
+
+    $message->body_set( $body );
+    my $sender = Email::Send->new;
+    $sender->mailer_args([Host=>'localhost']);
+    my $result = $sender->send( $message );
+    select(undef, undef, undef, 0.25);
+    return 1;
 }
 
 1;
