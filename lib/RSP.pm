@@ -30,8 +30,8 @@ sub BUILD {
 
         if($class->can('does') && $class->does('RSP::Role::AppMutation')){
             warn "Attempting to apply mutations on $class\n";
-            if($class->can_apply_mutations($self->config)){
-                $class->apply_mutations($self->config);
+            if($class->can_apply_mutations($self->conf)){
+                $class->apply_mutations($self->conf);
             } else {
                 push(@extension_stack, $class);
                 my $tries = ++$unable_to_comply->{$class};

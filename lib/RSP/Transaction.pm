@@ -132,13 +132,13 @@ sub process_transaction {
 sub assert_transaction_ready {
   my $self = shift;
   if (!$self->request) {
-    $self->log("no request object");
-    RSP::Error->throw("no request object");
+    $self->config->error("no request object");
+    die "no request object";
   }
 
   if (!$self->response) {
-    $self->log("no response object");
-    RSP::Error->throw("no response object");
+    $self->config->error("no response object");
+    die "no response object";
   }
 }
 
@@ -200,7 +200,7 @@ sub bootstrap {
 
   # check to see if this host is active
   if(!$self->host->is_active){
-    $self->log("Host '".$self->host->hostname."' is not currently active");
+    $self->config->info("Host '".$self->host->hostname."' is not currently active");
     die "Host '".$self->host->hostname."' is not currently active\n";
   }
 
@@ -253,12 +253,12 @@ sub run {
       $response = $self->context->run([ $self->build_entrypoint_arguments ]);
       use Data::Dumper;
       local $Data::Dumper::Indent = 0;
-      print STDERR Dumper($response)."\n";
+      $self->config->info(Dumper($response));
       $error = $@;
       die $error if $error;
   } catch {
  
-        $self->log("JS called failed with: $_");
+        $self->config->error("JS called failed with: $_");
         if(ref($_) && ref($_) eq 'JavaScript::Error') { 
             die $_;
          } else {
@@ -272,6 +272,7 @@ sub run {
     };
 
   if($self->has_exceeded_ops){
+      $self->config->error("Request has exceeded oplimit");
     RSP::Error->throw("exceeded oplimit");
   }
 
@@ -358,50 +359,18 @@ sub report_consumption {
 
 sub consumption_log {
   my $self = shift;
-  if ( my $conf = RSP->config->{amqp} ) {
+  if ( $self->config->does('RSP::Role::Config::AMQP') && (my $conf = RSP->config->amqp) ) {
     require RSP::AMQP;
     my $amqp = RSP::AMQP->new(user => $conf->{user}, pass => $conf->{pass});
     for my $report (@_){
         $amqp->send('rsp.consumption' => $report->as_json);
     }
-  } else {
-    foreach my $report (@_ ) {
-      $self->log( $report->as_json );
-    }
   }
-}
 
-=for comment
-##
-## imports extensions that a host requires.  These
-##   are by passing in classnames as arguments.
-##
-sub import_extensions {
-  my $self = shift;
-  my $cx   = shift;
-  my $sys  = {};
-  foreach my $ext (@_) {
-    # XXX - RSP::Config::Host will load extensions on our behalf
-    # eval { Module::Load::load( $ext ); };
-    my $ext_class = $ext->providing_class;
-    #if (!$@) {
-      if ( $ext_class->should_provide( $self ) ) {
-        my $provided = $ext_class->provides( $self );
-        if ( !$provided ) {
-	  ## perhaps we should do something?
-        } elsif (!ref($provided) || ref($provided) ne 'HASH') {
-          #warn "invalid extension provided by $ext";
-        } else {
-          $sys = merge $provided, $sys;
-        }
-      }
-    #} else {
-    #  warn "couldn't load extension $ext: $@\n";
-    #}
+  foreach my $report (@_ ) {
+    $self->config->info( "CONSUMPTION: " . $report->as_json );
   }
-  $cx->bind_value( 'system' => $sys );
 }
-=cut
 
 ##
 ## instantiates or simply returns the RSP::Host object
