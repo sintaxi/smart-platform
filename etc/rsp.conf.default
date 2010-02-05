@@ -1,5 +1,5 @@
 root=/Users/james/Documents/Joyent/Projects/rsp
-extensions=Console,DataStore,FileSystem,HTTP,Image,Import,JSONEncoder,Digest,MediaStore,OpenId,Sprintf,UUID,HMAC
+extensions=Console,DataStore,FileSystem,HTTP,Image,Import,JSONEncoder,Digest,MediaStore,Sprintf,UUID,HMAC
 
 ##
 ## this is the configuration for the stomp broker

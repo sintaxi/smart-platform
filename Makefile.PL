@@ -32,7 +32,6 @@ requires 'JavaScript' => '1.15';
 requires 'Module::Load' => 0;
 requires 'LWPx::ParanoidAgent' => 0;
 requires 'Cache::Memcached::Fast' => 0;
-requires 'Net::OpenID::Consumer' => 0;
 requires 'Class::Accessor::Chained' => 0;
 requires 'Data::UUID::Base64URLSafe' => 0;
 requires 'Scalar::Util::Numeric' => 0;
