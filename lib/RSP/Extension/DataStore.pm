@@ -3,6 +3,7 @@ package RSP::Extension::DataStore;
 use Moose;
 with qw(RSP::Role::AppMutation RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
+use RSP::Datastore::MySQL;
 use RSP::Datastore::SQLite;
 
 sub can_apply_mutations { 1 }
@@ -50,6 +51,12 @@ sub _get_backend {
     my $store_type = $config->storage->DataStore;
     if($store_type eq 'MySQL'){
         my $store_config = $config->_master->mysql;
+        return RSP::Datastore::MySQL->new(
+            namespace => $config->hostname,
+            host => $store_config->host,
+            user => $store_config->user,
+            password => $store_config->password,
+        );
     } elsif ($store_type eq 'SQLite'){
         my $store_config = $config->_master->local_storage;
         return RSP::Datastore::SQLite->new(

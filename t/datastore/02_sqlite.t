@@ -32,8 +32,6 @@ my $type      = "person";
 my $namespace = "test-datastore.reasonablysmart.com";
 my $datadir = tempdir();
 basic: {
-    use RSP::Datastore::Namespace;
-
     use_ok( 'RSP::Datastore::SQLite' );
     my $ds = RSP::Datastore::SQLite->new(namespace => $namespace, datadir => $datadir);
     isa_ok($ds, 'RSP::Datastore::SQLite');

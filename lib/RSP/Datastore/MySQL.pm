@@ -1,7 +1,6 @@
-package RSP::Datastore::Namespace::MySQL;
+package RSP::Datastore::MySQL;
 
-use strict;
-use warnings;
+use Moose;
 
 use RSP;
 use RSP::Transaction;
@@ -14,54 +13,68 @@ use Carp qw( confess cluck );
 use Scalar::Util::Numeric qw( isnum isint isfloat );
 use Digest::MD5 qw( md5_hex );
 
-use base 'RSP::Datastore::Namespace';
+BEGIN {
+    extends 'RSP::Datastore::Namespace';
+}
+
+has host => (is => 'ro', isa => 'Str', required => 1);
+has user => (is => 'ro', isa => 'Str', required => 1);
+has password => (is => 'ro', isa => 'Str', required => 1);
+
+has namespace => (is => 'ro', isa => 'Str', required => 1);
+has namespace_sum => (is => 'ro', isa => 'Str', lazy_build => 1);
+sub _build_namespace_sum {
+    my ($self) = @_;
+    return md5_hex( $self->namespace );
+}
+
+sub BUILD {
+    my ($self) = @_;
+    $self->connect();
+}
 
 sub create {
-  my $class = shift;
-  my $ns    = shift;
-  my $self  = $class->new;
-  $self->namespace( md5_hex($ns) );
-  my $host = RSP->config->{mysql}->{host};
-  $self->conn( $class->perform_connection );
-  $self->conn->do("create database " . $self->namespace);
-  $self->conn->do("use " . $self->namespace);
+  my ($self) = @_;
+  my $ns    = $self->namespace;
+  my $ns_sum = $self->namespace_sum;
+  
+  $self->conn( $self->perform_connection );
+  $self->conn->do("create database " . $ns_sum);
+  $self->conn->do("use " . $ns_sum);
   $self->cache( RSP::Transaction->cache( $ns ) );
   return $self;
 }
 
 sub perform_connection {
-  my $class = shift;
-  my $host = RSP->config->{mysql}->{host};
+  my ($self) = @_;
+  my $host = $self->host;
   DBI->connect_cached(
 		      "dbi:mysql:host=$host",
-		      RSP->config->{mysql}->{username},
-		      RSP->config->{mysql}->{password},
+		      $self->user,
+		      $self->password,
 		      { mysql_enable_utf8 => 1 }
 		     )
 }
 
 sub connect {
-  my $class = shift;
-  my $ns    = shift;
-  my $self  = $class->new;
-  my $db    = md5_hex($ns);
-  $self->namespace( $db );
-  $self->conn( $class->perform_connection );
+  my ($self) = @_;
+  my $db    = $self->namespace_sum;
+  $self->conn( $self->perform_connection );
 
   ## if we couldn't get a connection, chances are it's because
   ## we're missing the database, lets create one and see if that resolves it...
   ## NOTE: This commented assertion may not be true any more!
   eval {
-      if (!$self->conn->do(sprintf("use %s", $self->namespace))) {
-	  die "unknown db";
+      if (!$self->conn->do(sprintf("use %s", $db))) {
+	  die "unknown db\n";
       }
   };
   if ($@) {
-    $self = $class->create( $ns );
-    $self->conn->do(sprintf("use %s", $self->namespace));
+    $self = $self->create();
+    $self->conn->do(sprintf("use %s", $db));
   } 
 
-  $self->cache( RSP::Transaction->cache( $ns ) );
+  $self->cache( RSP::Transaction->cache( $self->namespace ) );
 
   return $self;
 }
@@ -72,7 +85,7 @@ sub fetch_types {
     my $sth  = $self->conn->prepare_cached(
       "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=?"
     );
-    $sth->execute( $self->namespace );
+    $sth->execute( $self->namespace_sum );
     while( my $row = $sth->fetchrow_arrayref ) {
       my $typename = $row->[0];
       $typename =~ s/\_.+$//; 
@@ -85,7 +98,7 @@ sub create_type_table {
   my $self = shift;
   my $type = lc(shift);
   if (!$type) {
-    RSP::Error->throw("no type");
+    die "no type\n";
   }
   $self->conn->begin_work;
   eval {
@@ -108,17 +121,16 @@ sub create_type_table {
   };
   if ($@) {
     $self->conn->rollback;
-    RSP::Error->throw("couldn't create type tables");
+    die "couldn't create type tables\n";
   }
   $self->conn->commit;
   $self->tables->{$type} = 1;
 }
 
-sub delete {
-  my $class = shift;
-  my $ns    = shift;
-  my $self  = $class->connect( $ns );
-  $self->conn->do("DROP DATABASE " . $self->namespace);
+sub remove_namespace {
+    my ($self) = @_;
+    $self->connect();
+    $self->conn->do("DROP DATABASE " . $self->namespace_sum);
 }
 
 
