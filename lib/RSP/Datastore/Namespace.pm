@@ -1,19 +1,17 @@
 package RSP::Datastore::Namespace;
 
-use strict;
-use warnings;
+use Moose;
 
 use RSP::Error;
 use Scalar::Util::Numeric qw( isnum isint isfloat );
 use Carp qw( cluck );
-use base 'Class::Accessor::Chained';
 
-__PACKAGE__->mk_accessors(qw(namespace conn tables sa cache));
+has [qw(conn tables sa cache)] => (is => 'rw');
 
-sub new {
-  my $class = shift;
-  my $self  = { tables => {}, sa => SQL::Abstract->new( quote_char => '`' ) };
-  bless $self, $class;
+sub BUILD {
+    my ($self) = @_;
+    $self->tables({});
+    $self->sa( SQL::Abstract->new(quote_char => '`') );
 }
 
 sub exception_name {
@@ -28,7 +26,7 @@ sub has_type_table {
   my $self = shift;
   my $type = lc(shift);
   if (!$type) {
-    RSP::Error->throw("no type");
+    die "no type\n";
   }
   if (!keys %{$self->tables}) {
     $self->fetch_types;
@@ -47,7 +45,7 @@ sub tables_for_type {
   my $self = shift;
   my $type = lc(shift);
   if (!$type) {
-    RSP::Error->throw("no type");
+    die "no type\n";
   }
   my @suffixes = qw( f s o i );
   my @tables = ();
@@ -62,21 +60,22 @@ sub remove {
   my $type = lc(shift);
   my $id   = shift;
   if (!$type) {
-    RSP::Error->throw("no type");
+    die "no type\n";
   }
   if (!$id) {
-    RSP::Error->throw("no id");
+    die "no id\n";
   }
   $self->conn->begin_work;
   eval {
     $self->_remove_in_transaction( $type, $id );
     if ( !$self->cache->remove( "${type}:${id}" ) ) {
-      cluck "Could not remove from cache!";
+      die "could not remove object id '$id' from cache!\n";
     }
   };
   if ($@) {
     $self->conn->rollback;
-    RSP::Error->throw($@);
+    chomp($@);
+    die "couldn't remove object id '$id': $@\n";
   }
   $self->conn->commit;
   return 1;
