@@ -2,7 +2,6 @@ package RSP::Datastore::MySQL;
 
 use Moose;
 
-use RSP;
 use RSP::Transaction;
 
 use DBI;
@@ -14,7 +13,7 @@ use Scalar::Util::Numeric qw( isnum isint isfloat );
 use Digest::MD5 qw( md5_hex );
 
 BEGIN {
-    extends 'RSP::Datastore::Namespace';
+    extends 'RSP::Datastore::Base';
 }
 
 has host => (is => 'ro', isa => 'Str', required => 1);
@@ -28,55 +27,32 @@ sub _build_namespace_sum {
     return md5_hex( $self->namespace );
 }
 
-sub BUILD {
+has conn => (is => 'rw', lazy_build => 1);
+sub _build_conn {
     my ($self) = @_;
-    $self->connect();
+    my $db = $self->namespace_sum;
+
+    my $conn = DBI->connect_cached(
+        "dbi:mysql:host=" . $self->host,
+        $self->user, $self->password,
+        { mysql_enable_utf8 => 1 }
+    );
+    eval {
+        if(!$conn->do(sprintf("use %s", $db))){
+            die "unknown db\n";
+        }
+    };
+    if($@){
+        $conn->do("create database " . $db);
+        $conn->do("use " . $db);
+    }
+    return $conn;
 }
 
-sub create {
-  my ($self) = @_;
-  my $ns    = $self->namespace;
-  my $ns_sum = $self->namespace_sum;
-  
-  $self->conn( $self->perform_connection );
-  $self->conn->do("create database " . $ns_sum);
-  $self->conn->do("use " . $ns_sum);
-  $self->cache( RSP::Transaction->cache( $ns ) );
-  return $self;
-}
-
-sub perform_connection {
-  my ($self) = @_;
-  my $host = $self->host;
-  DBI->connect_cached(
-		      "dbi:mysql:host=$host",
-		      $self->user,
-		      $self->password,
-		      { mysql_enable_utf8 => 1 }
-		     )
-}
-
-sub connect {
-  my ($self) = @_;
-  my $db    = $self->namespace_sum;
-  $self->conn( $self->perform_connection );
-
-  ## if we couldn't get a connection, chances are it's because
-  ## we're missing the database, lets create one and see if that resolves it...
-  ## NOTE: This commented assertion may not be true any more!
-  eval {
-      if (!$self->conn->do(sprintf("use %s", $db))) {
-	  die "unknown db\n";
-      }
-  };
-  if ($@) {
-    $self = $self->create();
-    $self->conn->do(sprintf("use %s", $db));
-  } 
-
-  $self->cache( RSP::Transaction->cache( $self->namespace ) );
-
-  return $self;
+has cache => (is => 'rw', lazy_build => 1);
+sub _build_cache {
+    my ($self) = @_;
+    return RSP::Transaction->cache( $self->namespace );
 }
 
 sub fetch_types {
@@ -129,12 +105,7 @@ sub create_type_table {
 
 sub remove_namespace {
     my ($self) = @_;
-    $self->connect();
     $self->conn->do("DROP DATABASE " . $self->namespace_sum);
 }
-
-
-
-
 
 1;

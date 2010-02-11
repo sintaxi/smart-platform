@@ -1,25 +1,23 @@
-package RSP::Datastore::Namespace;
+package RSP::Datastore::Base;
 
 use Moose;
 
-use RSP::Error;
+use Digest::MD5 qw(md5_hex);
+use SQL::Abstract;
 use Scalar::Util::Numeric qw( isnum isint isfloat );
 use Carp qw( cluck );
 
-has [qw(conn tables sa cache)] => (is => 'rw');
-
-sub BUILD {
+has namespace => (is => 'ro', isa => 'Str', required => 1);
+has namespace_sum => (is => 'ro', isa => 'Str', lazy_build => 1);
+sub _build_namespace_sum {
     my ($self) = @_;
-    $self->tables({});
-    $self->sa( SQL::Abstract->new(quote_char => '`') );
+    return md5_hex( $self->namespace );
 }
 
-sub exception_name {
-  return "datastore";
-}
-
-sub fetch_types {
-  die "abstract method fetch_types called";
+has tables => (is => 'rw', default => sub { {} });
+has sa => (is => 'rw', lazy_build => 1);
+sub _build_sa {
+    return SQL::Abstract->new(quote_char => '`');
 }
 
 sub has_type_table {
@@ -103,10 +101,10 @@ sub read {
   my $type = lc(shift);
   my $id   = shift;
   if (!$type) {
-    RSP::Error->throw("no type");
+    die "no type\n";
   }
   if (!$id) {
-    RSP::Error->throw("no id");
+    die "no id\n";
   }
 
   my $cache  = $self->cache->get( "${type}:${id}" );
@@ -123,7 +121,7 @@ sub read {
   } else {
     my $obj = $self->read_one_object( $type, $id );
     if (!$obj) {
-      RSP::Error->throw("no such object");
+      die "no such object\n";
     }
     return $obj;
   }
@@ -180,7 +178,7 @@ sub read_one_object {
     $sth->finish;
   }
   if (!$obj) {
-    RSP::Error->throw("no such object $type:$id");
+    die "no such object $type:$id\n";
   }
   my $json = JSON::XS::encode_json( $obj );
   if (!$self->cache->set( "${type}:${id}",  $json )) {
@@ -195,10 +193,10 @@ sub write {
   my $obj   = shift;
   my $trans = shift;
   if (!$type) {
-    RSP::Error->throw("no type");
+    die "no type\n";
   }
   if (!$obj) {
-    RSP::Error->throw("no object");
+    die "no object\n";
   }
   if ( $trans ) {
     my $id = $obj->{id};
@@ -224,7 +222,7 @@ sub write_one_object {
   my $obj  = shift;
   my $id   = $obj->{id};
   if (!$id) {
-    RSP::Error->throw("object has no id");
+    die "object has no id\n";
   }
   $self->conn->begin_work;
   eval {
@@ -257,7 +255,8 @@ sub write_one_object {
   if ($@) {
 #    print "THERE WAS AN ERROR WRITING THE DATA: $@\n";
     $self->conn->rollback;
-    RSP::Error->throw($@);
+    chomp($@);
+    die "$@\n";
   }
   $self->conn->commit;
   return 1;
@@ -269,10 +268,10 @@ sub query {
   my $query = shift;
   my $opts  = shift || {};
   if (!$type) {
-    RSP::Error->throw("no type");
+    die "no type\n";
   }
   if (!$query) {
-    RSP::Error->throw("no query");
+    die "no query\n";
   }
   my @objects;
   if (ref($query) eq 'HASH') {
@@ -395,7 +394,7 @@ sub table_for {
   my $type  = shift;
   my $args  = { @_ };
   if (!exists $args->{value}) { 
-    RSP::Error->throw("no value");
+    die "no value\n";
   }
   my $dt = $self->valtype( $args->{value} );
   my $lookup = {

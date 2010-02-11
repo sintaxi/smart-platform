@@ -39,7 +39,6 @@ my %opts = (
 );
 
 basic: {
-    use RSP::Datastore::Namespace;
     use_ok( 'RSP::Datastore::MySQL' );
     my $ds  = RSP::Datastore::MySQL->new(namespace => $namespace, %opts);
     my $ds2 = RSP::Datastore::MySQL->new(namespace => $namespace, %opts);

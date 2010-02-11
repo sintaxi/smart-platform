@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use JavaScript;
+use RSP;
 use RSP::Error;
 use Module::Load qw();
 use RSP::FakeCache;

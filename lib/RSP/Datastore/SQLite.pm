@@ -2,55 +2,36 @@ package RSP::Datastore::SQLite;
 
 use Moose;
 
-use RSP;
+use DBI;
+use File::Path;
+
 use RSP::Transaction;
 
-use DBI;
-use JSON::XS;
-use File::Path;
-use SQL::Abstract;
-use Set::Object;
-use Carp qw( confess cluck );
-use Scalar::Util::Numeric qw( isnum isint isfloat );
-use Digest::MD5 qw( md5_hex );
-
 BEGIN {
-    extends 'RSP::Datastore::Namespace';
+    extends 'RSP::Datastore::Base';
 }
 
 has datadir => (is => 'ro', isa => 'Str', required => 1);
 has dbfile => (is => 'rw', isa => 'Str');
-has namespace => (is => 'ro', isa => 'Str', required => 1);
-has namespace_sum => (is => 'ro', isa => 'Str', lazy_build => 1);
-sub _build_namespace_sum {
+has conn => (is => 'rw', lazy_build => 1);
+sub _build_conn {
     my ($self) = @_;
-    return md5_hex( $self->namespace );
+
+    my $ns = $self->namespace;
+    my $db = $self->namespace_sum;
+    my $dir = $self->datadir;
+
+    my $dbd = File::Spec->catfile($dir, substr($db, 0, 2));
+    my $dbf = File::Spec->catfile($dbd, $ns);
+    mkpath($dbd);
+    $self->dbfile($dbf);
+    return DBI->connect_cached("dbi:SQLite:dbname=$dbf", "", "", { sqlite_unicode => 1 });
 }
 
-sub BUILD {
+has cache => (is => 'rw', lazy_build => 1);
+sub _build_cache {
     my ($self) = @_;
-    $self->connect($self->namespace);
-}
-
-sub create {
-  my ($self) = @_;
-  $self->connect( $self->namespace );
-}
-
-sub connect {
-  my ($self) = @_;
-  my $ns    = $self->namespace;
-  my $db    = $self->namespace_sum;
-
-  my $dir = $self->datadir;
-
-  my $dbd = File::Spec->catfile( $dir, substr($db, 0, 2) );
-  my $dbf = File::Spec->catfile( $dbd, $ns );
-  mkpath( $dbd );
-  $self->dbfile( $dbf );
-  $self->conn( DBI->connect_cached( "dbi:SQLite:dbname=$dbf", "", "", { sqlite_unicode => 1 } ) );
-  $self->cache( RSP::Transaction->cache( $ns ) );
-  return $self;
+    return RSP::Transaction->cache($self->namespace);
 }
 
 sub fetch_types {
