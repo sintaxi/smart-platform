@@ -4,22 +4,30 @@ use strict;
 use warnings;
 
 use Test::More 'no_plan';
-use lib 't';
-use Mock::Transaction;
 
-use Carp qw( confess );
 
-use_ok('RSP');
-use_ok('RSP::Extension::MediaStore');
+use File::Temp qw(tempdir);
+my $tmp_dir = tempdir();
 
-$SIG{__DIE__} = sub {
-  confess @_;
-};
+basic: {
+    use_ok('RSP::MediaStore::Local');
 
-my ($fname, $data) = ("foobar", "bazbashfoo");
+    my $media = RSP::Mediastore::Local->new(
+        namespace => 'test.smart.joyent.com', 
+        datadir => $tmp_dir
+    );
+    isa_ok($media, 'RSP::Mediastore::Local');
 
-my $tx = Mock::Transaction->new( 'test.smart.joyent.com' );
+    my ($fname, $data) = ("foobar", "bazbashfoo");
+    ok($media->write("test-data", $fname, $data), q{file written correctly});
+    my $fobj = $media->get("test-data", $fname);
+    ok($fobj, q{file retrieved correctly});
+    isa_ok($fobj, q{RSP::JSObject::MediaFile::Local});
 
+    ok($media->remove("test-data", $fname), q{file written correctly});
+}
+
+__END__
 ok( my $ext_class = RSP::Extension::MediaStore->providing_class );
 diag("providing class is $ext_class");
 
