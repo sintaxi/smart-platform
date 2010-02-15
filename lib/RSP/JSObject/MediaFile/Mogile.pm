@@ -12,25 +12,24 @@ use base 'RSP::JSObject::MediaFile';
 sub new {
   my $class = shift;
   my $mog   = shift;
-  my $tx    = shift;
   my $name  = shift;
   my $paths = shift;
-  my $self  = { mog => $mog, tx => $tx, paths => $paths, name => $name };
+  my $self  = { mog => $mog, paths => $paths, name => $name };
   bless $self, $class;
 }
 
 sub remove {
   my $self = shift;
   $self->{mog}->delete( $self->filename );
-  $self->clearcache( $self->{tx}, $self->filename );
+  $self->clearcache( $self->filename );
 }
 
 sub clearcache {
   my $class  = shift;
-  my $tx     = shift;
   my $fname  = shift;
+  # XXX = wtf?
   foreach my $key ( (keys %{ $class->properties }, 'content')) {
-    $tx->cache->delete( $class->cachename( $key, $fname ) );
+      #$tx->cache->delete( $class->cachename( $key, $fname ) );
   }
 }
 

@@ -33,24 +33,28 @@ sub bind {
     });
 
     my $class_opts;
+    my $class;
     if($self->js_instance->config->storage->MediaStore eq 'Local'){
-        my $class = 'RSP::JSObject::MediaFile::Local';
-        Class::MOP::load_class($class);
-        $class_opts = {
-            name => 'MediaFile',
-            'package' => $class,
-            properties => {
-                filename    => { getter => $self->generate_js_method_closure('filename') },
-                mimetype    => { getter => $self->generate_js_method_closure('mimetype') },
-                size        => { getter => $self->generate_js_method_closure('size') },
-                'length'    => { getter => $self->generate_js_method_closure('length') },
-                digest      => { getter => $self->generate_js_method_closure('digest') },
-            },
-            methods => {
-                remove => $self->generate_js_method_closure('remove'),
-            },
-        };
+        $class = 'RSP::JSObject::MediaFile::Local';
+    } elsif($self->js_instance->config->storage->MediaStore eq 'MogileFS'){
+        $class = 'RSP::JSObject::MediaFile::Mogile';
     }
+    
+    Class::MOP::load_class($class);
+    $class_opts = {
+        name => 'MediaFile',
+        'package' => $class,
+        properties => {
+            filename    => { getter => $self->generate_js_method_closure('filename') },
+            mimetype    => { getter => $self->generate_js_method_closure('mimetype') },
+            size        => { getter => $self->generate_js_method_closure('size') },
+            'length'    => { getter => $self->generate_js_method_closure('length') },
+            digest      => { getter => $self->generate_js_method_closure('digest') },
+        },
+        methods => {
+            remove => $self->generate_js_method_closure('remove'),
+        },
+    };
 
     $self->js_instance->bind_class(%$class_opts);
 }
