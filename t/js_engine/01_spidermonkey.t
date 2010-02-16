@@ -34,14 +34,6 @@ create_instance: {
     is($JavaScript::Runtime::ALLOC_SIZE, $host->alloc_size, q{Runtime is created with correct size});
 }
 
-interrupt_handler: {
-    my $je = RSP::JS::Engine::SpiderMonkey->new;
-    my $ji = $je->create_instance({ config => $host });
-
-    is($ji->interrupt_handler, $coderef, q{Interrupt handler stores coderef});
-    is($JavaScript::Runtime::INTERRUPT_HANDLER, $coderef, q{Interrupt handler set in runtime});
-}
-
 context: {
     my $je = RSP::JS::Engine::SpiderMonkey->new;
     my $ji = $je->create_instance({ config => $host });

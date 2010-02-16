@@ -29,6 +29,7 @@ requires 'Digest::HMAC_SHA1' => 0;
 requires 'JSON::XS' => 0;
 requires 'Scalar::Util' => 0;
 requires 'JavaScript' => '1.15';
+requires 'JavaScript::Runtime::OpcodeCounting' => "1.02";
 requires 'Module::Load' => 0;
 requires 'LWPx::ParanoidAgent' => 0;
 requires 'Cache::Memcached::Fast' => 0;

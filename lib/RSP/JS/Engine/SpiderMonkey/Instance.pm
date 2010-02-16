@@ -2,19 +2,20 @@ package RSP::JS::Engine::SpiderMonkey::Instance;
 
 use Moose;
 use JavaScript;
+use JavaScript::Runtime::OpcodeCounting;
 use Hash::Merge::Simple qw(merge);
 use Try::Tiny;
 use Scalar::Util qw(reftype);
 
 has runtime => (
     is => 'ro', isa => 'JavaScript::Runtime', lazy_build => 1, 
-    handles => [qw(set_interrupt_handler create_context)],
+    handles => [qw(create_context)],
     clearer => 'clear_runtime',
     predicate => 'has_runtime',
 );
 sub _build_runtime {
     my ($self) = @_;
-    my $runtime = JavaScript::Runtime->new( $self->alloc_size );
+    my $runtime = JavaScript::Runtime->new( $self->alloc_size, '-OpcodeCounting' );
     return $runtime;
 }
 
@@ -43,7 +44,6 @@ sub _build_context {
 has config => (
     is => 'ro', isa => 'Object', required => 1, 
     handles => {
-        _initial_interrupt_handler => 'interrupt_handler',
         extensions => 'extensions',
         bootstrap_file => 'bootstrap_file',
         hostname => 'hostname',
@@ -53,16 +53,6 @@ has config => (
         alloc_size => 'alloc_size',
     },
 );
-
-has interrupt_handler => (is => 'rw', isa => 'Maybe[CodeRef]', trigger => \&_trigger_interrupt_handler, lazy_build => 1);
-sub _build_interrupt_handler {
-    my ($self) = @_;
-    return $self->_initial_interrupt_handler;
-}
-sub _trigger_interrupt_handler {
-    my ($self, $value, $old_value) = @_;
-    $self->set_interrupt_handler($value);
-}
 
 has version => (is => 'rw', isa => 'Str', trigger => \&_trigger_version, default => "1.8");
 sub _trigger_version {
@@ -85,7 +75,6 @@ sub BUILD {
     my ($self) = @_;
     $self->version($self->version);
     $self->options($self->options);
-    $self->interrupt_handler($self->interrupt_handler);
     $self->_import_extensions;
 }
 
@@ -200,7 +189,6 @@ sub DEMOLISH {
     my ($self) = @_;
     
     if($self->has_context && $self->has_runtime){
-        $self->interrupt_handler(undef);
         $self->unbind_value('system');
     }
 

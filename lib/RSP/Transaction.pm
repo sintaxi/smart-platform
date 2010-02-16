@@ -210,14 +210,8 @@ sub bootstrap {
     
   my $ji = $je->create_instance({ config => $self->host });
 
-  $ji->interrupt_handler(sub {
-      $self->{ops}++;
-      if($self->ops > $self->host->oplimit){
-          $self->exceeded_ops;
-          RSP::Error->throw("op threshold exceeded");
-      }
-      return 1;
-  });
+  $ji->runtime->set_opcount(0);
+  $ji->runtime->set_opcount_limit( $self->host->oplimit );
 
   $ji->initialize;
   $self->context($ji);
