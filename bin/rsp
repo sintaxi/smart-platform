@@ -33,6 +33,8 @@ EOM
 exit 1;
 }
 
+$SIG{INT} = sub { exit; };
+
 $port = $port ? $port : RSP->config->{mojo}->{port};
 my $opts = {
     pid_file => File::Spec->catfile( RSP->config->{_}->{root}, 'run', 'rsp.pid' ),

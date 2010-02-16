@@ -10,6 +10,7 @@ has runtime => (
     is => 'ro', isa => 'JavaScript::Runtime', lazy_build => 1, 
     handles => [qw(set_interrupt_handler create_context)],
     clearer => 'clear_runtime',
+    predicate => 'has_runtime',
 );
 sub _build_runtime {
     my ($self) = @_;
@@ -32,6 +33,7 @@ has context => (
         set_pending_exception   => 'set_pending_exception',
     },
     clearer => 'clear_context',
+    predicate => 'has_context',
 );
 sub _build_context {
     my ($self) = @_;
@@ -51,12 +53,6 @@ has config => (
         alloc_size => 'alloc_size',
     },
 );
-
-# XXX - This probably chould be different, but extensions need to have access to "host"
-sub host {
-    my $self = shift;
-    return $self->config(@_);
-}
 
 has interrupt_handler => (is => 'rw', isa => 'Maybe[CodeRef]', trigger => \&_trigger_interrupt_handler, lazy_build => 1);
 sub _build_interrupt_handler {
@@ -127,26 +123,9 @@ EOJS
 
     $self->bind_value('extensions', {});
     foreach my $ext (@{ $self->extensions }) {
-
-        # Load newer style extensions
         if($ext->can('does') && $ext->does('RSP::Role::Extension')){
             my $ext_obj = $ext->new({ js_instance => $self });
             $ext_obj->bind;
-            next;
-        }
-
-        # XXX - Load older style JS extensions
-        my $ext_class = $ext->providing_class;
-        my $provided = $ext_class->provides( $self );
-        if ( $provided ) {
-            my $foo = sub {
-                my $class = shift;
-                $class =~ s/::/__/g;
-                $class = lc($class);
-                return $class;
-            };              
-            my $thing = $foo->($ext_class);
-            $self->bind_value("extensions.$thing", $provided);
         }
     }
     
@@ -220,14 +199,14 @@ sub run {
 sub DEMOLISH {
     my ($self) = @_;
     
-    if($self->context && $self->runtime){
+    if($self->has_context && $self->has_runtime){
         $self->interrupt_handler(undef);
         $self->unbind_value('system');
     }
 
     # is this even needed ?
-    #$self->clear_context;
-    #$self->clear_runtime;
+    $self->clear_context;
+    $self->clear_runtime;
 }
 
 1;

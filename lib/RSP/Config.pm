@@ -124,6 +124,7 @@ sub host {
     if(!$conf){
         # If we don't have a config supplied from the config file, we'll use defaults
         $conf = $self->_build_host_obj($host => {});
+        $self->_hosts->{$host} = $conf;
     }
 
     return $conf;

@@ -360,9 +360,9 @@ sub report_consumption {
 
 sub consumption_log {
   my $self = shift;
-  if ( $self->config->does('RSP::Role::Config::AMQP') && (my $conf = RSP->config->amqp) ) {
-    require RSP::AMQP;
-    my $amqp = RSP::AMQP->new(user => $conf->{user}, pass => $conf->{pass});
+  if ( $self->config->does('RSP::Role::Config::AMQP') && (my $conf = $self->config->amqp) ) {
+      Class::MOP::load_class('RSP::AMQP');
+    my $amqp = RSP::AMQP->new(user => $conf->user, pass => $conf->pass);
     for my $report (@_){
         $amqp->send('rsp.consumption' => $report->as_json);
     }

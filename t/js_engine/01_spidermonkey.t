@@ -153,7 +153,6 @@ cleanup: {
             $ji->initialize;
         
             $ji->run;
-            $ji->clear_context;
             $JavaScript::Context::ON_DESTROY = sub { $CLEANED_UP_CONTEXT = 1 };
         }
         ok($CLEANED_UP_CONTEXT, q{Ensure context was cleaned up});
@@ -168,7 +167,6 @@ cleanup: {
             $ji->initialize;
         
             $ji->run;
-            $ji->clear_runtime;
             $JavaScript::Runtime::ON_DESTROY = sub { $CLEANED_UP_RUNTIME = 1 };
         }
         ok($CLEANED_UP_RUNTIME, q{Ensure context was cleaned up});
@@ -185,8 +183,6 @@ cleanup: {
             $ji->initialize;
         
             $ji->run;
-            $ji->clear_context;
-            $ji->clear_runtime;
             $JavaScript::Context::ON_DESTROY = sub { $CLEANED_UP_CONTEXT = 1 };
             $JavaScript::Runtime::ON_DESTROY = sub { $CLEANED_UP_RUNTIME = 1 };
         }
