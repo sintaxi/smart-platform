@@ -21,7 +21,8 @@ our $test_config = {
     'host:foo' => { alternate => 'actuallyhere.com', bootstrap_file => $filename, },
 };
 
-my $host = RSP::Config->new(config => $test_config)->host('foo');
+my $conf = RSP::Config->new(config => $test_config);
+my $host = $conf->host('foo');
 my $root = $host->root;
 
 make_path("$root/js");

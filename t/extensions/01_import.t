@@ -13,7 +13,7 @@ use TestHelper qw(initialize_test_js_instance);
 
 use Scalar::Util qw(reftype);
 
-my $ji = initialize_test_js_instance({});
+my ($ji, $conf) = initialize_test_js_instance({});
 my $root = $ji->config->root;
 
 open(my $js_fh, ">", "$root/js/foo.js") or die "Could not open file: $!";

@@ -45,7 +45,7 @@ sub initialize_test_js_instance {
     my $ji = $je->create_instance({ config => $host });
     $ji->initialize;
 
-    return wantarray ? ($ji) : $ji;;
+    return wantarray ? ($ji, $conf) : $ji;
 }
 
 1;

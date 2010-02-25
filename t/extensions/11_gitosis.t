@@ -15,7 +15,7 @@ use TestHelper qw(initialize_test_js_instance);
 use JSON::XS;
 use Scalar::Util qw(reftype);
 
-my $ji = initialize_test_js_instance({
+my ($ji, $conf) = initialize_test_js_instance({
     amqp => {
         user => 'test', pass => 'test', repository_management_exchange => 'gitosis_rsp_test', host => 'bob',
         repository_deletion_exchange => 'gitosis_rsp_delete_test',

@@ -9,7 +9,7 @@ use Try::Tiny;
 use Set::Object;
 
 has _config => (is => 'ro', required => 1, init_arg => 'config');
-has _master => (is => 'ro', required => 1, init_arg => 'global_config', isa => 'RSP::Config'); # XXX TODO - weaken?
+has _master => (is => 'ro', required => 1, init_arg => 'global_config', isa => 'RSP::Config', weak_ref => 1);
 
 # XXX - should this come from a role???
 has js_engine => (is => 'ro', required => 1, isa => 'Str', lazy_build => 1);

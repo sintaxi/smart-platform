@@ -58,8 +58,9 @@ $config = {
 };
 
 basic_host:{
-    my $foo = RSP::Config->new({ config => $config })->host('foo');
-    my $bar = RSP::Config->new({ config => $config })->host('bar');
+    my $conf = RSP::Config->new({ config => $config });
+    my $foo = $conf->host('foo');
+    my $bar = $conf->host('bar');
 
     ok($foo->does('RSP::Role::Config::SpiderMonkey::Host'), q{host 'foo' does spidermonkey config});
     ok(!$bar->does('RSP::Role::Config::SpiderMonkey::Host'), q{host 'bar' does not do spidermonkey config});
@@ -68,7 +69,8 @@ basic_host:{
 }
 
 config_host_options: {
-    my $host = RSP::Config->new({ config => $config })->host('foo');
+    my $conf = RSP::Config->new({ config => $config });
+    my $host = $conf->host('foo');
 
     is($host->use_e4x, 1, q{Host Config use_e4x is inherited from the parent default});
     is($host->use_strict, 1, q{Host Config use_strict is inherited from the parent default});
@@ -78,7 +80,8 @@ config_host_options: {
         $config->{_}{spidermonkey_use_e4x} = 0;
         $config->{_}{spidermonkey_use_strict} = 0;
          
-        $host = RSP::Config->new({ config => $config })->host('foo');
+        $conf = RSP::Config->new({ config => $config });
+        $host = $conf->host('foo');
         is($host->use_e4x, 0, q{Host Config use_e4x is inherited from the parent (set)});
         is($host->use_strict, 0, q{Host Config use_strict is inherited from the parent (set)});
     }
@@ -90,7 +93,8 @@ config_host_options: {
         $config->{'host:foo'}{use_e4x} = 1;
         $config->{'host:foo'}{use_strict} = 1;
          
-        $host = RSP::Config->new({ config => $config })->host('foo');
+        $conf = RSP::Config->new({ config => $config });
+        $host = $conf->host('foo');
         is($host->use_e4x, 1, q{Host Config use_e4x overrides the parent (true)});
         is($host->use_strict, 1, q{Host Config use_strict overrides the parent (true)});
     }
@@ -102,7 +106,8 @@ config_host_options: {
         $config->{'host:foo'}{use_e4x} = 0;
         $config->{'host:foo'}{use_strict} = 0;
          
-        $host = RSP::Config->new({ config => $config })->host('foo');
+        $conf = RSP::Config->new({ config => $config });
+        $host = $conf->host('foo');
         is($host->use_e4x, 0, q{Host Config use_e4x overrides the parent (false)});
         is($host->use_strict, 0, q{Host Config use_strict overrides the parent (false)});
     }

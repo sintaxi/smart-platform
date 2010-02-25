@@ -14,7 +14,7 @@ use File::Temp qw(tempdir);
 
 my $tmp_dir = tempdir();
 
-my $ji = initialize_test_js_instance({
+my ($ji, $conf) = initialize_test_js_instance({
     rsp => { storage => 'storage:local' },
     'localstorage' => { 
         datadir => $tmp_dir 
@@ -27,7 +27,7 @@ my $ji = initialize_test_js_instance({
 basic: {
     use_ok('RSP::Extension::MediaStore');
     ok(RSP::Extension::MediaStore->does('RSP::Role::AppMutation'), q{MediaStore does RSP::Role::AppMutation});
-    RSP::Extension::MediaStore->apply_mutations($ji->config->_master);
+    RSP::Extension::MediaStore->apply_mutations($conf);
 
     ok($ji->config->_master->does('RSP::Role::Config::MogileStorage'), q{Config now does MogileStorage});
     ok($ji->config->_master->does('RSP::Role::Config::LocalStorage'), q{Config now does LocalMediaStorage});
@@ -69,7 +69,7 @@ local: {
 }
 
 mogile: {
-    my $ji = initialize_test_js_instance({
+    my ($ji, $conf) = initialize_test_js_instance({
         rsp => { storage => 'storage:mogile' },
         'mogilefs' => { 
             trackers => 'somehost:1234'

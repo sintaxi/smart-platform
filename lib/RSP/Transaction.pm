@@ -6,7 +6,6 @@ use warnings;
 use JavaScript;
 use RSP;
 use RSP::Error;
-use Module::Load qw();
 use RSP::FakeCache;
 use Cache::Memcached::Fast;
 use Hash::Merge::Simple 'merge';
@@ -30,7 +29,6 @@ __PACKAGE__->mk_accessors(qw( runtime context hostclass ops url has_exceeded_ops
 ##
 sub import {
   my $class = shift;
-  #Module::Load::load( $HOST_CLASS );
   eval {
     $class->SUPER::import(@_);
   };
@@ -148,9 +146,11 @@ sub assert_transaction_ready {
 ##  any use of memcache that is connected via something
 ##  other than this method is dangerous and shouldn't be done.
 ##
+my $CLASS_CACHE_OBJ;
 sub cache {
   my $self = shift;
   if (!RSP->config->{rsp}->{memcached}) { return RSP::FakeCache->new; }
+  my $obj;
   if (ref( $self )) { ## instance method
     ## if we've got a memcache, return it
     if ( $self->{cache} ) {
@@ -170,11 +170,16 @@ sub cache {
       RSP::Error->throw("no hostname");
     }
     ## this is from an static call, so we need to construct every time, not ideal, but we can live with it
-    return Cache::Memcached::Fast->new({
-      'servers'           => [ { map { ('address' => $_) } split(',', RSP->config->{rsp}->{memcached}) } ],
-      'namespace'         => $hostname . ':', ## append the colon for easy reading in mcinsight...
-    });
+    $CLASS_CACHE_OBJ ||= do {
+        Cache::Memcached::Fast->new({
+            'servers'           => [ { map { ('address' => $_) } split(',', RSP->config->{rsp}->{memcached}) } ],
+            'namespace'         => $hostname . ':', ## append the colon for easy reading in mcinsight...
+        });
+    };
+    $obj = $CLASS_CACHE_OBJ;
   }
+
+  return $obj;
 }
 
 sub exceeded_ops {
@@ -271,6 +276,7 @@ sub run {
     RSP::Error->throw("exceeded oplimit");
   }
 
+  $self->ops($self->context->runtime->get_opcount);
   $self->encode_response( $response );
   $self->access_log();
 }
@@ -303,7 +309,10 @@ sub end {
   my $post_callback = shift;
 
   $self->report_consumption;
-  undef( $self->{cache} );
+  if($self->{cache}){
+      $self->{cache}->disconnect_all();
+      undef( $self->{cache} );
+  }
   $self->cleanup_js_environment;
 }
 

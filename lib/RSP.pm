@@ -8,6 +8,8 @@ our $VERSION = '1.2';
 use Application::Config 'rsp.conf';
 
 use RSP::Config;
+use Try::Tiny;
+#      use Carp::Always;
 
 our $CONFIG;
 sub conf {
@@ -52,8 +54,6 @@ sub handler {
                                     ->request( $tx->req )
 				    ->response( $tx->res );
 
-      use Carp::Always;
-    use Try::Tiny;
     try {
         $rsptx->process_transaction;
         die $@ if $@;

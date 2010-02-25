@@ -11,7 +11,7 @@ use TestHelper qw(initialize_test_js_instance);
 
 use Scalar::Util qw(reftype);
 
-my $ji = initialize_test_js_instance({});
+my ($ji, $conf) = initialize_test_js_instance({});
 
 basic: {
     use_ok('RSP::Extension::DataStore');
