@@ -52,7 +52,7 @@ sub write_key {
 				);
   my $fh = IO::File->new( $file, ">" );
   if (!$fh) {
-    RSP::Error->throw("could not open keyfile for writing");
+    die "could not open keyfile for writing\n";
   }
   $fh->print( $key );
   $fh->close();

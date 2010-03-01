@@ -5,7 +5,6 @@ use warnings;
 
 use JavaScript;
 use RSP;
-use RSP::Error;
 use RSP::FakeCache;
 use Cache::Memcached::Fast;
 use Hash::Merge::Simple 'merge';
@@ -167,7 +166,7 @@ sub cache {
     my $hostname = shift;
     if (!$hostname) {
       $self->log("no hostname");
-      RSP::Error->throw("no hostname");
+      die "no hostname";
     }
     ## this is from an static call, so we need to construct every time, not ideal, but we can live with it
     $CLASS_CACHE_OBJ ||= do {
@@ -220,15 +219,6 @@ sub bootstrap {
 
   $ji->initialize;
   $self->context($ji);
-  RSP::Error->bind($self);
-
-}
-
-##
-## extension_name provides details for the RSP::Error class
-##
-sub extension_name {
-  return "compilation stage";
 }
 
 ##
@@ -263,17 +253,14 @@ sub run {
             die $_;
          } else {
             my $str = $_;
-            #$str =~ s/at (.+)\sline\s(\d+)\.$//;
-            my $err = RSP::Error->new($str);
-            $err->{fileName} = undef;
-            $err->{lineNumber} = undef;
-            die $str;
+            chomp($str);
+            die "$str\n";
         } 
     };
 
   if($self->has_exceeded_ops){
       $self->config->error("Request has exceeded oplimit");
-    RSP::Error->throw("exceeded oplimit");
+      die "exceeded oplimit";
   }
 
   $self->ops($self->context->runtime->get_opcount);
