@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 42;
+use Test::More tests => 43;
+use Test::Exception;
 use File::Temp qw(tempdir);
 
 my $objects = [
@@ -138,6 +139,14 @@ basic: {
       foreach my $o (@$objects) {
         $ds->remove( $type, $o->{id} );
       }
+    }
+
+
+    {
+        throws_ok {
+            $ds->write("----bleh", { foo => 1 });
+        } qr{(?s:datastore type names may only be named using alpha-numeric characters and underscores, starting with a letter)\n\Z}, 
+            q{Incorrect type name throws error};
     }
 
     ok( $ds->remove_namespace(), "removing namespace");

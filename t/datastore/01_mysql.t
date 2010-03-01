@@ -4,8 +4,9 @@ use strict;
 use warnings;
 
 use Test::More (defined($ENV{MYSQL_HOST}) && defined($ENV{MYSQL_USER}) && defined($ENV{MYSQL_PASSWORD})) 
-    ? (tests => 40)
+    ? (tests => 41)
     : (skip_all => q{MYSQL_HOST, MYSQL_USER and MYSQL_PASSWORD must be set for this test});
+use Test::Exception;
 
 my $objects = [
 	       {
@@ -138,6 +139,14 @@ basic: {
         $ds->remove( $type, $o->{id} );
       }
     }
+
+    {
+        throws_ok {
+            $ds->write("----bleh", { foo => 1 });
+        } qr{(?s:datastore type names may only be named using alpha-numeric characters and underscores, starting with a letter)\n\Z}, 
+            q{Incorrect type name throws error};
+    }
+
 
     ok( $ds->remove_namespace( $namespace ), "removing namespace");
 }

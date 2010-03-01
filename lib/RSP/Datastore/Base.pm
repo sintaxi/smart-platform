@@ -38,6 +38,14 @@ sub types {
   return keys %{$self->tables};
 }
 
+sub check_type_name {
+    my ($self, $type) = @_;
+    die "no type supplied\n" if(!$type);
+    if($type !~ qr{^[a-zA-Z][a-zA-Z0-9_]*$}){
+        die "datastore type names may only be named using alpha-numeric characters and underscores, starting with a letter\n";
+    }
+    return 1;
+}
 
 sub tables_for_type {
   my $self = shift;

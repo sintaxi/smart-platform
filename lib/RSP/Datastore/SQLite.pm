@@ -52,9 +52,9 @@ sub fetch_types {
 sub create_type_table {
   my $self = shift;
   my $type = lc(shift);
-  if (!$type) {
-    die "no type\n";
-  }
+
+  $self->check_type_name($type);
+  
   $self->conn->begin_work;
   eval {
     $self->conn->do("CREATE TABLE ${type}_ids ( id CHAR(50) )");
