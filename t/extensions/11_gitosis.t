@@ -19,6 +19,7 @@ my ($ji, $conf) = initialize_test_js_instance({
     amqp => {
         user => 'test', pass => 'test', repository_management_exchange => 'gitosis_rsp_test', host => 'bob',
         repository_deletion_exchange => 'gitosis_rsp_delete_test',
+        repository_key_registration_exchange => 'smart.gitosis.key.register',
     }    
 });
 
@@ -67,5 +68,17 @@ delete_repo: {
         msg => encode_json({ repo => 'some.host.somewhere' }),
         exchange => 'gitosis_rsp_delete_test',
     }, q{Gitosis repo delete() published to AMQP correctly});
+}
+
+clone: {
+    my $gitosis = RSP::Extension::Gitosis->new({ js_instance => $ji }); 
+
+    local $Net::RabbitMQ::PUBLISHED;
+    $gitosis->write_key("bob", "thingthingthing");
+    is_deeply($Net::RabbitMQ::PUBLISHED, {
+        channel => 1, route_key => 'smart.gitosis.key.register', 
+        msg => encode_json({ user => 'bob', key => 'thingthingthing' }),
+        exchange => 'smart.gitosis.key.register',
+    }, q{Gitosis repo key.write() published to AMQP correctly});
 }
 

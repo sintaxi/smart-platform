@@ -46,16 +46,19 @@ sub write_key {
   my $self = shift;
   my $user = shift;
   my $key  = shift;
-  my $file = File::Spec->catfile(
-				 RSP->config->{keymanager}->{keydir},
-				 sprintf("%s.pub", $user)
-				);
-  my $fh = IO::File->new( $file, ">" );
-  if (!$fh) {
-    die "could not open keyfile for writing\n";
-  }
-  $fh->print( $key );
-  $fh->close();
+
+    my $mesg = {
+        user => $user,
+        key => $key,
+    };
+
+    my $conf = $self->js_instance->config->amqp;
+    my $amqp = $self->_new_amqp_instance;
+    $amqp->send(
+        $conf->repository_key_registration_exchange,
+        encode_json( $mesg )
+    );
+    return 1;
 }
 
 sub check_key {
