@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 43;
+use Test::More tests => 44;
 use Test::Exception;
 use File::Temp qw(tempdir);
 
@@ -148,6 +148,12 @@ basic: {
         } qr{(?s:datastore type names may only be named using alpha-numeric characters and underscores, starting with a letter)\n\Z}, 
             q{Incorrect type name throws error};
     }
+
+    {
+        # We search on a type that hasn't been written to yet... we should get an empty list
+        is_deeply($ds->query("flibble", { fred => 'bar' }), [], q{non-written-to type search() returns empty list});
+    }
+
 
     ok( $ds->remove_namespace(), "removing namespace");
 }

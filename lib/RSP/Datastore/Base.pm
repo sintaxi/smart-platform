@@ -14,7 +14,21 @@ sub _build_namespace_sum {
     return md5_hex( $self->namespace );
 }
 
-has tables => (is => 'rw', default => sub { {} });
+has tables => (is => 'rw', lazy_build => 1);
+sub _build_tables {
+    my ($self) = @_;
+    
+    my @tables = map {
+           my $s = $_;
+           $s =~ s/\_.+$//;
+           $s;
+       } $self->conn->tables(undef, $self->namespace_sum);
+    my $tabs = { map { $_ => 1 } @tables };
+
+    return $tabs;
+}
+
+
 has sa => (is => 'rw', lazy_build => 1);
 sub _build_sa {
     return SQL::Abstract->new(quote_char => '`');
@@ -26,15 +40,11 @@ sub has_type_table {
   if (!$type) {
     die "no type\n";
   }
-  if (!keys %{$self->tables}) {
-    $self->fetch_types;
-  }
   return $self->tables->{$type}
 }
 
 sub types {
   my $self = shift;
-  if (!keys %{$self->tables}) { $self->fetch_types }
   return keys %{$self->tables};
 }
 
@@ -53,12 +63,8 @@ sub tables_for_type {
   if (!$type) {
     die "no type\n";
   }
-  my @suffixes = qw( f s o i );
-  my @tables = ();
-  foreach my $suffix (@suffixes) {
-    push @tables, sprintf("%s_prop_%s", $type, $suffix );
-  }
-  return @tables;
+
+  return map { sprintf("%s_prop_%s", $type, $_) } qw(f s o i);
 }
 
 sub remove {
@@ -124,8 +130,7 @@ sub read {
   }
 
   if (!$self->has_type_table( $type )) {
-    $self->create_type_table( $type );
-    return $self->read( $type, $id );
+      die "no such object\n";
   } else {
     my $obj = $self->read_one_object( $type, $id );
     if (!$obj) {
@@ -217,10 +222,8 @@ sub write {
 
   if (!$self->has_type_table( $type )) {
     $self->create_type_table( $type );
-    $self->write_one_object( $type, $obj );
-  } else {
-    $self->write_one_object( $type, $obj );
   }
+  $self->write_one_object( $type, $obj );
   return 1;
 }
 
@@ -278,6 +281,11 @@ sub query {
   if (!$type) {
     die "no type\n";
   }
+  
+  if ( !$self->has_type_table( $type ) ) {
+    return [];
+  }
+
   if (!$query) {
     die "no query\n";
   }
@@ -336,10 +344,6 @@ sub all_ids_for {
   my $type = lc(shift);
 
   my $set = Set::Object->new;
-  
-  if ( !$self->has_type_table( $type ) ) {
-    return $set;
-  } 
   
   my ($stmt, @bind) = $self->sa->select("${type}_ids", ['id']);
   my $sth = $self->conn->prepare_cached($stmt);

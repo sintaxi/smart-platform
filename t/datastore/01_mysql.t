@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::More (defined($ENV{MYSQL_HOST}) && defined($ENV{MYSQL_USER}) && defined($ENV{MYSQL_PASSWORD})) 
-    ? (tests => 41)
+    ? (tests => 42)
     : (skip_all => q{MYSQL_HOST, MYSQL_USER and MYSQL_PASSWORD must be set for this test});
 use Test::Exception;
 
@@ -145,6 +145,11 @@ basic: {
             $ds->write("----bleh", { foo => 1 });
         } qr{(?s:datastore type names may only be named using alpha-numeric characters and underscores, starting with a letter)\n\Z}, 
             q{Incorrect type name throws error};
+    }
+
+    {
+        # We search on a type that hasn't been written to yet... we should get an empty list
+        is_deeply($ds->query("flibble", { fred => 'bar' }), [], q{non-written-to type search() returns empty list});
     }
 
 
