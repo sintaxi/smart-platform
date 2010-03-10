@@ -88,6 +88,42 @@ sub create_type_table {
   $self->tables->{$type} = 1;
 }
 
+sub read_one_object {
+  my $self = shift;
+  my $type = lc(shift);
+  my $id   = shift;
+
+  my $obj;
+
+  my $q_id = $self->conn->quote($id);
+  my $sql = "SELECT propname, propval, thingtype FROM (";
+  my @statements;
+  for my $table ($self->tables_for_type( $type )){
+    push @statements, "(SELECT id, propname, propval, '$table' AS thingtype FROM $table AS u_properties_$table WHERE id = $q_id)";
+  }
+  $sql .= join(' UNION ', @statements);
+  $sql .= ") AS union_result_set WHERE id = $q_id";
+
+    my $sth = $self->conn->prepare_cached( $sql );
+    $sth->execute();
+    while( my $row = $sth->fetchrow_hashref() ) {
+      if (!$obj) {
+        $obj = { id => $id };
+      }
+      my $val = $row->{propval};            
+      $obj->{ $row->{ propname } } = $val ? $self->encode_output_val( $row->{thingtype}, $val ) : undef;
+    }
+
+  if (!$obj) {
+    die "no such object $type:$id\n";
+  }
+  my $json = JSON::XS::encode_json( $obj );
+  if (!$self->cache->set( "${type}:${id}",  $json )) {
+    cluck("could not write $type object $id to cache");
+  }
+  return $obj;
+}
+
 sub remove_namespace {
     my ($self) = @_;
     $self->conn->do("DROP DATABASE " . $self->namespace_sum);

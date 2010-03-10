@@ -318,44 +318,29 @@ sub query {
   if (!$query) {
     die "no query\n";
   }
-  my @objects;
+
+  my $set;
+
   if (ref($query) eq 'HASH') {
     if (keys %$query == 0) {
-      my $set = $self->all_ids_for( $type );
-      foreach my $id (@$set) {
-	push @objects, $self->read($type, $id);
-      }
+      $set = $self->all_ids_for( $type );
     } else {
-      my $set = $self->query_set_and( $type, $query );
-      foreach my $id (@$set) {
-	push @objects, $self->read( $type, $id );
-      }
+      $set = $self->query_set_and( $type, $query );
     }
   } elsif (ref($query) eq 'ARRAY') {
-    my $set = $self->query_set_or( $type, $query );
-    foreach my $id (@$set) {
-      push @objects, $self->read( $type, $id );
-    }
+    $set = $self->query_set_or( $type, $query );
   }
 
-  if ( $opts->{sort} ) {
-    ## okay, time to get sorting...
-    @objects = sort { 
-	my $ra = $a->{$opts->{sort}};
-	my $rb = $b->{$opts->{sort}};
-	my $result;
-	if (isnum( $ra )) {
-	  $result = $ra <=> $rb;
-	} else {
-	  $result = $ra cmp $rb;
-	}
-	return $result;
-    } @objects;
-  }
-
-  if ( $opts->{reverse} ) {
-    @objects = reverse @objects;
-  }
+  my $sort_key = $opts->{sort};
+  my @objects = sort {
+                return 0 if!$sort_key; 
+                my ($ra, $rb) = ($a->{$sort_key}, $b->{$sort_key});
+                $opts->{reverse} 
+                    ? (isnum($rb) ? ($rb <=> $ra) : ($rb cmp $ra))
+                    : (isnum($ra) ? ($ra <=> $rb) : ($ra cmp $rb));
+            }
+            map { $self->read($type, $_) } 
+        $set->members;
 
   if ( $opts->{limit}) {
     my $offset = 0;
