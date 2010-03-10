@@ -76,6 +76,7 @@ sub clear {
 
     $self->conn->begin_work;
     my $sth = $self->conn->prepare("SELECT id FROM ${type}_ids");
+    $sth->execute;
     my @ids = keys %{ $sth->fetchall_hashref('id') };
     local $@;
     eval {
