@@ -17,12 +17,14 @@ sub _build_namespace_sum {
 has tables => (is => 'rw', lazy_build => 1);
 sub _build_tables {
     my ($self) = @_;
-    
+
+    my $sum = $self->namespace_sum;
     my @tables = map {
            my $s = $_;
-           $s =~ s/\_.+$//;
+           $s =~ s/^`\Q$sum\E`\.`([^`]+)`/$1/;
+           $s =~ s/(?:(?:\_prop\_\w+)|_ids)$//;
            $s;
-       } $self->conn->tables(undef, $self->namespace_sum);
+       } $self->conn->tables(undef, $sum);
     my $tabs = { map { $_ => 1 } @tables };
 
     return $tabs;
@@ -65,6 +67,32 @@ sub tables_for_type {
   }
 
   return map { sprintf("%s_prop_%s", $type, $_) } qw(f s o i);
+}
+
+sub clear {
+    my ($self, $type) = @_;
+
+    my @tables = $self->tables_for_type($type);
+
+    $self->conn->begin_work;
+    my $sth = $self->conn->prepare("SELECT id FROM ${type}_ids");
+    my @ids = keys %{ $sth->fetchall_hashref('id') };
+    local $@;
+    eval {
+        for my $table (@tables, "${type}_ids"){
+           $self->conn->do("DELETE FROM $table"); 
+        }
+    };
+    if($@){
+        $self->conn->rollback;
+        chomp($@);
+        die "Could not clear type: $@";
+    }
+    for my $id (@ids){
+        $self->cache->remove("$type:$id");
+    }
+    $self->conn->commit;
+    return scalar(@ids);
 }
 
 sub remove {
@@ -186,7 +214,7 @@ sub read_one_object {
         $obj = { id => $id };
       }
       my $val = $row->{propval};            
-      $obj->{ $row->{ propname } } = $self->encode_output_val( $table, $val );
+      $obj->{ $row->{ propname } } = $val ? $self->encode_output_val( $table, $val ) : $val;
     }
     $sth->finish;
   }

@@ -33,6 +33,7 @@ sub bind {
             remove => $self->generate_js_closure('remove'),
             search => $self->generate_js_closure('search'),
             'write' => $self->generate_js_closure('write'),
+            clear => $self->generate_js_closure('clear'),
         },
     });
 }
@@ -87,6 +88,11 @@ sub remove {
 sub write {
     my ($self, $type, @args) = @_;
     return $self->namespace->write( lc($type), @args );
+}
+
+sub clear {
+    my ($self, $type, @args) = @_;
+    return $self->namespace->clear( lc($type), @args );
 }
 
 1;
