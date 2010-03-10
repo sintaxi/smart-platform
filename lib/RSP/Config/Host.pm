@@ -114,7 +114,7 @@ sub _build_bootstrap_file {
 has alloc_size => (is => 'ro', lazy_build => 1, isa => 'Int');
 sub _build_alloc_size {
     my ($self) = @_;
-    return (1024 ** 2) * 2;
+    return (1024 ** 2) * 8;
 }
 
 has log_directory => (is => 'ro', isa => 'ExistantDirectory', lazy_build => 1);

@@ -270,7 +270,10 @@ sub run {
 
 sub access_log {
     my ($self, $log_message) = @_;
-    
+   
+    # XXX disable access logging for now
+    return;
+
     my $logfile = $self->host->access_log;
     open(my $fh, '>>', $logfile) or die "Could not open logfile '$logfile' for appending; $!";
     

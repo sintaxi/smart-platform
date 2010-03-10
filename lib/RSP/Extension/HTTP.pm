@@ -6,7 +6,7 @@ with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 use Encode;
 use HTTP::Request;
-use LWPx::ParanoidAgent;
+use LWP::UserAgent;
 
 use Try::Tiny;
 
@@ -32,9 +32,9 @@ sub bind {
 sub http_request {
     my ($self, @js_args) = @_;
 
-    my $ua = LWPx::ParanoidAgent->new;
+    my $ua = LWP::UserAgent->new;
     $ua->agent("Joyent Smart Platform / HTTP / $VERSION");
-    $ua->timeout( 10 );
+    $ua->timeout( 60 );
 
     my $response = try {
         my @args;
