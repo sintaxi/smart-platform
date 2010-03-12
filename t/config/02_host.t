@@ -184,7 +184,7 @@ check_is_active: {
 check_alloc_size: {
     my $conf = RSP::Config->new(config => $test_config);
     my $host = $conf->host('foo');
-    is($host->alloc_size, 2097152, q{Allocation size is correct});
+    is($host->alloc_size, 8388608, q{Allocation size is correct});
 }
 
 check_global_library: {

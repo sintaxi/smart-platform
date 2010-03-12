@@ -110,4 +110,8 @@ sub bind_class {
     return;
 }
 
+sub set_thread_stack_limit {
+
+}
+
 1;

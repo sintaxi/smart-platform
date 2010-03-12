@@ -74,13 +74,18 @@ sub clear {
 
     my @tables = $self->tables_for_type($type);
 
+    my @ids;
     $self->conn->begin_work;
-    my $sth = $self->conn->prepare("SELECT id FROM ${type}_ids");
-    $sth->execute;
-    my @ids = keys %{ $sth->fetchall_hashref('id') };
+    if($self->tables->{$type.'_ids'}){
+        my $sth = $self->conn->prepare("SELECT id FROM ${type}_ids");
+        $sth->execute;
+        @ids = keys %{ $sth->fetchall_hashref('id') };
+        push @tables, $type.'_ids';
+    }
+
     local $@;
     eval {
-        for my $table (@tables, "${type}_ids"){
+        for my $table (@tables){
            $self->conn->do("DELETE FROM $table"); 
         }
     };
@@ -89,9 +94,7 @@ sub clear {
         chomp($@);
         die "Could not clear type: $@";
     }
-    for my $id (@ids){
-        $self->cache->remove("$type:$id");
-    }
+    $self->cache->remove("$type:$_") for @ids;
     $self->conn->commit;
     return scalar(@ids);
 }

@@ -7,7 +7,7 @@ use Test::More qw(no_plan);
 use Test::Exception;
 
 use mocked [qw(JavaScript t/Mock)];
-use mocked [qw(LWPx::ParanoidAgent t/Mock)];
+use mocked [qw(LWP::UserAgent t/Mock)];
 
 use lib qw(t/lib);
 use TestHelper qw(initialize_test_js_instance);
@@ -38,14 +38,14 @@ basic: {
 http_request: {
     my $http = RSP::Extension::HTTP->new({ js_instance => $ji });
 
-    local $LWPx::ParanoidAgent::RESPONSE = [200, 'OK', undef, "howdy"];
+    local $LWP::UserAgent::RESPONSE = [200, 'OK', undef, "howdy"];
     my $response = $http->http_request(GET => 'http://foo.bar/');
 
-    is($LWPx::ParanoidAgent::AGENT_STRING, 'Joyent Smart Platform / HTTP / 1.00', q{Agent string is correct});
-    is($LWPx::ParanoidAgent::TIMEOUT, 10, q{Timeout is correct});
+    is($LWP::UserAgent::AGENT_STRING, 'Joyent Smart Platform / HTTP / 1.00', q{Agent string is correct});
+    is($LWP::UserAgent::TIMEOUT, 60, q{Timeout is correct});
 
-    is($LWPx::ParanoidAgent::REQUEST->uri, 'http://foo.bar/', q{Request URI is correct});
-    is($LWPx::ParanoidAgent::REQUEST->method, 'GET', q{Request Method is correct});
+    is($LWP::UserAgent::REQUEST->uri, 'http://foo.bar/', q{Request URI is correct});
+    is($LWP::UserAgent::REQUEST->method, 'GET', q{Request Method is correct});
     is_deeply($response, { code => 200, content => 'howdy', headers => {} }, q{Response is as expected});
 }
 

@@ -12,7 +12,7 @@ use File::Temp qw(tempdir);
 my $tmp_dir = tempdir();
 
 basic: {
-    use_ok('RSP::MediaStore::MogileFS');
+    use_ok('RSP::Mediastore::MogileFS');
 
     my $media = RSP::Mediastore::MogileFS->new(
         namespace => 'test.smart.joyent.com', 

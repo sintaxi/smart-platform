@@ -1,4 +1,4 @@
-package LWPx::ParanoidAgent;
+package LWP::UserAgent;
 
 use unmocked 'Moose';
 use unmocked 'HTTP::Response';

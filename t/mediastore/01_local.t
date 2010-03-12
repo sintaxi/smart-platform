@@ -10,7 +10,7 @@ use File::Temp qw(tempdir);
 my $tmp_dir = tempdir();
 
 basic: {
-    use_ok('RSP::MediaStore::Local');
+    use_ok('RSP::Mediastore::Local');
 
     my $media = RSP::Mediastore::Local->new(
         namespace => 'test.smart.joyent.com', 
