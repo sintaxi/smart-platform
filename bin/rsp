@@ -33,7 +33,6 @@ EOM
 exit 1;
 }
 
-$SIG{INT} = sub { exit; };
 
 $port = $port ? $port : RSP->config->{mojo}->{port};
 my $opts = {
@@ -42,14 +41,14 @@ my $opts = {
     (defined($port) ? (port => $port) : ()),
 }; 
 
-my $server = $prefork ? Mojo::Server::Daemon::Prefork->new($opts) : Mojo::Server::Daemon->new($opts);
+my $server = $prefork 
+       ? Mojo::Server::Daemon::Prefork->new({ 
+                       %$opts, max_requests => 1, min_spare_servers => 5, 
+                       max_spare_servers => 30, max_servers => 80 }) 
+       : Mojo::Server::Daemon->new($opts);
 
 if($daemonize){
     $server->daemonize;
-}
-
-if ( $ARGV[0] ) {
-    RSP->config->{rsp}->{hostroot} = $ARGV[0];
 }
 
 if ( defined($port) ) {
@@ -67,16 +66,9 @@ if ( defined($port) ) {
       }
     }
   } else {
-    warn "starting $$ on port $port";
     $server->run;
   }
 } else {
   $server->run;
 }
-
-package Mojo::Server::Daemon::Prefork;
-
-use POSIX qw( setsid );
-
-1;
 

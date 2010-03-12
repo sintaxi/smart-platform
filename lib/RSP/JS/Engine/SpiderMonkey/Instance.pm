@@ -75,7 +75,7 @@ sub BUILD {
     my ($self) = @_;
     $self->version($self->version);
     $self->options($self->options);
-    $self->set_thread_stack_limit(5_000_000);
+    $self->context->set_thread_stack_limit(5_000_000);
     $self->_import_extensions;
 }
 
