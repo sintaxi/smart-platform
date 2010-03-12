@@ -24,7 +24,7 @@ has namespace => (is => 'ro', isa => 'Str', required => 1);
 has namespace_sum => (is => 'ro', isa => 'Str', lazy_build => 1);
 sub _build_namespace_sum {
     my ($self) = @_;
-    return md5_hex( $self->namespace );
+    return 'db_' . md5_hex( $self->namespace );
 }
 
 has conn => (is => 'rw', lazy_build => 1);
