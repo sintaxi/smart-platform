@@ -76,7 +76,7 @@ sub clear {
 
     my @ids;
     $self->conn->begin_work;
-    if($self->tables->{$type.'_ids'}){
+    if($self->tables->{$type}){
         my $sth = $self->conn->prepare("SELECT id FROM ${type}_ids");
         $sth->execute;
         @ids = keys %{ $sth->fetchall_hashref('id') };
