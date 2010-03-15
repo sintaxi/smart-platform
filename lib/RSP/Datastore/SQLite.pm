@@ -37,7 +37,7 @@ sub _build_cache {
 sub _build_tables {
     my $self = shift;
 
-    my $tables;
+    my $tables = {};
     my $sth  = $self->conn->prepare_cached(
       "SELECT tbl_name FROM sqlite_master"
     );
