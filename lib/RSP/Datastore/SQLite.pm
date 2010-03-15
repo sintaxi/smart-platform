@@ -34,6 +34,23 @@ sub _build_cache {
     return RSP::Transaction->cache($self->namespace);
 }
 
+sub _build_tables {
+    my $self = shift;
+
+    my $tables;
+    my $sth  = $self->conn->prepare_cached(
+      "SELECT tbl_name FROM sqlite_master"
+    );
+    $sth->execute();
+    while( my $row = $sth->fetchrow_arrayref ) {
+      my $typename = $row->[0];
+      $typename =~ s/(?:(?:\_prop\_\w+)|_ids)$//;
+      $tables->{ $typename } = 1;
+    }
+
+    return $tables;
+}
+
 sub create_type_table {
   my $self = shift;
   my $type = lc(shift);
