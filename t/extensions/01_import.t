@@ -60,24 +60,33 @@ use: {
         q{Failing library throws exception};
 }
 
-global_lib: {
-    my $tmp_dir = $ji->config->_master->root;
-    use File::Path qw(make_path);
-    make_path("$tmp_dir/library/flibble_2.0");
-    open(my $global_fh, ">", "$tmp_dir/library/flibble_2.0/flibble.js");
-    print {$global_fh} "function blah(){ return 'howdy'; }\n";
-    close $global_fh;
+secured: {
     my $import = RSP::Extension::Import->new({ js_instance => $ji }); 
 
-    local $JavaScript::Context::FILE;
-    lives_ok {
-        $import->use("flibble", "2.0");
-    } q{Able to use global library};
-    is($JavaScript::Context::FILE, "$tmp_dir/library/flibble_2.0/flibble.js", q{Correct global library is used});
-
-    throws_ok {
-        $import->use("flibble", "3.0");
-    } qr{Library name 'flibble' at version '3\.0' does not exist}, q{Non-existant version throws exception};
-
+    dies_ok {
+        $import->use('\\../\\\../\\\\../\\\\\../\\\\\\../foo');
+    } q{Import works};
 }
 
+globbing: {
+    open(my $js_fh, ">", "$root/js/this_one.js") or die "Could not open file: $!";
+    print {$js_fh} <<EOJS;
+"howdy";
+EOJS
+    close($js_fh);
+
+    open($js_fh, ">", "$root/js/this_otherone.js") or die "Could not open file: $!";
+    print {$js_fh} <<EOJS;
+"howdy";
+EOJS
+    close($js_fh);
+    
+    my $import = RSP::Extension::Import->new({ js_instance => $ji }); 
+
+    local $JavaScript::Context::FILES;
+    lives_ok {
+        $import->use('this_*');
+    } q{Import works};
+    is_deeply($JavaScript::Context::FILES, ["$root/js/this_one.js", "$root/js/this_otherone.js"], q{Library globbing import is correct});
+
+}

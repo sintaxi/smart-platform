@@ -60,8 +60,10 @@ sub bind_value {
 
 our $FILE;
 our $EVAL_RESULT = 1;
+our $FILES;
 sub eval_file {
     my ($self, $file) = @_;
+    push @$FILES, $file;
     $FILE = $file;
     if(!$EVAL_RESULT){
         $@ = "[mocked] fail";

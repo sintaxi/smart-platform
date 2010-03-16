@@ -16,53 +16,40 @@ sub bind {
 }
 
 sub use {
-    my ($self, $lib, $version) = @_;
+    my ($self, $lib) = @_;
 
     my $name = $lib;
     $lib =~ s{\.}{/}g;
     $lib .= '.js';
-
-    my $path_to_lib;
-
-    if(!$version){
-        $path_to_lib = $self->js_instance->config->file(code => $lib);
+    
+    # Ensure applications are unable to leave their sandbox
+    # XXX - this is probably overkill since users don't use paths directly, but it's better safe than
+    # sorry
+    ($lib) = File::Spec->no_upwards($lib);
+    
+    my @paths;
+    if($lib =~ m{\*}){
+        my $code_dir = $self->js_instance->config->code;
+        my $try = File::Spec->catfile($code_dir, $lib);
+        @paths = glob($try);
     } else {
-        $path_to_lib = $self->global_lib($name, $version);
+        push @paths, $self->js_instance->config->file(code => $lib);
     }
 
+    for my $path_to_lib (@paths) {
+        local $SIG{__DIE__};
+        if(!-e $path_to_lib){
+            die "Library '$name' does not exist\n";
+        }
 
-    local $SIG{__DIE__};
-    if(!-e $path_to_lib){
-        die "Library '$name' does not exist\n";
+        try {
+            $self->js_instance->evaluate_file($path_to_lib);
+            die "$@\n" if $@;
+        } catch {
+            #$self->js_instance->config->log($_);
+            die "Unable to load library '$name': $_";
+        };
     }
-
-    try {
-        $self->js_instance->evaluate_file($path_to_lib);
-        die "$@\n" if $@;
-    } catch {
-        #$self->js_instance->config->log($_);
-        die "Unable to load library '$name': $_";
-    };
-}
-
-sub global_lib {
-    my ($self, $lib, $version) = @_;
-
-    my $name = $lib;
-
-    my $versioned_lib_dir = File::Spec->catdir(
-        $self->js_instance->config->global_library,
-        $name . "_" . $version
-    );
-
-    if ( -e $versioned_lib_dir ) {
-        $lib =~ s{\.}{/}g;
-        $lib .= '.js';
-        return File::Spec->catdir($versioned_lib_dir, $lib);
-    }
-
-    local $SIG{__DIE__};
-    die qq{Library name '$name' at version '$version' does not exist};
 }
 
 1;
