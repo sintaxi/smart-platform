@@ -248,7 +248,6 @@ sub run {
     } catch {
         my $tmp = $_;
         if(blessed($tmp) eq 'JavaScript::Error') { 
-            warn "howdy";
             $self->config->error("JS called failed with: " . $tmp->as_string);
             die $tmp;
          } else {
