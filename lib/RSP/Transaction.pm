@@ -15,6 +15,7 @@ use RSP::Consumption::Bandwidth;
 use feature qw(switch);
 use Class::MOP; # for load_class
 use Try::Tiny;
+use Scalar::Util qw(blessed);
 
 use base 'Class::Accessor::Chained';
 
@@ -234,26 +235,26 @@ sub build_entrypoint_arguments {
 ## this handles all the javascripty stuff
 ##
 sub run {
-  my $self = shift;
+    my $self = shift;
 
-  my $response;
-  my $error;
-  try {
-      local $@;
-      $response = $self->context->run([ $self->build_entrypoint_arguments ]);
-      use Data::Dumper;
-      local $Data::Dumper::Indent = 0;
-      $self->config->info(Dumper($response));
-      $error = $@;
-      die $error if $error;
-  } catch {
- 
-        $self->config->error("JS called failed with: $_");
-        if(ref($_) && ref($_) eq 'JavaScript::Error') { 
-            die $_;
+    my $response;
+    my $error;
+    try {
+        $response = $self->context->run([ $self->build_entrypoint_arguments ]);
+        die $@ if $@;
+        use Data::Dumper;
+        local $Data::Dumper::Indent = 0;
+        $self->config->info(Dumper($response));
+    } catch {
+        my $tmp = $_;
+        if(blessed($tmp) eq 'JavaScript::Error') { 
+            warn "howdy";
+            $self->config->error("JS called failed with: " . $tmp->as_string);
+            die $tmp;
          } else {
-            my $str = $_;
+            my $str = $tmp;
             chomp($str);
+            $self->config->error("JS called failed with: $str");
             die "$str\n";
         } 
     };
@@ -270,7 +271,7 @@ sub run {
 
 sub access_log {
     my ($self, $log_message) = @_;
-   
+  
     # XXX disable access logging for now
     return;
 
@@ -279,8 +280,9 @@ sub access_log {
     
     use Data::Dumper;
     print {$fh} sprintf(
-        "[%s] %s - '%s %s HTTP/%s.%s'\n", 
+        "[%s] (%s) %s - '%s %s HTTP/%s.%s'\n", 
         scalar(localtime),
+        $self->hostname,
         $self->response->code,
         $self->request->method,
         $self->url,
