@@ -1,7 +1,7 @@
 package RSP::Mediastore::MogileFS;
 
 use Moose;
-
+use namespace::autoclean;
 use Scalar::Util qw( blessed );
 
 use MogileFS::Admin;
@@ -150,4 +150,5 @@ sub get {
   }
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

@@ -1,7 +1,7 @@
 package RSP::Datastore::Base;
 
 use Moose;
-
+use namespace::autoclean;
 use Digest::MD5 qw(md5_hex);
 use SQL::Abstract;
 use Scalar::Util::Numeric qw( isnum isint isfloat );
@@ -489,4 +489,5 @@ sub query_one_set {
   return $set;
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

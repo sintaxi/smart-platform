@@ -1,6 +1,7 @@
 package RSP::AMQP;
 
 use Moose;
+use namespace::autoclean;
 use Net::RabbitMQ;
 
 has host => (is => 'rw', isa => 'Str', default => 'localhost');
@@ -32,4 +33,5 @@ sub DEMOLISH {
     $self->_mq->disconnect;
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

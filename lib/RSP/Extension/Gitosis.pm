@@ -1,7 +1,7 @@
 package RSP::Extension::Gitosis;
 
 use Moose;
-
+use namespace::autoclean;
 with qw(RSP::Role::AppMutation RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 sub can_apply_mutations {
@@ -117,4 +117,5 @@ sub _new_amqp_instance {
     return $amqp;
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

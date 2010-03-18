@@ -1,6 +1,7 @@
 package RSP::JSObject::File;
 
 use Moose;
+use namespace::autoclean;
 with qw(RSP::Role::JSObject);
 
 use IO::File;
@@ -85,4 +86,5 @@ sub mtime {
   return $mtime;
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

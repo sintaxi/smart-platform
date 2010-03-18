@@ -52,6 +52,7 @@ requires 'IO::String' => 0;
 requires 'Net::SSL' => 0;
 requires 'Email::Send' => 0;
 requires 'Email::Simple' => 0;
+requires 'namespace::autoclean' => 0;
 
 tests_recursive();
 auto_install;

@@ -1,6 +1,7 @@
 package RSP::JS::Engine::SpiderMonkey;
 
 use Moose;
+use namespace::autoclean;
 use Moose::Util;
 
 use RSP::JS::Engine::SpiderMonkey::Instance;
@@ -22,4 +23,5 @@ sub applicable_host_config_roles {
     qw(RSP::Role::Config::SpiderMonkey::Host);
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

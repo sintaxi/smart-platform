@@ -1,7 +1,7 @@
 package RSP::Extension::Sprintf;
 
 use Moose;
-
+use namespace::autoclean;
 with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 sub bind {
@@ -17,4 +17,5 @@ sub sprintf {
     return sprintf($format, @args);
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

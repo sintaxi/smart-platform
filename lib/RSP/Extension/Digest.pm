@@ -1,7 +1,7 @@
 package RSP::Extension::Digest;
 
 use Moose;
-
+use namespace::autoclean;
 with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 use Scalar::Util qw( blessed );
@@ -49,4 +49,5 @@ sub digest_md5_base64 {
     return md5_base64( _js_data($data) );
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

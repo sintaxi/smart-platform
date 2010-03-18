@@ -1,7 +1,7 @@
 package RSP::Extension::HTTP;
 
 use Moose;
-
+use namespace::autoclean;
 with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 use Encode;
@@ -67,4 +67,5 @@ sub response_to_object {
   return $ro;
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

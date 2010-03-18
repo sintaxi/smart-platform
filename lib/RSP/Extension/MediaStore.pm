@@ -1,6 +1,7 @@
 package RSP::Extension::MediaStore;
 
 use Moose;
+use namespace::autoclean;
 with qw(RSP::Role::AppMutation RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 sub can_apply_mutations { 1 }
@@ -102,4 +103,5 @@ sub get {
     $self->namespace->get(@args);
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

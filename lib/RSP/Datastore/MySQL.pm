@@ -1,7 +1,7 @@
 package RSP::Datastore::MySQL;
 
 use Moose;
-
+use namespace::autoclean;
 use RSP::Transaction;
 
 use DBI;
@@ -129,4 +129,5 @@ sub remove_namespace {
     $self->conn->do("DROP DATABASE " . $self->namespace_sum);
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

@@ -1,6 +1,7 @@
 package RSP::Mediastore::Local;
 
 use Moose;
+use namespace::autoclean;
 use strict;
 use warnings;
 
@@ -84,4 +85,5 @@ sub remove {
   $self->get( $type, $name )->remove();
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

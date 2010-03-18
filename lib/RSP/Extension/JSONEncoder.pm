@@ -1,7 +1,7 @@
 package RSP::Extension::JSONEncoder;
 
 use Moose;
-
+use namespace::autoclean;
 with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 use Try::Tiny;
@@ -43,4 +43,5 @@ sub json_decode {
     };
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

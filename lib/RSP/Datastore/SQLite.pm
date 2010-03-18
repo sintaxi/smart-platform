@@ -1,7 +1,7 @@
 package RSP::Datastore::SQLite;
 
 use Moose;
-
+use namespace::autoclean;
 use DBI;
 use File::Path;
 
@@ -89,4 +89,5 @@ sub remove_namespace {
     unlink( $self->dbfile );
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

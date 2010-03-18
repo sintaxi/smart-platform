@@ -1,7 +1,7 @@
 package RSP::Extension::HMAC;
 
 use Moose;
-
+use namespace::autoclean;
 with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 use Digest::HMAC_SHA1 qw( hmac_sha1 hmac_sha1_hex );
@@ -40,4 +40,5 @@ sub _js_data {
     return blessed($data) ? $data->as_string : $data;
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

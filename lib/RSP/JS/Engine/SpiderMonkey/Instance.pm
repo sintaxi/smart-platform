@@ -1,6 +1,7 @@
 package RSP::JS::Engine::SpiderMonkey::Instance;
 
 use Moose;
+use namespace::autoclean;
 use JavaScript;
 use JavaScript::Runtime::OpcodeCounting;
 use Hash::Merge::Simple qw(merge);
@@ -198,4 +199,5 @@ sub DEMOLISH {
     $self->clear_runtime;
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

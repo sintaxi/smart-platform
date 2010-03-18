@@ -1,7 +1,7 @@
 package RSP::Extension::FileSystem;
 
 use Moose;
-
+use namespace::autoclean;
 with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 use RSP::JSObject::File;
@@ -61,6 +61,5 @@ sub get_file {
     }
 }
 
-
-
+__PACKAGE__->meta->make_immutable;
 1;

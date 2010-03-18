@@ -1,6 +1,7 @@
 package RSP::Extension::Console;
 
 use Moose;
+use namespace::autoclean;
 with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 sub bind {
@@ -15,4 +16,5 @@ sub console_log {
     print STDERR $msg;
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

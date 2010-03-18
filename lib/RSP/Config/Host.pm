@@ -3,6 +3,7 @@ package RSP::Config::Host;
 use feature qw(switch);
 
 use Moose;
+use namespace::autoclean;
 use File::Spec;
 use File::Path qw(make_path);
 use Try::Tiny;
@@ -159,10 +160,6 @@ sub file {
 
     return $path;
 }
-
-
-no Moose;
-#__PACKAGE__->meta->make_immutable;
 
 1;
 

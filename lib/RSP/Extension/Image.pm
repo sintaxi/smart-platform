@@ -1,7 +1,7 @@
 package RSP::Extension::Image;
 
 use Moose;
-
+use namespace::autoclean;
 with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 use RSP::JSObject::Image;
@@ -51,4 +51,5 @@ sub DEMOLISH {
     $self->js_instance->unbind_value( $self->jsclass );
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

@@ -1,6 +1,7 @@
 package RSP::Extension::DataStore;
 
 use Moose;
+use namespace::autoclean;
 with qw(RSP::Role::AppMutation RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 use RSP::Datastore::MySQL;
@@ -95,4 +96,6 @@ sub clear {
     return $self->namespace->clear( lc($type), @args );
 }
 
+
+__PACKAGE__->meta->make_immutable;
 1;

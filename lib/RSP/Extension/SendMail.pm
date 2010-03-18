@@ -1,7 +1,7 @@
 package RSP::Extension::SendMail;
 
 use Moose;
-
+use namespace::autoclean;
 with qw(RSP::Role::Extension RSP::Role::Extension::JSInstanceManipulation);
 
 use Email::Send;
@@ -44,4 +44,5 @@ sub email_send {
     return 1;
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

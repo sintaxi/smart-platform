@@ -1,6 +1,7 @@
 package RSP::JSObject::Image;
 
 use Moose;
+use namespace::autoclean;
 with qw(RSP::Role::JSObject);
 
 use Imager;
@@ -94,4 +95,5 @@ sub as_string {
   return $cnt;
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

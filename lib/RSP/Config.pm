@@ -1,6 +1,7 @@
 package RSP::Config;
 
 use Moose;
+use namespace::autoclean;
 use RSP;
 use Cwd qw(getcwd);
 
@@ -164,9 +165,6 @@ sub _build_log_dispatcher {
     Log::Dispatch::Config->configure($path);
     return Log::Dispatch::Config->instance;
 }
-
-no Moose;
-#__PACKAGE__->meta->make_immutable;
 
 1;
 

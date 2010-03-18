@@ -1,6 +1,7 @@
 package RSP::Extension::Import;
 
 use Moose;
+use namespace::autoclean;
 use Try::Tiny;
 use File::Spec;
 
@@ -52,4 +53,5 @@ sub use {
     }
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

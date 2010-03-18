@@ -42,6 +42,8 @@ sub BUILD {
             }
         }
     }
+
+    $self->conf->meta->make_immutable;
 }
 
 use RSP::Transaction::Mojo;
