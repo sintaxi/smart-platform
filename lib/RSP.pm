@@ -55,7 +55,6 @@ sub handler {
 
     try {
         $rsptx->process_transaction;
-        die $@ if $@;
     } catch {
         $tx->res->code(500);
         $tx->res->headers->content_type('text/plain');

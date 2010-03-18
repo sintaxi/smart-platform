@@ -247,7 +247,7 @@ sub run {
         $self->config->info(Dumper($response));
     } catch {
         my $tmp = $_;
-        if(blessed($tmp) eq 'JavaScript::Error') { 
+        if(ref($tmp) && (blessed($tmp) eq 'JavaScript::Error')) {
             $self->config->error("JS called failed with: " . $tmp->as_string);
             die $tmp;
          } else {

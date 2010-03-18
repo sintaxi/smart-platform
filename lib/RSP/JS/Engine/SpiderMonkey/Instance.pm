@@ -181,7 +181,7 @@ sub run {
         $return_value = $self->call( $entrypoint, @{ $arguments });
         die $@ if $@;
     } catch {
-        die $_;
+        die "Could not call function '$entrypoint': $_\n";
     };
     return $return_value;
 }
