@@ -76,16 +76,22 @@ sub _build_root {
     return $dir;
 }
 
-has global_library => (is => 'ro', isa => 'ExistantDirectory', lazy_build => 1);
-sub _build_global_library {
+has new_style => (is => 'ro', isa => 'Bool', lazy_build => 1);
+sub _build_new_style {
     my ($self) = @_;
-    return $self->_master->global_library;
+    my $path = File::Spec->catfile($self->root, "prefs.json");
+    return -e $path ? 1 : 0;
 }
 
 has code => (is => 'ro', isa => 'ExistantDirectory', lazy_build => 1);
 sub _build_code {
     my ($self) = @_;
-    my $dir = File::Spec->catfile($self->root, qw(js));
+    my $dir;
+    if($self->new_style){
+        $dir = $self->root;
+    } else {
+        $dir = File::Spec->catfile($self->root, qw(js));
+    }
     die "Code directory '$dir' does not exist" if !-d $dir;
     return $dir;
 }
@@ -143,7 +149,12 @@ sub _build_access_log {
 has web => (is => 'ro', lazy_build => 1, isa => 'ExistantDirectory');
 sub _build_web {
     my ($self) = @_;
-    my $dir = File::Spec->catfile($self->root, qw(web));
+    my $dir;
+    if($self->new_style){
+        $dir = $self->root;
+    } else {
+        $dir = File::Spec->catfile($self->root, qw(web));
+    }
     die "Web directory '$dir' does not exist" if !-d $dir;
     return $dir;
 }

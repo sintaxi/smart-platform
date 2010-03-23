@@ -31,14 +31,6 @@ sub _build_root {
     return $root;
 }
 
-has global_library => (is => 'ro', lazy_build => 1, isa => 'ExistantDirectory');
-sub _build_global_library {
-    my ($self) = @_;
-    my $root = $self->root;
-    my $path = File::Spec->catdir($root, 'library');
-    return $path;
-}
-
 has extensions => (is => 'ro', lazy_build => 1, isa => 'ArrayRef[ClassName]');
 sub _build_extensions {
     my ($self) = @_;

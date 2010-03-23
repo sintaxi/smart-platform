@@ -187,13 +187,6 @@ check_alloc_size: {
     is($host->alloc_size, 8388608, q{Allocation size is correct});
 }
 
-check_global_library: {
-    make_path("$tmp_dir/library");
-    my $conf = RSP::Config->new(config => $test_config);
-    my $host = $conf->host('foo');
-    is($host->global_library, "$tmp_dir/library", q{Global library is correct});
-}
-
 check_log_directory: {
     my $conf = RSP::Config->new(config => $test_config);
     my $host = $conf->host('foo');
@@ -244,4 +237,21 @@ check_file: {
         $host->file(cookies_on_dowels => 'bleh');
     } qr{Unknown file type 'cookies_on_dowels'},
         q{Unknown file type throws exception};
+}
+
+#---------------------------------------------
+# NEW STYLE
+#---------------------------------------------
+
+new_style_loading: {
+    open(my $fh, ">", "$tmp_dir2/bar/prefs.json") or die "Could not open file: $!";
+    print {$fh} "";
+    close($fh);
+
+    my $conf = RSP::Config->new(config => $test_config);
+    my $host = $conf->host('bar');
+    ok($host->new_style, q{Host is new style});
+    is($host->file(code => 'some_code.js'), "$tmp_dir2/bar/some_code.js", q{file for 'code' is correct, new style});
+    is($host->file(web => 'some_code.js'), "$tmp_dir2/bar/some_code.js", q{file for 'web' is correct, new style});
+    is($host->bootstrap_file, "$tmp_dir2/bar/bootstrap.js", 'bootstrap file path returned, new style');
 }
