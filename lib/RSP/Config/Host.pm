@@ -61,14 +61,16 @@ sub _build_actual_host {
     return $self->_config->{alternate} ? $self->_config->{alternate} : $self->hostname;
 }
 
-has root => (is => 'ro', isa => 'ExistantDirectory', lazy_build => 1);
+# XXX - bypass Existant directory for now
+#has root => (is => 'ro', isa => 'ExistantDirectory', lazy_build => 1);
+has root => (is => 'ro', isa => 'Str', lazy_build => 1);
 sub _build_root {
     my ($self) = @_;
     my $hostroot = $self->_master->hostroot;
     my $dir = File::Spec->catfile($hostroot, $self->actual_host);
     if(!-e $dir){
         try {
-            make_path($dir);
+            #make_path($dir);
         } catch {
             die "Unable to create hostdirectory '$dir': $@";
         }
