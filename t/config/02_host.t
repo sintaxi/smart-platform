@@ -254,4 +254,24 @@ new_style_loading: {
     is($host->file(code => 'some_code.js'), "$tmp_dir2/bar/some_code.js", q{file for 'code' is correct, new style});
     is($host->file(web => 'some_code.js'), "$tmp_dir2/bar/some_code.js", q{file for 'web' is correct, new style});
     is($host->bootstrap_file, "$tmp_dir2/bar/bootstrap.js", 'bootstrap file path returned, new style');
+
+    unlink("$tmp_dir2/bar/prefs.json");
+}
+
+new_style_transition: {
+    my $conf = RSP::Config->new(config => $test_config);
+    my $host = $conf->host('bar');
+    ok(!$host->new_style, q{Host is not new style});
+    is($host->file(code => 'some_code.js'), "$tmp_dir2/bar/js/some_code.js", q{file for 'code' is correct});
+    is($host->file(web => 'some_code.js'), "$tmp_dir2/bar/web/some_code.js", q{file for 'web' is correct});
+    is($host->bootstrap_file, "$tmp_dir2/bar/js/bootstrap.js", 'bootstrap file path returned');
+    
+    open(my $fh, ">", "$tmp_dir2/bar/prefs.json") or die "Could not open file: $!";
+    print {$fh} "";
+    close($fh);
+
+    ok($host->new_style, q{Host is new style});
+    is($host->file(code => 'some_code.js'), "$tmp_dir2/bar/some_code.js", q{file for 'code' is correct, new style});
+    is($host->file(web => 'some_code.js'), "$tmp_dir2/bar/some_code.js", q{file for 'web' is correct, new style});
+    is($host->bootstrap_file, "$tmp_dir2/bar/bootstrap.js", 'bootstrap file path returned, new style');
 }

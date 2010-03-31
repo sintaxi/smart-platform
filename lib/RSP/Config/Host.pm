@@ -76,15 +76,13 @@ sub _build_root {
     return $dir;
 }
 
-has new_style => (is => 'ro', isa => 'Bool', lazy_build => 1);
-sub _build_new_style {
+sub new_style {
     my ($self) = @_;
     my $path = File::Spec->catfile($self->root, "prefs.json");
     return -e $path ? 1 : 0;
 }
 
-has code => (is => 'ro', isa => 'ExistantDirectory', lazy_build => 1);
-sub _build_code {
+sub code {
     my ($self) = @_;
     my $dir;
     if($self->new_style){
@@ -111,8 +109,7 @@ sub is_active {
 
 
 # XXX - make this an 'ExistantFile' type constraint?
-has bootstrap_file => (is => 'ro', lazy_build => 1);
-sub _build_bootstrap_file {
+sub bootstrap_file {
     my ($self) = @_;
     my $file = File::Spec->catfile($self->code, qw(bootstrap.js));
     return $file;
@@ -146,8 +143,7 @@ sub _build_access_log {
     return $logfile;
 }
 
-has web => (is => 'ro', lazy_build => 1, isa => 'ExistantDirectory');
-sub _build_web {
+sub web {
     my ($self) = @_;
     my $dir;
     if($self->new_style){
